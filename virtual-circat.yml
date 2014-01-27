@@ -1,0 +1,120 @@
+# Configuration for Circat machine
+# Mathias Laurin, 2013-02-02
+
+dashboard:
+      name: Dashboard
+      image: :/img/gaslines.svg
+      labels:
+        - name: MFC10 label
+          pos: [0.1, 0.1]
+
+        - name: MFC11 label
+          pos: [0.1, 0.2]
+
+pfeiffer:
+    COM5:
+        - name: roughing pressure
+          driver: virtual
+          pos: [0.547, 0.963]
+          extra: {node: 1}
+
+        - name: exhaust chamber
+          driver: virtual
+          pos: [0.884, 0.744]
+          extra: {node: 2}
+
+        - name: QMS rouging
+          driver: virtual
+          pos: [0.704, 0.841]
+          extra: {node: 3}
+
+        - name: QMS chamber
+          driver: virtual
+          pos: [0.584, 0.708]
+          extra: {node: 4}
+
+        - name: inlet pressure
+          driver: virtual
+          pos: [0.360, 0.055]
+          extra: {node: 5}
+
+bronkhorst:
+    COM4:
+        - name: MFC 10
+          pos: [0.233, 0.166]
+          driver: virtual
+          extra: {node: 10}
+
+        - name: MFC 11
+          pos: [0.233, 0.272]
+          driver: virtual
+          extra: {node: 11}
+
+        - name: MFC 12
+          pos: [0.233, 0.379]
+          driver: virtual
+          extra: {node: 12}
+
+        - name: MFC 13
+          pos: [0.233, 0.487]
+          driver: virtual
+          extra: {node: 13}
+
+        - name: MFC 14
+          pos: [0.233, 0.591]
+          driver: virtual
+          extra: {node: 14}
+
+        - name: PC 15
+          pos: [0.744, 0.678]
+          driver: virtual
+          extra: {node: 15}
+
+        - name: PC 16
+          pos: [0.800, 0.678]
+          driver: virtual
+          extra: {node: 16}
+
+        - name: MFC 17
+          pos: [0.725, 0.120]
+          driver: virtual
+          extra: {node: 17}
+          
+        - name: MFC 18
+          pos: [0.725, 0.202]
+          driver: virtual
+          extra: {node: 18}
+
+watlow:
+    COM7:
+        - name: Watlow heater
+          driver: virtual
+
+fluke:
+    COM4:
+        - name: fluke
+          driver: virtual
+ 
+daq:
+    Circat1/port0:
+        - name : PC15 valve
+          driver: virtual
+          angle: -90
+          pos: [0.745, 0.790]
+          extra: {node: line0}
+      
+        - name : PC16 valve
+          driver: virtual
+          pos: [0.802, 0.790]
+          angle: -90
+          extra: {node: line1}
+    
+        - name : roughing
+          driver: virtual
+          pos: [0.300, 0.726]
+          extra: {node: line2}
+
+
+
+# import yaml
+# yml = yaml.load(open("circat.yml"))

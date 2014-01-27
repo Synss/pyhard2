@@ -1,0 +1,9 @@
+An object-oriented framework for the development of instrument drivers
+
+
+
+pyhard2 is an object-oriented framework to help in the development of instrument drivers. pyhard2 is proposed as an alternative to LabVIEW. Emphasis is given on serial drivers but the framework can be used with any socket.
+
+The source also contains the implementation of a PID controller and a setpoint ramp generator.
+
+The instrument drivers may further be incorporated in a GUI, using, e.g. PyQt or PySide. For threading using a thread proxy mediator pattern, the proxy is generated automatically. Furthermore, a few generic GUI are provided (e.g. generic heater).

@@ -1,0 +1,17 @@
+<!DOCTYPE RCC><RCC version="1.0">
+<qresource>
+  <file>img/valve_green.svg</file>
+  <file>img/valve_red.svg</file>
+  <file>img/gaslines.svg</file>
+  <file>icons/Tango/document-print-preview.svg</file>
+  <file>icons/Tango/edit-copy.svg</file>
+  <file>icons/Tango/edit-paste.svg</file>
+  <file>icons/Tango/list-add.svg</file>
+  <file>icons/Tango/list-remove.svg</file>
+  <file>icons/Tango/media-playback-start.svg</file>
+  <file>icons/Tango/media-playback-stop.svg</file>
+  <file>icons/Tango/media-seek-forward.svg</file>
+  <file>icons/Tango/process-stop.svg</file>
+</qresource>
+</RCC>
+

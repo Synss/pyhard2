@@ -1,0 +1,6 @@
+*.pyc
+.DS_Store
+*.swp
+*.patch
+toto.py
+Backup_of_*.cdr
