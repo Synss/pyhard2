@@ -18,12 +18,6 @@ except ImportError:
     sys.stderr.flush()
     raise
 
-import sip as _sip
-for _type in "QDate QDateTime QString QTextStream QTime QUrl QVariant".split():
-    _sip.setapi(_type, 2)
-from PyQt4.QtCore import QObject, pyqtSignal, pyqtSlot
-Slot, Signal = pyqtSlot, pyqtSignal
-
 import pyhard2.driver as drv
 Parameter = drv.Parameter
 Action = drv.Action
@@ -33,22 +27,11 @@ import pyhard2.pid as pid
 warnings.simplefilter("once")
 
 
-class SignalWrapper(QObject):
-
-    signal = Signal(float)
-
-    def __init__(self):
-        QObject.__init__(self)
-        self.emit = self.signal.emit
-        self.connect = self.signal.connect
-        self.disconnect = self.signal.disconnect
-
-
 class PidSubsystem(drv.Subsystem):
 
     """ Wrapper for `pyhard2.pid`. """
 
-    output = SignalWrapper()
+    output = drv.SignalProxy()
 
     def __init__(self):
         self.__pid = pid.PidController()
@@ -66,7 +49,7 @@ class PidSubsystem(drv.Subsystem):
             self.add_parameter_by_name(name, name)
         self.add_action_by_name("reset", "reset")
 
-    @Slot(float)
+    #@Slot(float)
     def compute_output(self, measure):
         """ Return the output from the PID, provided `measure`. """
         pidout = self.__pid.compute_output(measure)
@@ -80,7 +63,7 @@ class VirtualInputSubsystem(drv.Subsystem):
             drv.ProtocolLess(None, async=False))
         self._sysout = 0.0
 
-    @Slot(float)
+    #@Slot(float)
     def set_sysout(self, sysout):
         self._sysout = sysout
 
@@ -102,7 +85,7 @@ class VirtualOutputSubsystem(drv.Subsystem):
         self._noise = 1.0          # %
         self._start = time.time()
 
-    @Slot(float)
+    #@Slot(float)
     def append_input(self, input):
         self._times.append(time.time() - self._start)
         self._inputs.append(input)

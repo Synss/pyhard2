@@ -62,7 +62,7 @@ class Serial(serial.Serial):
         return line
 
 
-class _SignalProxy(QObject):
+class SignalProxy(QObject):
 
     signal = Signal(object)
 
@@ -233,7 +233,7 @@ class Parameter(object):
 
     def _get(self, subsys):
         value = self.getter_func(subsys.protocol._encode_read(subsys, self))
-        subsys._signals.setdefault(self, _SignalProxy()).emit(value)
+        subsys._signals.setdefault(self, SignalProxy()).emit(value)
         if not subsys.protocol.async:
             return value
 
@@ -428,7 +428,7 @@ class Subsystem(object):
             command.__set__(instance, value)
 
         def signal(instance):
-            return instance._signals.setdefault(command, _SignalProxy())
+            return instance._signals.setdefault(command, SignalProxy())
 
         def is_readonly(instance):
             return command.read_only
