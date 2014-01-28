@@ -514,20 +514,6 @@ class Subsystem(object):
         """
         setattr(cls, attr_name, Action(*args, **kwargs))
 
-    def _add_parameter(self, setcmd, item=None):
-        if isinstance(item, basestring):
-            attr_name, kwargs = item, {}
-        else:
-            attr_name, kwargs = item
-        if setcmd.endswith("?"):
-            setcmd = setcmd[:-1]
-            kwargs.update(dict(read_only=True))
-        elif setcmd.endswith("!"):
-            setcmd = setcmd[:-1]
-            self.add_action_by_name(attr_name, setcmd, **kwargs)
-        else:
-            self.add_parameter_by_name(attr_name, setcmd, **kwargs)
-
 
 class Instrument(object):
 
