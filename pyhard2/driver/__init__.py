@@ -405,19 +405,16 @@ class Subsystem(object):
         return "%s(protocol=%r)" % (self.__class__.__name__, self.protocol)
 
     def __str__(self):
-        contents = list((name, type(obj).__name__, obj.__doc__)
-                        for name, obj in self._iface())
+        contents = [
+            (name, type(obj).__name__, obj.__doc__)
+            for name, obj in vars(type(self)).iteritems()
+            if isinstance(obj, Parameter) or isinstance(obj, Action)]
         fieldlength = [max(len(str(field)) for field in line)
                        for line in zip(*contents)]
         return os.linesep.join(
             ["%s <0x%x>" % (self.__class__.__name__, id(self))] +
             ["%-{0}s %-{1}s %s".format(*fieldlength)
              % (name, typ, doc) for name, typ, doc in sorted(contents)])
-
-    def _iface(self):
-        for param_name, param in vars(self.__class__).iteritems():
-            if isinstance(param, Parameter) or isinstance(param, Action):
-                yield param_name, param
 
     def __getattr__(self, attr_name):
 
@@ -533,16 +530,13 @@ class Instrument(object):
 
     def __str__(self):
         name = "Instrument %s" % self.__class__.__name__
-        buf = [name, len(name) * "=", os.linesep]
-        for subsys_name, subsys in self._iface():
-            header = "%s subsystem" % subsys_name
-            buf.extend([header, len(header) * "-", subsys.__str__()])
+        buf = [name, len(name) * "="]
+        for name, obj in ((name, obj)
+                          for name, obj in vars(self).iteritems()
+                          if isinstance(obj, Subsystem)):
+            header = "%s subsystem" % name
+            buf.extend([header, len(header) * "-", "%s" % obj])
         return os.linesep.join(buf)
-
-    def _iface(self):
-        for subsys_name, subsys in vars(self).iteritems():
-            if isinstance(subsys, Subsystem):
-                yield subsys_name, subsys
 
     def __getattr__(self, attr_name):
         try:
@@ -588,37 +582,13 @@ class Adapter(object):
         return "%s(adaptee=%r, mapping=%r)" % \
                 (self.__class__.__name__, self.adaptee, self.mapping)
 
-    def __str__(self):
-        name = "Adapter to %s" % self.adaptee.__class__.__name__
-        header = [name, len(name) * "=", ""]
-        contents = list((path, type(obj).__name__, obj.__doc__)
-                         for path, subsys, obj in self._iface())
-        fieldlength = [max(len(str(field)) for field in line)
-                       for line in zip(*contents)]
-        return os.linesep.join(header +
-            ["%-{0}s %-{1}s %s".format(*fieldlength)
-             % (name, typ, doc) for name, typ, doc in sorted(contents)])
-
     def __getattr__(self, attr_name):
-        """Recursion until match found in self.mapping."""
+        """ Recursion until match found in self.mapping. """
         try:
             return reduce(getattr,
                           self.mapping[attr_name].split("."), self.adaptee)
         except KeyError:
             return super(Adapter, self).__getattribute__(attr_name)
-
-    def _iface(self):
-        if self.adaptee is None:
-            raise StopIteration
-        for subsys_name, subsys in self.adaptee._iface():
-            for param_name, param in subsys._iface():
-                path = (param_name if subsys_name == "main" else
-                        ".".join([subsys_name, param_name]))
-                adapted_path = next((ctrlr_attr for (ctrlr_attr, drv_attr)
-                                     in self.mapping.iteritems()
-                                     if path == drv_attr), None)
-                if adapted_path:
-                    yield adapted_path, subsys, param
 
 
 class DriverAdapter(QObject, Adapter):  # inherits QObject for moveToThread
