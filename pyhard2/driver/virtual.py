@@ -7,7 +7,6 @@ Virtual instrument driver used to test GUIs.
 """
 
 import sys
-import types
 import time
 import random
 import warnings
