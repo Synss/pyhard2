@@ -524,9 +524,15 @@ class Instrument(object):
         Name the default `Subsystem`.
 
     """
+    def __init__(self, socket=None, async=False):
+        self.__socket = socket
+        self.__async = async
 
     def __repr__(self):
-        return "%s()" % (self.__class__.__name__)
+        return "%s(socket=%r, async=%r)" % (
+            self.__class__.__name__,
+            self.__socket,
+            self.__async)
 
     def __str__(self):
         name = "Instrument %s" % self.__class__.__name__
