@@ -21,13 +21,6 @@ Extract the archive into a directory and run:
 
 License
 =======
-pyhard2 (c) 2012-2013 Mathias Laurin,
+pyhard2 (c) 2012-2014 Mathias Laurin,
             GNU General Public License v3 (GPLv3)
 
-
-What's new
-==========
-
-- 0.9.4: fix error in pyhard2.ctrlr.daq
-- 0.9.3: refactor pyhard2.ctrlr by splitting the module into
-  packages in pyhard2.ctrlr.ctrlr.*

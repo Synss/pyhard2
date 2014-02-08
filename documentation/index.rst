@@ -6,14 +6,13 @@ pyhard2 is the free device-driver development toolkit (DDK) written in
 Python.
 
 It provides an alternative to other DDKs like LabVIEW, the Windows Driver Kit,
-and Matlab on the desktop and in the lab, and is the free software choice for
+and Matlab on the desktop and in the lab.  It is the free software choice for
 free hardware projects on Arduino/Raspberry Pi/BeagleBone hardware.
 
 - Written entirely in Python, pyhard2 is completely free and open source.
 - Runs on any platform Python supports (including, but not limited to, MS
   Windows, Mac OS X, Linux and the BSDs).
-- New drivers take 0.5 day to write and require very little amount of
-  programming.
+- New drivers take 0.5 day to write and do not require a large amount of code.
 - Graphical user interfaces are loosely coupled to the driver.
 - The library takes care of threading when the driver is used in a GUI.
 - Easily create a Dashboard presenting a live overview over different
@@ -61,16 +60,16 @@ Tutorials
    tutgui2
    tutgui3
 
-API documentation
-=================
+DDK API documentation
+=====================
 
 .. toctree::
    :maxdepth: 1
 
    apidrv
+   apimisc
    apictrlr
    apiqt4
-   apimisc
 
 Drivers API documentation
 -------------------------
@@ -112,11 +111,20 @@ You should have received a copy of the GNU General Public License along with
 this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-Install
-=======
+Installation
+============
 
-Download the archive from the `project page
-<https://sourceforge.net/projects/pyhard2>`_, unpack and run::
+The project is hosted on `github <https://github.com/Synss/pyhard2>`_ and
+`sourceforge <http://pyhard2.sourceforge.net>`_.  Follow the sourceforge link
+for the HTML documentation.
+
+To install, either download the archive from the `project page on sourceforge
+<https://sourceforge.net/projects/pyhard2>`_ and unpack it in an empty directory
+or clone the git repository from github
+
+   git clone https://github.com/Synss/pyhard2.git
+
+Then, in the project root, run::
 
    python setup.py install
 
@@ -124,19 +132,18 @@ pyhard2 depends on
 
 - pyserial_: Multiplatform Serial Port Module for Python (Win32, Jython, Linux,
   BSD and more).
-- PyQt4_: version 4.8 or higher (modules :mod:`pyhard2.ctrlr` and
-  :mod:`pyhard2.dashboard` only).
+- PyQt4_: version 4.8 or higher.
 
 .. _pyserial: http://pyserial.sourceforge.net
-
 .. _PyQt4: http://www.riverbankcomputing.com/software/pyqt/download
 
-and works well with, at least,
+and optionally on
 
 - numpy_ and scipy_: Scientific computing tools for Python
   (used in the module :mod:`pyhard2.driver.daq`).
 - matplotlib_: Python plotting.
 - pyyaml_: YAML implementations for Python (recommended).
+- ezodf_: create new or open existing OpenDocumentFormat files.
 - comedi_: Linux control and measurement device interface (used on Linux,
   in the module :mod:`pyhard2.driver.daq`), or
 - pylibnidaqmx_: a Python wrapper to libnidaqmx library (used on Windows
@@ -145,18 +152,23 @@ and works well with, at least,
   in the module :mod:`pyhard2.driver.bronkhorst`).
 
 .. _numpy: http://www.numpy.org
-
 .. _scipy: http://www.scipy.org
-
 .. _matplotlib: http://matplotlib.org/
-
 .. _pyyaml: http://pyyaml.org/wiki/PyYAMLDocumentation
-
+.. _ezodf: http://pythonhosted.org/ezodf/
 .. _comedi: http://www.comedi.org
-
 .. _pylibnidaqmx: http://code.google.com/p/pylibnidaqmx
-
 .. _construct: http://construct.readthedocs.org/en/latest
+
+
+Development and contributing
+============================
+
+Please file issues on `github <https://github.com/Synss/pyhard2/issues>`_.
+Questions may be asked on the `mailing list
+<https://sourceforge.net/p/pyhard2/mailman/>`_.
+
+Any feedback provided via these channels is very welcome.
 
 
 Indices and tables

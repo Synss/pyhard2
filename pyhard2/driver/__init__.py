@@ -34,21 +34,24 @@ import serial
 
 
 def identity(*args):
-    """A simple identity function."""
+    """ A simple identity function. """
     return args[0] if len(args) is 1 else args
 
 
 class Serial(serial.Serial):
 
-    """Fix `readline` in `pyserial`."""
+    """ Fix `readline` in `pyserial`. """
 
     def __init__(self, port=None, newline="\n", *args, **kwargs):
         super(Serial, self).__init__(port, *args, **kwargs)
         self.newline = newline
 
     def readline(self):
-        """Implement own readline since changing EOL character with `io`
-        does not work well."""
+        """
+        Implement own readline since changing EOL character with `io`
+        does not work well.
+
+        """
         if not self.newline:
             return super(Serial, self).readline()
         line = ""
@@ -63,6 +66,13 @@ class Serial(serial.Serial):
 
 
 class SignalProxy(QObject):
+    """
+    A proxy class for Qt4 signals.
+
+    A SignalProxy can be used in place of a Signal in classes that do
+    not inherit QObject.
+
+    """
 
     signal = Signal(object)
 
@@ -142,13 +152,13 @@ class Action(object):
     ----------
     getcmd :
         Get the command.
-    getter_func : function
+    getter_func : function, optional
         Apply to the value returned by the hardware.
-    doc : docstring
+    doc : docstring, optional
 
     Notes
     -----
-    Implements `__call__`.
+    Implements :meth:`__call__`.
 
     """
 
@@ -185,21 +195,24 @@ class Parameter(object):
     getcmd : str or callable
         Command to query the parameter.
     setcmd : str or callable, optional
-        Command to set the parameter.
+        Command to set the parameter.  If omitted, defaults to `getcmd`.
     minimum, maximum : number, optional
         Minimum and maximum value used for data validation.  Values
-        passed to the parameter exceeding `minimum` or `maximum` are silently
-        coerced to avoid hardware errors
+        passed to the parameter exceeding `minimum` or `maximum` will be
+        silently coerced to avoid hardware errors.
     read_only : bool
-        An AttributeError is raised if an attempt to write to a `read
-        only` parameter is done.
-    getter_func, setter_func : function
+        If read_only is True, the paramter will raise an AttributeError
+        if one attempts to set its value.
+    getter_func, setter_func : function, optional
+        These functions can be used either for type conversion (i.e.,
+        str to int) or for pretty printing.  Default to :func:`identity`
+        if unset.
     doc : docstring
 
     Notes
     -----
 
-    Implements `__get__` and `__set__`.
+    Implements :meth:`__get__` and :meth:`__set__`.
 
     """
 
@@ -260,6 +273,8 @@ class Parameter(object):
         Parameters
         ----------
         subsys : Subsystem
+        val :
+            Value to set.
         """
         self._set(subsys, val)
 
@@ -267,7 +282,17 @@ class Parameter(object):
 class AbstractProtocol(object):
 
     """
-    An abstract class to implement protocols.
+    New Protocols should inherit this class.
+
+    Parameters
+    ----------
+    socket :
+        The socket used to communicate with the driver.
+    async : bool
+        Whether communication should be synchronous/blocking or
+        asynchronous/non-blocking.  Blocking should be preferred when 
+        the driver is used interactively and non-blocking, when used in
+        a GUI.
 
     Notes
     -----
@@ -276,7 +301,6 @@ class AbstractProtocol(object):
     drivers, or both for read-write drivers.
 
     """
-
     def __init__(self, socket, async):
         self.socket = socket
         self.async = async
@@ -296,9 +320,35 @@ class AbstractProtocol(object):
 
 class WrapperProtocol(AbstractProtocol):
 
-    """ Look up `param.getcmd` or `param.setcmd` in `wrapped_obj`'s
-        attributes. """
+    """
+    Protocol that makes `wrapped_obj`'s attributes accessible in its
+    parent Subsystem.
 
+    Examples
+    --------
+    >>> class MyClass(object):
+    ...
+    ...    def __init__(self):
+    ...        self.attr = "Some value"
+    ...
+    >>> class MySubsystem(Subsystem):
+    ...
+    ...    def __init__(self, obj):
+    ...        self.__wrapped = obj
+    ...        protocol = WrapperProtocol(self.__wrapped, async=False)
+    ...        super(MySubsystem, self).__init__(protocol)
+    ...
+    ...    my_parameter = Parameter("attr", doc="Accessor to obj.attr")
+    ...
+    >>> wrapped = MyClass()
+    >>> subsys = MySubsystem(wrapped)
+    >>> subsys.my_parameter
+    'Some value'
+    >>> subsys.my_parameter = "Another value"
+    >>> wrapped.attr
+    'Another value'
+
+    """
     def __init__(self, wrapped_obj, async):
         super(WrapperProtocol, self).__init__(socket=None, async=async)
         self._wrapped_obj = wrapped_obj
@@ -317,16 +367,41 @@ class WrapperProtocol(AbstractProtocol):
 class ProtocolLess(AbstractProtocol):
 
     """
-    Protocol to use with hardware that does not need framing.
+    Protocol that lets Actions and Paramters work like python
+    properties.
 
-    Notes
-    -----
-    Requires that `setcmd` and `getcmd` from the `Subsystem` are
-    callbacks.  The :mod:`pyhard2.driver.virtual` driver provides an
-    example usage.
+    This protocol should be used whenever framing is not needed.
+    Parameters and Actions in a Subsystem that uses `ProtocolLess` take
+    function objects as arguments to `getcmd` and `setcmd`, like Python
+    properties.
+
+    Examples
+    --------
+    >>> class MySubsystem(Subsystem):
+    ...
+    ...    def __init__(self):
+    ...        protocol = ProtocolLess(Serial(), async=False)
+    ...        super(MySubsystem, self).__init__(protocol)
+    ...        self._value = "A value"
+    ...
+    ...    def __get_value(self):
+    ...        return self._value
+    ...
+    ...    def __set_value(self, value):
+    ...        self._value = value
+    ...
+    ...    value = Parameter(__get_value, __set_value, doc="Accessor")
+    ...
+    >>> subsys = MySubsystem()
+    >>> subsys.value
+    'A value'
+    >>> subsys.value = "Another value"
+    >>> subsys.value
+    'Another value'
+    >>> print(subsys._value)
+    Another value
 
     """
-
     def __init__(self, socket, async):
         super(ProtocolLess, self).__init__(socket, async)
 
@@ -340,17 +415,28 @@ class ProtocolLess(AbstractProtocol):
 class SerialProtocol(AbstractProtocol):
 
     """
-    Implement a protocol for use for serial communication.
+    Protocol for serial communication with the hardware.
 
     Parameters
     ----------
+    socket : Serial
+    async : bool
     fmt_read : str
-        string with placeholders to format read command
-    fmt_write : str
-        string with placeholders to format write command
+        String with placeholders to format read command.  The mnemonics
+        `subsys`, `protocol`, and `param` can be used to access
+        attributes in the parent Subsystem, its Protocol or the calling
+        Parameter (or Action).  The attribute itself is written between
+        [] after the mnemonic.  For example:
+        ``{subsys[mnemonic]}:{param[getcmd]}?\\r``,
+        ``{subsys[index]:X}{param[getcmd]}?\\r``, or
+        ``{param[getcmd]}{protocol[node]:0.2i}\\r\\n`` are valid
+        arguments.
+    fmt_write : str, optional
+        string with placeholders to format write command.  See
+        documentation to `fmt_read`.  The parameter may be omitted in
+        read-only protocols.
 
     """
-
     def __init__(self, socket, async, fmt_read=None, fmt_write=None):
         super(SerialProtocol, self).__init__(socket, async)
         self.fmt_read = fmt_read
@@ -372,13 +458,13 @@ class SerialProtocol(AbstractProtocol):
         self.socket.write(cmd)
 
     def _fmt_cmd_read(self, subsys, param):
-        """Return string ready to be sent to the hardware."""
+        """ Return string ready to be sent to the hardware. """
         return self.fmt_read.format(subsys=subsys.__dict__,
                                     protocol=self.__dict__,
                                     param=param.__dict__)
 
     def _fmt_cmd_write(self, subsys, param, val):
-        """Return string ready to be sent to the hardware."""
+        """ Return string ready to be sent to the hardware. """
         return self.fmt_write.format(subsys=subsys.__dict__,
                                      protocol=self.__dict__,
                                      param=param.__dict__,
@@ -388,15 +474,32 @@ class SerialProtocol(AbstractProtocol):
 class Subsystem(object):
 
     """
-    A logical group of one or more `Parameter`.
-    
+    A logical group of one or more commands (`Parameters` and
+    `Actions`).
+
+    The commands can be accessed directly on the Subsystem.  Further,
+    another interface providing accessors to the commands and their
+    attributes is generated on the fly.
+
+    This accessor-based interface follows simple rules:
+        - an `Action` is executed by prefixing its name with ``do_`` so
+          that an Action ``a`` can be accessed with :meth:`do_a`.
+        - getter and setter functions have the name of the `Parameter`
+          prefixed with ``get_`` and ``set_`` so that a Parameter ``p``
+          can be accessed with :meth:`get_p` and :meth:`set_p`.
+        - other `Parameter` attributes are accessed by suffixing the
+          Parameter's name with ``_is_readonly``, ``_minimum``,
+          ``_maximum``, and ``_signal``.
+
+    Printing a Subsystem returns a summary of its interface.
+
     Parameters
     ----------
     protocol : Protocol
-        Protocol used by this subsystem to communicate with the hardware.
+        Protocol used by this subsystem to communicate with the
+        hardware.
 
     """
-
     def __init__(self, protocol):
         self.protocol = protocol
         self._signals = dict()
@@ -487,41 +590,46 @@ class Subsystem(object):
 
     @classmethod
     def add_parameter_by_name(cls, attr_name, *args, **kwargs):
-        """Helper to batch set parameters.
+        """ Helper to batch set parameters.
 
         Parameters
         ----------
         attr_name : str
             Name the new `Parameter`.
         args, kwargs : optional
-            Passed to `Parameter.__init__()`.
+            Passed to :meth:`Parameter.__init__`.
         """
         setattr(cls, attr_name, Parameter(*args, **kwargs))
 
     @classmethod
     def add_action_by_name(cls, attr_name, *args, **kwargs):
-        """Helper to batch set actions.
+        """ Helper to batch set actions.
 
         Parameters
         ----------
         attr_name : str
             Name the new `Action`.
         args, kwargs : optional
-            Passed to `Action.__init__()`
+            Passed to :meth:`Action.__init__`
         """
         setattr(cls, attr_name, Action(*args, **kwargs))
 
 
 class Instrument(object):
 
-    """ Class containing the subsystems.
-    
-    This is the class that should be directly exposed to the user.
+    """
+    Class containing the subsystems.
 
-    Attributes
-    ----------
-    default : str
-        Name the default `Subsystem`.
+    If a `Subsystem` is named ``main`` in the class, it can be accessed
+    directly on the `Instrument`.  That is
+    ``instrument_obj.main.parameter_name`` is essentially the same as
+    ``instrument_obj.parameter_name``.  This is particularly useful in
+    instruments that contain a single Subsystem and in an interactive
+    session.
+
+    This is the class that is directly exposed to the user.
+
+    Printing an Instrument returns a summary of its interface.
 
     """
     def __init__(self, socket=None, async=False):
@@ -570,16 +678,19 @@ class Instrument(object):
 class Adapter(object):
 
     """
-    Adapt `Instrument` interface by mapping attribute names.
+    This class implements the adapter pattern in python.
+
+    The adapter pattern is a design pattern that translates one
+    interface for a class into a compatible interface. (wikipedia)
 
     Parameters
     ----------
-    adaptee : Instrument
-        Instrument to adapt.
+    adaptee : object
+        Object to adapt.
     mapping : dict
         Mapping in the form {adaptor_attr : adaptee_attr}
-    """
 
+    """
     def __init__(self, adaptee, mapping):
         self.adaptee = adaptee
         self.mapping = mapping
@@ -599,9 +710,17 @@ class Adapter(object):
 
 class DriverAdapter(QObject, Adapter):  # inherits QObject for moveToThread
 
-    """ Add get_, set_, do_ and _signal, _is_readonly, _minimum, and _maximum
-        functions to the mapping. """
+    """
+    Add access to the ``get_``, ``set_``, ``do_``, ``_signal``,
+    ``_is_readonly``, ``_minimum``, and ``_maximum`` functions to the
+    mapping.
 
+    See also
+    --------
+    Adapter : Class that this class inherits.
+    Subsystem : Class that generates the ``get_``, etc. functions.
+
+    """
     prefixes = "get_ set_ do_".split()
     suffixes = "_signal _is_readonly _minimum _maximum".split()
 
@@ -639,3 +758,7 @@ class DriverAdapter(QObject, Adapter):  # inherits QObject for moveToThread
     def __getattr__(self, attr_name):
         return Adapter.__getattr__(self, attr_name)
 
+
+if __name__ == "__main__":
+    import doctest
+    doctest.testmod()

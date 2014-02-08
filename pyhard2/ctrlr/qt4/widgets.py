@@ -1,10 +1,4 @@
-"""
-pyhard2.ctrlr.qt4.widgets
-=========================
-
-Widgets for pyhard2.ctrlr
-
-"""
+""" Widgets for pyhard2.ctrlr.qt4 """
 
 import csv as _csv
 import StringIO as _StringIO
@@ -17,9 +11,7 @@ import PyQt4.Qwt5 as Qwt
 
 class Curve(Qwt.QwtPlotCurve):
 
-    """
-    Curve deriving from :class:`Qwt.QwtPlotCurve`.
-    """
+    """ Curve deriving from :class:`Qwt.QwtPlotCurve`. """
 
     def __init__(self, title=""):
         super(Curve, self).__init__(title)
@@ -36,7 +28,7 @@ class Curve(Qwt.QwtPlotCurve):
 
 class Monitor(Qwt.QwtPlot):
 
-    """Monitor deriving from :class:`Qwt.QwtPlot`."""
+    """ Monitor deriving from :class:`Qwt.QwtPlot`. """
 
     def __init__(self, parent=None):
         super(Monitor, self).__init__(parent)
@@ -73,7 +65,7 @@ class Monitor(Qwt.QwtPlot):
         self.addAction(self.exportAction)
 
     def export(self):
-        """Export the content of the monitor to a file."""
+        """ Export the content of the monitor to a file. """
         try:
             with open(QtGui.QFileDialog.getSaveFileName(self), "w") as csvfile:
                 csvwriter = _csv.writer(csvfile, delimiter="\t")
@@ -97,7 +89,7 @@ class Monitor(Qwt.QwtPlot):
 
 class ScientificSpinBox(QtGui.QDoubleSpinBox):
 
-    """QDoubleSpinBox with a scientific display."""
+    """ QDoubleSpinBox with a scientific display. """
 
     def __init__(self, parent=None):
         super(ScientificSpinBox, self).__init__(parent)
@@ -113,8 +105,8 @@ class ScientificSpinBox(QtGui.QDoubleSpinBox):
 class _DoubleClickEvent(QtCore.QObject):
     """
     Filter `MouseButtonDblClick` and emit a `doubleClicked` signal.
+
     """
-    
     doubleClicked = Signal()
 
     def __init__(self, parent):
@@ -129,6 +121,11 @@ class _DoubleClickEvent(QtCore.QObject):
 
 class MeasureEdit(ScientificSpinBox):
 
+    """
+    ScientificSpinBox with monitoring (in a pop-up) and the possibility
+    to set a `setpoint` value.
+
+    """
     setpointValue = Signal(float)
 
     def __init__(self, parent=None):
@@ -173,9 +170,11 @@ class MeasureEdit(ScientificSpinBox):
             self.removeAction(self._setpointAction)
 
     def monitor(self):
+        """ Returns the monitor. """
         return self._monitor
 
     def setCurveData(self, curveData):
+        """ Sets data. """
         self._curve.setData(curveData)
 
     def setReadOnly(self, readOnly):
@@ -187,8 +186,8 @@ class MeasureEdit(ScientificSpinBox):
 
 
 class Spreadsheet(QtGui.QTableView):
-
-    """A simple spreadsheet implementing copy/paste.
+    """
+    A simple spreadsheet implementing copy/paste.
 
     Attributes
     ----------
@@ -238,7 +237,7 @@ class Spreadsheet(QtGui.QTableView):
         self.addAction(self.removeRowAction)
 
     def _copy(self):
-        """Copy selected cells as csv."""
+        """ Copy selected cells as csv. """
         previous = QtCore.QModelIndex()
         fields = []
         for idx in sorted(self.selectedIndexes()):
@@ -253,7 +252,7 @@ class Spreadsheet(QtGui.QTableView):
         QtGui.QApplication.clipboard().setText(csvfile.getvalue())
 
     def _paste(self):
-        """Paste csv buffer."""
+        """ Paste csv buffer. """
         csvfile = _StringIO.StringIO(QtGui.QApplication.clipboard().text())
         dialect = _csv.Sniffer().sniff(csvfile.read(1024))
         csvfile.seek(0)
@@ -279,7 +278,7 @@ class Spreadsheet(QtGui.QTableView):
                     return
 
     def _addRow(self):
-        """Add one row after the row."""
+        """ Add one row after the row. """
         current = self.currentIndex()
         if not current.isValid():
             return
@@ -289,7 +288,7 @@ class Spreadsheet(QtGui.QTableView):
                          for __ in range(model.columnCount())])
 
     def _removeSelectedRows(self):
-        """Remove selected rows or current row if no selection."""
+        """ Remove selected rows or current row if no selection. """
         selection = [idx for idx in self.selectionModel().selectedRows()]
         if not selection:
             selection = [self.currentIndex()]

@@ -6,7 +6,5 @@
 
 .. automodule:: pyhard2.ctrlr.qt4.delegates
 
-.. automodule:: pyhard2.ctrlr.qt4.threading
-
 .. automodule:: pyhard2.ctrlr.qt4.widgets
 

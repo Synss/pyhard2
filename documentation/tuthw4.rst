@@ -9,18 +9,17 @@ The code from this tutorial is available for download at :download:`tuthw3.py`
 and :download:`tuthw4.ods`.
 
 
-The two methods :meth:`~Subsystem.add_parameter_by_name` and
-:meth:`~Subsystem.add_action_by_name` introduced in the previous tutorial
-:doc:`tuthw3` are very powerful.  They can be used to generate `Subsystems`
-from outside Python.  Here, we complete our multimeter driver using a
-spreadsheet program (like LibreOffice).
+:meth:`Subsystem.add_parameter_by_name` and :meth:`Subsystem.add_action_by_name`
+introduced in :doc:`tuthw3` are very powerful.  They can be used to generate
+`Subsystems` from outside Python.  Here, we complete our multimeter driver using
+a spreadsheet program (like LibreOffice).
 
 The sheet is available for download and looks approximately like the table:
 
 .. table:: FlukeSubsystem
 
    =========  ==============  =======  =========
-   type       name            command  read only
+   type       name            getcmd   read_only
    =========  ==============  =======  =========
    Parameter  identification  ID           FALSE
    Action     default_setup   DS
@@ -29,22 +28,21 @@ The sheet is available for download and looks approximately like the table:
 
 The file may be opened using `ezodf <http://pythonhosted.org/ezodf>`_::
 
-   import ezodf
-   from tuthw3 import Fluke18x as FlukeTutHw3
+   from pyhard2.driver.input import odf
+   import tuthw3
+
+   class Fluke18x(tuthw3.Fluke18x):
+
+      def __init__(self, socket, async=False):
+         super(Fluke18x, self).__init__(socket, async)
+         protocol = tuthw3.FlukeProtocol(socket, async)
+         odf.instrument_from_workbook("tuthw4.ods", self, protocol, tuthw3)
 
 
-   class Fluke18x(FlukeTutHw3):
-
-      def __init__(self, socket, protocol=None):
-         super(Fluke18x, self).__init__(socket, protocol)
-         spreadsheet = ezodf.opendoc("tuthw4.ods")
-         self.init_from_spreadsheet(spreadsheet)
-
-
-The function :func:`init_from_spreadsheet` is rather general and its first
-argument is an opened workbook.  The second argument optional but
-:func:`globals` may be used here to give access to `setter_func` and
-`getter_func` defined in the module.
+The module `pyhard2.driver.input` contains the mechanics to convert from various
+formats to pyhard2 instruments and subsystems.  The module `tuthw3` is passed as
+the last argument to provide access to :func:`parse_response`.  Pass the current
+module with :func:`globals`.
 
 Each worksheet in the spreadsheet is read in turn and the header is assumed to
 be in the first row.  The other rows contain the parameters and actions of the

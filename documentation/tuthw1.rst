@@ -25,57 +25,51 @@ gives the following information:
          of the primary display
       end note
 
-This translates to::
+After the acknowledgement, the multimeter returns a line with:
+
+- an echo of the query,
+- the measured value, and
+- its unit.
+
+It would be more useful to obtain the measure as a float which implies returning
+the unit separately.  This can be achieved with a function like:
+
+.. literalinclude::  tuthw1.py
+   :pyobject:  parse_response
+
+We then define a `Subsystem`.  `Subsystems` are meant to organize the commands
+sent to the hardware in logical units.  In the present case, we only want to
+return `measure` and `unit`.  We thus define the corresponding two `Parameters`.
+`Parameters` are defined on the `Subsystem` class and act like python
+`properties`.  In this first tutorial, we hard-code the communication with the
+multimeter in `__get_measure`.
+
+This gives::
 
    import pyhard2.driver as drv
 
 .. literalinclude::  tuthw1.py
    :pyobject:  FlukeSubsystem
 
+Note that the `parse_response` function that we defined above is passed to the
+`getter_func` arguments of the `Parameters`.  It will be applied just before
+returning the value.
 
-`Subsystems` are meant to help organize commands.  `Parameters` are defined on
-the class and act like python `properties`.  `get_measure` returns the second
-line of the response form the multimeter, which contains
-
-- an echo of the query
-- the measurement, and
-- its unit.
-
-It would be more useful to obtain the measure as a float and it is good
-practice to return the unit separately.  Among the keyword arguments of
-`Parameter`, `getter_func` is a function that is applied just before returning
-the value.  This is where we can parse the response of the instrument.  A
-function like the following works:
-
-.. literalinclude::  tuthw1.py
-   :pyobject:  parse_response
-
-
-Now, we should put this `Subsystem` in an `Instrument`.  Although it is not
-strictly necessary to use inheritance to create instruments since
-
->>> serial_port = "COM1"
->>> socket = drv.Serial(serial_port)
->>> multimeter = drv.Instrument(socket)
->>> multimeter.socket.timeout = 1.0
->>> multimeter.socket.newline = "\r"
->>> multimeter.main = FlukeSubsystem(multimeter)
->>> multimeter.measure
-23.0
-
-works as expected.  It is nevertheless recommended as it allows to initialize
-the serial socket in `__init__()` and to import the instrument with ``from
-driver.fluke import Fluke18x``. 
+Now, we should put this `Subsystem` in an `Instrument`.  The instrument
+initializes the socket, sets a protocol, and typically takes an extra `async`
+keyword parameter that should defaults to False.
 
 .. literalinclude::  tuthw1.py
    :pyobject:  Fluke18x
 
+We did not implement a protocol so far so that we pass `drv.ProtocolLess` to the
+subsystem and we forward it `async` as well.
 
-This driver is already usable.
+The driver can now be used:
 
->>> with Fluke18x(socket) as multimeter:
-...     print("%.1f %s" % (multimeter.measure, multimeter.unit))
-...
+>>> socket = drv.Serial("COM1")  # must be set to the correct COM-port
+>>> multimeter = Fluke18x(socket)
+>>> print multimeter.measure, multimeter.unit
 22.6 Deg C
 
 .. tip::
@@ -83,10 +77,13 @@ This driver is already usable.
    Printing an `Instrument` displays the list of supported commands.
 
    >>> print(multimeter)
-   path                                    	  type   	doc
-   ========================================	=========	===
-   measure                                 	Parameter	None
-   unit                                    	Parameter	None
+   Instrument Fluke18x
+   ===================
+   main subsystem
+   --------------
+   FlukeSubsystem <0x...>
+   measure Parameter	None
+   unit    Parameter	None
 
 
 That is all.  We have our first driver.
@@ -95,8 +92,7 @@ That is all.  We have our first driver.
 .. topic::  Subsystems
 
    Subsystems (classes deriving from :class:`pyhard2.driver.Subsystem`) are
-   used to organize and group related commands in the driver.  They can be
-   nested, although this is not recommended.
+   used to organize and group related commands in the driver.
 
    The subsystem called ``main`` can be accessed directly such that, e.g.,
 

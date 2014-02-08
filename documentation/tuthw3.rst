@@ -12,8 +12,8 @@ possible to simulate button presses with commands like "`SF {key code}`", where
 `{key code}` is an integer between 10 and 30.  We could define twenty commands
 "SF 10", "SF 11", etc. or add an ``if 10 <= param.getcmd <= 30`` condition in
 the protocol, but that would either be a lot of work or a fragile solution.
-Instead, we add these commands using the :meth:`~Subsystem.add_action_by_name`
-method from `Subsystem`.  The completed subsystem now looks like:
+Instead, we add these commands using :meth:`Subsystem.add_action_by_name`.  The
+completed subsystem now looks like:
 
 
 .. literalinclude:: tuthw3.py
@@ -49,9 +49,9 @@ press_button_wake_up                    	Action	None
 unit                                    	Parameter	None
 
 
-.. topic::  Parameters and actions
+.. topic::  Parameters and Actions
 
-   Interactions with the hardware occur via parameters or actions.
+   Interactions with the hardware occur via parameters and actions.
 
    Parameters
       are `set` or `gotten`.  They usually return a value and are better
@@ -60,13 +60,13 @@ unit                                    	Parameter	None
 
    Actions
       are better expressed with a verb like `reset`, `trigger`, or `clear`.
+      They do not return values.
 
 
-The :meth:`~Subsystem.add_action_by_name` and its
-:meth:`~Subsystem.add_parameter_by_name` pendant can be used to
-semi-automatically generate subsystems from various formats like Excel
-workbooks.  See how in :doc:`tuthw4`.  Or go directly include the driver in a
-:doc:`tutgui1`.
+:meth:`Subsystem.add_action_by_name` and :meth:`Subsystem.add_parameter_by_name`
+can be used to semi-automatically generate subsystems from various formats like
+spreadsheet programs.  See how in :doc:`tuthw4`.  Or go directly include the
+driver in a :doc:`tutgui1`.
 
 
 .. seealso::

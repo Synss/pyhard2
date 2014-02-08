@@ -28,8 +28,15 @@ warnings.simplefilter("once")
 
 class PidSubsystem(drv.Subsystem):
 
-    """ Wrapper for `pyhard2.pid`. """
+    """
+    Wrap `pyhard2.pid.PidController`.
 
+    See also
+    --------
+    pyhard2.pid.PidController : The PID controller.
+    pyhard2.driver.WrapperProtocol : The wrapper.
+    
+    """
     output = drv.SignalProxy()
 
     def __init__(self):
@@ -57,6 +64,11 @@ class PidSubsystem(drv.Subsystem):
 
 class VirtualInputSubsystem(drv.Subsystem):
 
+    """
+    Virtual subsystem that returns a measure as a function of the
+    output of the system.
+
+    """
     def __init__(self):
         super(VirtualInputSubsystem, self).__init__(
             drv.ProtocolLess(None, async=False))
@@ -64,6 +76,7 @@ class VirtualInputSubsystem(drv.Subsystem):
 
     #@Slot(float)
     def set_sysout(self, sysout):
+        """ Set the output of the system. """
         self._sysout = sysout
 
     def __get_measure(self):
@@ -74,6 +87,11 @@ class VirtualInputSubsystem(drv.Subsystem):
 
 class VirtualOutputSubsystem(drv.Subsystem):
 
+    """
+    Virtual subsystem that computes a response from the system using the
+    state-space representation given in `system`.
+
+    """
     def __init__(self, system):
         super(VirtualOutputSubsystem, self).__init__(
             drv.ProtocolLess(None, async=False))
@@ -86,6 +104,7 @@ class VirtualOutputSubsystem(drv.Subsystem):
 
     #@Slot(float)
     def append_input(self, input):
+        """ Sets current `input`. """
         self._times.append(time.time() - self._start)
         self._inputs.append(input)
 
@@ -106,6 +125,17 @@ class VirtualOutputSubsystem(drv.Subsystem):
 
 class VirtualInstrument(drv.Instrument):
 
+    """
+    Virtual instrument that links the `VirtualInputSubsystem` and
+    the `VirtualOutputSubsystem` via the `PidSubsystem`.
+
+    Attributes
+    ----------
+    pid : PidSubsystem
+    input : VirtualInputSubsystem
+    output : VirtualOutputSubsystem
+
+    """
     def __init__(self, system=None, async=False):
         super(VirtualInstrument, self).__init__()
         self.pid = PidSubsystem()

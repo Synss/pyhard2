@@ -1,10 +1,4 @@
-"""
-pyhard2.ctrlr.qt4.controllers
-=============================
-
-Controllers for pyhard2.ctrlr
-
-"""
+""" Controllers for pyhard2.ctrlr.qt4 """
 
 from functools import partial
 

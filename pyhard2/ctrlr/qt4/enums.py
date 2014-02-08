@@ -1,10 +1,4 @@
-"""
-pyhard2.ctrlr.qt4.enums
-=======================
-
-Enums for pyhard2.ctrlr
-
-"""
+""" Enums for pyhard2.ctrlr.qt4 """
 
 from PyQt4 import QtCore
 Qt = QtCore.Qt

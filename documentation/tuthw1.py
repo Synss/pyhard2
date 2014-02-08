@@ -12,24 +12,25 @@ def parse_response(which="measure"):
 
 class FlukeSubsystem(drv.Subsystem):
 
-    def get_measure(self):
-        socket = self.instrument.socket
+    def __get_measure(self):
+        socket = self.protocol.socket
         socket.write("QM\r")      # "QM\r"
         ack = socket.readline()   # "0\r"
         assert(ack == "0\r")
         return socket.readline()  # "QM,+0023.0 Deg C"
 
-    measure = drv.Parameter(get_measure, getter_func=parse_response())
-    unit = drv.Parameter(get_measure, getter_func=parse_response("unit"))
+    measure = drv.Parameter(__get_measure, getter_func=parse_response())
+    unit = drv.Parameter(__get_measure, getter_func=parse_response("unit"))
 
 
 class Fluke18x(drv.Instrument):
 
-    def __init__(self, socket, protocol=None):
-        super(Fluke18x, self).__init__(socket, protocol)
-        self.socket.timeout = 1.0
-        self.socket.newline = "\r"
-        self.main = FlukeSubsystem(self)
+    def __init__(self, socket, async=False):
+        super(Fluke18x, self).__init__(socket, async)
+        socket.timeout = 1.0
+        socket.timeout.newline = "\r"
+        protocol = drv.ProtocolLess(socket, async)
+        self.main = FlukeSubsystem(protocol)
 
 
 def main(serial_port):

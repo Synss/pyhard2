@@ -1,10 +1,4 @@
-"""
-pyhard2.ctrlr.qt4.models
-========================
-
-Models for pyhard2.ctrlr
-
-"""
+""" Models for pyhard2.ctrlr.qt4 """
 
 import time as _time
 from functools import partial as _partial

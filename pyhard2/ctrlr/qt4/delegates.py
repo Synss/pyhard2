@@ -1,8 +1,4 @@
-"""
-pyhard2.ctrlr.qt4.delegates
-===========================
-
-"""
+""" Delegates for pyhard2.ctrlr.qt4 """
 
 from PyQt4 import QtCore, QtGui
 Slot, Signal = QtCore.pyqtSlot, QtCore.pyqtSignal
