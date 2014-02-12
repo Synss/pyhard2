@@ -45,25 +45,25 @@ Action = drv.Action
 class DioSubsystem(drv.Subsystem):
     """Subsystem for digital input/output."""
 
-    def get_state(self):
+    def __get_state(self):
         return bool(self.protocol.socket.read())
 
-    def set_state(self, state):
+    def __set_state(self, state):
         self.protocol.socket.write(bool(state))
 
-    state = Parameter(get_state, set_state)
+    state = Parameter(__get_state, __set_state)
 
-    def do_switch(self):
+    def __do_switch(self):
         self.state = not self.state
 
-    switch = Action(do_switch)
+    switch = Action(__do_switch)
 
-    def do_pulse(self, time_on, time_off=0.0):
+    def __do_pulse(self, time_on, time_off=0.0):
         for delay in (time_on, time_off):
             self.switch()
             sleep(delay)
 
-    pulse = Action(do_pulse)
+    pulse = Action(__do_pulse)
 
 
 class DioInstrument(drv.Instrument):
@@ -79,10 +79,10 @@ class AiSubsystem(drv.Subsystem):
 
     samples = 100
 
-    def get_measure(self):
+    def __get_measure(self):
         return np.average(self.protocol.socket.read(self.samples))
 
-    measure = Parameter(get_measure, read_only=True)
+    measure = Parameter(__get_measure, read_only=True)
 
 
 class AiInstrument(drv.Instrument):
@@ -96,10 +96,10 @@ class AiInstrument(drv.Instrument):
 class AoSubsystem(drv.Subsystem):
     """Subsystem for analog output."""
 
-    def set_measure(self, data):
+    def __set_measure(self, data):
         self.protocol.socket.write(data)
 
-    measure = Parameter(None, set_measure)
+    measure = Parameter(None, __set_measure)
 
 
 class AoInstrument(drv.Instrument):
