@@ -158,6 +158,7 @@ class InstrumentItem(LoggingItem):
 
         """
         if self.__instr:
+            self._connectedRole = role
             item = self.model().horizontalHeaderItem(self.column())
             cmd = "%s_signal" % item.data(role=UserRole.CommandName)
             reduce(getattr, cmd.split("."), self.__instr)().connect(
