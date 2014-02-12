@@ -13,6 +13,7 @@ development kit.
 
 """
 
+import time
 import os
 import types
 
@@ -54,13 +55,16 @@ class Serial(serial.Serial):
         does not work well.
 
         """
+        _start = time.time()
         if not self.newline:
             return super(Serial, self).readline()
         line = ""
         while not line.endswith(self.newline):
             c = self.read(1)
-            if not c:
-                # Timed out
+            if (not c and
+                self.timeout and
+                time.time() - _start > self.timeout):
+                # No time out set, but nothing on the line
                 break
             else:
                 line += c
