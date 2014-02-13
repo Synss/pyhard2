@@ -80,7 +80,7 @@ class AiSubsystem(drv.Subsystem):
     samples = 100
 
     def __get_measure(self):
-        return np.average(self.protocol.socket.read(self.samples))
+        return float(np.average(self.protocol.socket.read(self.samples)))
 
     measure = Parameter(__get_measure, read_only=True)
 
