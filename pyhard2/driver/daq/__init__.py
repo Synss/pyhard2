@@ -79,8 +79,13 @@ class AiSubsystem(drv.Subsystem):
 
     samples = 100
 
+    def __init__(self, protocol, func):
+        super(AiSubsystem, self).__init__(protocol)
+        self._func = func
+
     def __get_measure(self):
-        return float(np.average(self.protocol.socket.read(self.samples)))
+        return self._func(
+            float(np.average(self.protocol.socket.read(self.samples))))
 
     measure = Parameter(__get_measure, read_only=True)
 
@@ -88,9 +93,9 @@ class AiSubsystem(drv.Subsystem):
 class AiInstrument(drv.Instrument):
     """Instrument for analog input."""
 
-    def __init__(self, socket, async=False):
+    def __init__(self, socket, func=drv.identity, async=False):
         super(AiInstrument, self).__init__()
-        self.main = AiSubsystem(drv.ProtocolLess(socket, async))
+        self.main = AiSubsystem(drv.ProtocolLess(socket, async), func)
 
 
 class AoSubsystem(drv.Subsystem):
