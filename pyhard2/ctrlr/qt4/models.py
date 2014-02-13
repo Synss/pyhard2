@@ -126,6 +126,12 @@ class InstrumentItem(LoggingItem):
         cmd = "%s_minimum" % item.data(role=UserRole.CommandName)
         return reduce(getattr, cmd.split("."), self.__instr)()
 
+    def pollData(self):
+        """ Call enqueueData if polling is set on column """
+        item = self.model().horizontalHeaderItem(self.column())
+        if item.data(role=UserRole.PollingCheckStateRole):
+            self.enqueueData()
+
     def enqueueData(self):
         """
         Request reading data in hardware.
@@ -351,9 +357,7 @@ class InstrumentModel(QtGui.QStandardItemModel):
                     item.setInstrument(adapter)
                     item.connectHardware()
                     QtCore.QTimer.singleShot(0, item.enqueueData)
-                    if (self.horizontalHeaderItem(ncol)
-                            .data(role=UserRole.PollingCheckStateRole)):
-                        self._pollingTimer.timeout.connect(item.enqueueData)
+                    self._pollingTimer.timeout.connect(item.pollData)
             thread.start()
             self._threads.append(thread)
         self._pollingTimer.start()
