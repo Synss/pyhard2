@@ -617,6 +617,27 @@ class Subsystem(object):
         setattr(cls, attr_name, Action(*args, **kwargs))
 
 
+class MetaSubsystem(Subsystem):
+
+    """
+    Subsystem that acts on another subsystem.
+
+    Use to execute sequences of commands from the child `Subsystem` or parse
+    bits.
+
+    This Subsystem should typically be used with the `ProtocolLess` protocol
+    and only comunicate with the hardware through the child `Subsystem`.
+
+    """
+    def __init__(self, protocol, subsystem):
+        super(MetaSubsystem, self).__init__(protocol)
+        self._subsystem = subsystem
+
+    def __repr__(self):
+        return "%s(protocol=%r, subsystem=%r)" % (
+            self.__class__.__name__, self.protocol, self._subsystem)
+
+
 class Instrument(object):
 
     """
