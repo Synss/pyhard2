@@ -563,7 +563,8 @@ class Subsystem(object):
             except AttributeError:
                 return object.__getattribute__(self, attr_name)
             else:
-                return types.MethodType(function, self, type(self))
+                return self.__dict__.setdefault(
+                    attr_name, types.MethodType(function, self, type(self)))
 
         suffixed = dict(_is_readonly=is_readonly,
                         _minimum=minimum,
@@ -584,7 +585,8 @@ class Subsystem(object):
             except AttributeError:
                 return object.__getattribute__(self, attr_name)
             else:
-                return types.MethodType(function, self, type(self))
+                return self.__dict__.setdefault(
+                    attr_name, types.MethodType(function, self, type(self)))
 
         return object.__getattribute__(self, attr_name)
 
