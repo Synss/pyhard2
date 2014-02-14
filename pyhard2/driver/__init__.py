@@ -32,6 +32,8 @@ Signal = pyqtSignal
 
 import serial
 
+from pyhard2._inspect import getattr_static
+
 
 def identity(*args):
     """ A simple identity function. """
@@ -539,12 +541,6 @@ class Subsystem(object):
         def maximum(instance):
             return command.maximum
 
-        def __get_property(prop_name):
-            try:
-                return vars(type(self))[prop_name]
-            except KeyError:
-                raise AttributeError
-
         prefixed = dict(get_=getter, set_=setter, do_=getter)
         try:
             prefix, function = ((p, f) for (p, f) in prefixed.iteritems()
@@ -554,7 +550,7 @@ class Subsystem(object):
         else:
             prop_name = attr_name[len(prefix):]
             try:
-                command = __get_property(prop_name)
+                command = getattr_static(self, prop_name)
                 if (isinstance(command, Action) and prefix not in ("do_",)):
                     # Action only has `do_`
                     raise AttributeError
@@ -578,7 +574,7 @@ class Subsystem(object):
         else:
             prop_name = attr_name[:-len(suffix)]
             try:
-                command = __get_property(prop_name)
+                command = getattr_static(self, prop_name)
                 if (isinstance(command, Action)):
                     # no Action with suffix
                     raise AttributeError
