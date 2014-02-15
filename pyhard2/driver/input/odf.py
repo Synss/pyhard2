@@ -5,6 +5,7 @@ Parse the spreadsheet format with ezodf.
 
 """
 
+import sys as _sys
 import ezodf
 import pyhard2.driver as drv
 
@@ -15,30 +16,9 @@ def un_camel(s):
                                   for c in s[1:])
 
 
-def subsystem_from_sheet(sheet, subsystem, module=None):
-    """ Initialize a subsystem from an ODF document.
-
-        The first row of the sheet must contain headers labeled with the name
-        of the parameters passed to the init of `Parameter` and `Action`.
-
-        Parameters
-        ----------
-        sheet : workbook.sheet
-        subsystem : Subsystem
-            The subsystem to initialize.
-        module : dict, optional
-            The module of the caller.  Provides access to the local functions
-            defined with the driver.
-
-
-        .. warning::
-            Expressions in the `getter_func` and `setter_func`
-            columns will be sent to `eval`.  This could be used to
-            execute arbitrary code.
-
-    """
-    module = globals() if module is None else module
-
+def _subsystem_from_sheet(sheet, module):
+    """ Initialize a subsystem from an ODF document. """
+    subsystem = type(sheet.name, (module.get("Subsystem", drv.Subsystem),), {})
     for n, row in enumerate(sheet.rows()):
         if n is 0:
             # First row contains headers
@@ -61,37 +41,49 @@ def subsystem_from_sheet(sheet, subsystem, module=None):
         else:
             # default to adding as parameter
             subsystem.add_parameter_by_name(cmd_name, **cmd_args)
+    return subsystem
 
 
-def instrument_from_workbook(filename, instrument, protocol, module=None):
-    """ Initialize an instrument from an ODF document.
+def subsystems_factory(filename):
+    """ Create `Subsystems` from an ODF document.
+
+        The first row of each sheet must contain headers labeled with
+        the name of the parameters passed to the init of `Parameter` and
+        `Action`.
 
         Parameters
         ----------
         filename : filename
             Filename of the spreadsheet.
-        instrument : Instrument
-        protocol : Protocol
-        module : dict, optional
-            The `globals()` dictionary may be parsed here to give access
-            to functions defined in the caller module.
-            If a class named `Subsystem` is defined in `module`, it will
-            be used to initialize the new subsystems.
+
+        Returns
+        -------
+        dict(str, Subsystem class)
+            `Subsystem` name: `Subsystem` class pairs.  The Subsystems
+            must be instantiated by the caller.
+
+        Examples
+        --------
+        >>> instrument = drv.Instrument()
+        >>> for name, subsystem in subsystems_factory(filename).iteritems():
+        ...     setattr(instrument, "filename.ods",  # actual path
+        ...             subsystem(drv.ProtocolLess(None, async=False)))
+
+        Notes
+        -----
+        - The prototype used for the new subsystems will be either the
+          class named `Subsystem` in the caller module if it exists, or
+          `drv.Subsystem`.
+        - Expressions in the `getter_func` and `setter_func` columns
+          will be sent to `eval`.  This could be used to execute
+          arbitrary code.
 
     """
-    module = globals() if module is None else module
+    module = _sys._getframe(1).f_globals
     workbook = ezodf.opendoc(filename)
-    for sheet in workbook.sheets:
-        try:
-            # Get subsystem from instrument
-            subsystem = vars(instrument)[sheet.name]
-        except (TypeError, KeyError):
-            # or create a new one if it does not exist
-            subsystem = type(sheet.name,
-                             (module.get("Subsystem", drv.Subsystem),),
-                             {})(protocol)
-        subsystem_from_sheet(sheet, subsystem, module)
-        setattr(instrument, un_camel(sheet.name), subsystem)
+    return {un_camel(sheet.name):
+            _subsystem_from_sheet(sheet, module)
+            for sheet in workbook.sheets}
 
 
 if __name__ == "__main__":

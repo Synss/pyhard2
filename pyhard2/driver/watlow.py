@@ -185,7 +185,9 @@ class Series988(drv.Instrument):
         # better approach to finding the filename in setuptools
         # using `pkg_resources` that also works in zipped egg
         filename = path.join(path.dirname(__file__), "watlow.fods")
-        odf.instrument_from_workbook(filename, self, protocol, globals())
+        for name, subsystem in \
+                odf.subsystems_factory(filename).iteritems():
+            setattr(self, name, subsystem(protocol))
 
         self.operation_pid_A = OperationPidASubsystem(protocol)
         self.operation_pid_B = OperationPidBSubsystem(protocol)

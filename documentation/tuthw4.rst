@@ -10,7 +10,7 @@ and :download:`tuthw4.ods`.
 
 
 :meth:`Subsystem.add_parameter_by_name` and :meth:`Subsystem.add_action_by_name`
-introduced in :doc:`tuthw3` are very powerful.  They can be used to generate
+introduced in :doc:`tuthw3` are very powerful.  They can be used to write 
 `Subsystems` from outside Python.  Here, we complete our multimeter driver using
 a spreadsheet program (like LibreOffice).
 
@@ -29,26 +29,26 @@ The sheet is available for download and looks approximately like the table:
 The file may be opened using `ezodf <http://pythonhosted.org/ezodf>`_::
 
    from pyhard2.driver.input import odf
-   import tuthw3
+   from tuthw3 import *
 
-   class Fluke18x(tuthw3.Fluke18x):
+   class AutoFluke18x(Fluke18x):
 
       def __init__(self, socket, async=False):
-         super(Fluke18x, self).__init__(socket, async)
-         protocol = tuthw3.FlukeProtocol(socket, async)
-         odf.instrument_from_workbook("tuthw4.ods", self, protocol, tuthw3)
+         super(AutoFluke18x, self).__init__(socket, async)
+         protocol = FlukeProtocol(socket, async)
+         for name, subsystem in \
+               odf.subsystems_factory("tuthw4.ods").iteritems():
+            setattr(self, name, subsystem(protocol))
 
 
-The module `pyhard2.driver.input` contains the mechanics to convert from various
-formats to pyhard2 instruments and subsystems.  The module `tuthw3` is passed as
-the last argument to provide access to :func:`parse_response`.  Pass the current
-module with :func:`globals`.
+The module `pyhard2.driver.input` contains the mechanics to generate subsystems
+from various formats.
 
 Each worksheet in the spreadsheet is read in turn and the header is assumed to
 be in the first row.  The other rows contain the parameters and actions of the
 subsystem.
 
->>> meter = Fluke18x(drv.Serial())  # that we just created above
+>>> meter = AutoFluke18x(drv.Serial())  # that we just created above
 >>> meter.main = meter.fluke_subsystem  # set default subsystem
 
 Three new commands have been added as confirmed by:
