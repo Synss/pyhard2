@@ -39,7 +39,7 @@ class PidSubsystem(drv.Subsystem):
     """
     output = drv.SignalProxy()
 
-    def __init__(self):
+    def __init__(self, spmin=0.0, spmax=99.0):
         self.__pid = pid.PidController()
         protocol = drv.WrapperProtocol(self.__pid, async=True)
         super(PidSubsystem, self).__init__(protocol)
@@ -48,11 +48,12 @@ class PidSubsystem(drv.Subsystem):
                         derivative_time
                         vmin
                         vmax
-                        setpoint
                         anti_windup
                         proportional_on_pv
                     """.split():
             self.add_parameter_by_name(name, name)
+        self.add_parameter_by_name("setpoint", "setpoint",
+                                   minimum=spmin, maximum=spmax)
         self.add_action_by_name("reset", "reset")
 
     #@Slot(float)
