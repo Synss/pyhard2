@@ -92,8 +92,8 @@ class XonProtocol(drv.SerialProtocol):
         )
 
     def _xon(self):
-        self.socket.read(1)  # XOFF == 0x13
-        self.socket.read(1)  # XON  == 0x11
+        assert(self.socket.read(1) == "/x13")  # XOFF
+        assert(self.socket.read(1) == "/x11")  # XON
 
     def _encode_read(self, subsys, param):
         cmd = self._fmt_cmd_read(subsys, param)
@@ -118,11 +118,11 @@ class XonProtocol(drv.SerialProtocol):
                 err = XonProtocol._err[int(err_code)]
                 raise drv.HardwareError(
                     "Command %r returned error: %s" %
-                    (cmd.strip(), err))
+                    (cmd, err))
             except KeyError:
                 raise WatlowDriverError(
                     "Command %r returned unkwnown error: %s" %
-                    (cmd.strip(), err_code.strip()))
+                    (cmd, err_code))
 
 
 class ModbusProtocol(drv.SerialProtocol):
