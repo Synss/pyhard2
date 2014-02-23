@@ -79,7 +79,7 @@ class AmtronController(ctrlr.SetpointController):
                 (self._gateBtn, gateColumn)):
             self._powerBoxMapper.addMapping(editor, column)
             editor.toggled.connect(self._powerBoxMapper.submit)
-        self._powerBoxMapper.toFirst()
+        model.configLoaded.connect(self._powerBoxMapper.toFirst)
 
 
 def scale(factor):

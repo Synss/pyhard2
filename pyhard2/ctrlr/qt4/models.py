@@ -256,6 +256,8 @@ class InstrumentModel(QtGui.QStandardItemModel):
         self._threads = []
         self._pollingTimer = QtCore.QTimer(self)
 
+        self.configLoaded.connect(self._populateModel)
+        self.configLoaded.connect(self._pollingTimer.start)
         self.configLoaded.connect(self.startPolling)
 
         self._instrumentClass = {}
@@ -320,6 +322,12 @@ class InstrumentModel(QtGui.QStandardItemModel):
             name = instrCls.__name__
         self._instrumentClass[name] = (instrCls, mapper)
 
+    def _populateModel(self):
+        for item in (self.itemFromIndex(self.index(row, column))
+                     for row in range(self.rowCount())
+                     for column in range(self.columnCount())):
+            item.enqueueData()
+
     def loadConfig(self, opts):
         """Populate the model.
 
@@ -356,11 +364,9 @@ class InstrumentModel(QtGui.QStandardItemModel):
                     item = self.itemFromIndex(self.index(nrow, ncol))
                     item.setInstrument(adapter)
                     item.connectHardware()
-                    QtCore.QTimer.singleShot(0, item.enqueueData)
                     self._pollingTimer.timeout.connect(item.pollData)
             thread.start()
             self._threads.append(thread)
-        self._pollingTimer.start()
         self.configLoaded.emit()
 
     def closeEvent(self, event):

@@ -400,7 +400,7 @@ class Controller(QtGui.QMainWindow):
                 (self._iEditor, ColumnName.PidIntegralColumn),
                 (self._dEditor, ColumnName.PidDerivativeColumn)):
             self._pidMapper.addMapping(editor, column)
-        self._pidMapper.toFirst()
+        model.configLoaded.connect(self._pidMapper.toFirst)
 
         self._profileModelMapper.setModel(model)
         self._instrTable.selectionModel().currentRowChanged.connect(
@@ -415,7 +415,7 @@ class Controller(QtGui.QMainWindow):
                                             ColumnName.SetpointColumn)
         self.startProgramAction.toggled.connect(
             self._startProgramMapper.submit)
-        self._startProgramMapper.toFirst()
+        model.configLoaded.connect(self._startProgramMapper.toFirst)
 
     def previewCurves(self, column=ColumnName.SetpointColumn):
         model = self._instrTable.model()

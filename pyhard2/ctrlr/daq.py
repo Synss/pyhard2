@@ -101,7 +101,6 @@ class DaqModel(ctrlr.InstrumentModel):
                     item = self.itemFromIndex(self.index(nrow, ncol))
                     item.setInstrument(adapter)
                     item.connectHardware(role=Qt.CheckStateRole)
-                    QtCore.QTimer.singleShot(0, item.enqueueData)
             thread.start()
             self._threads.append(thread)
         self.configLoaded.emit()
