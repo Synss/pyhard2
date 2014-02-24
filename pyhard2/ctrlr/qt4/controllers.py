@@ -94,7 +94,7 @@ class _NumericRangeDelegate(NumericDelegate):
         if index.isValid():
             editor = super(_NumericRangeDelegate, self).createEditor(
                 parent, option, index)
-            editor.setrange(self.range())
+            editor.setRange(self._minimum, self._maximum)
             return editor
         else:
             return super(_NumericRangeDelegate, self).createEditor(
