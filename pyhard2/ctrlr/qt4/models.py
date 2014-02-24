@@ -227,14 +227,20 @@ class SetpointItem(InstrumentItem):
 
     def __init__(self):
         super(SetpointItem, self).__init__()
-        self.__profileModel = QtGui.QStandardItemModel(8, 2)
+        self.__profileModel = ColumnRangedModel(8, 2)
         self.__profileModel.setHorizontalHeaderLabels(
             u"time / s;setpoint".split(";"))
+        self.__profileModel.setMinimumForColumn(0, 0)
+        self.__profileModel.setMaximumForColumn(0, 36000)
+        self.__profileModel.setMinimumForColumn(1, 0)
+        self.__profileModel.setMaximumForColumn(1, 99)
         self.__ramp = None
         self.__profile = None
 
     def profileModel(self):
         """Return the data model for the setpoint ramp."""
+        self.__profileModel.setMinimumForColumn(1, self.minimum())
+        self.__profileModel.setMaximumForColumn(1, self.maximum())
         return self.__profileModel
 
     def startRamp(self):
