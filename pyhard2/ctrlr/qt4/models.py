@@ -59,6 +59,57 @@ class _CurveData(Qwt.QwtData):
         self.__data = []
 
 
+class ColumnRangedItem(QtGui.QStandardItem):
+    """
+    Item that returns the minimum and maximum values for the column set
+    in a `ColumnRangedModel`.
+
+    """
+    def __init__(self):
+        super(ColumnRangedItem, self).__init__()
+
+    def clone(self):
+        return self.__class__()
+
+    def minimum(self):
+        """ Return this item's minimum value. """
+        return self.model().minimumForColumn(self.column())
+
+    def maximum(self):
+        """ Return this item's maximum value. """
+        return self.model().maximumForColumn(self.column())
+
+
+class ColumnRangedModel(QtGui.QStandardItemModel):
+
+    minimumRole = Qt.UserRole + 1
+    maximumRole = Qt.UserRole + 2
+
+    def __init__(self, rows, columns, parent=None):
+        super(ColumnRangedModel, self).__init__(rows, columns, parent)
+        self.setItemPrototype(ColumnRangedItem())
+
+    def minimumForColumn(self, column):
+        """ Return the minimum value for the items in `column`. """
+        item = self.horizontalHeaderItem(column)
+        return item.data(role=ColumnRangedModel.minimumRole)
+
+    def setMinimumForColumn(self, column, minimum):
+        """ Set the minimum value for the items in `column`. """
+        item = self.horizontalHeaderItem(column)
+        item.setData(minimum, role=ColumnRangedModel.minimumRole)
+
+    def maximumForColumn(self, column):
+        """ Return the maximum value for the items in `column`. """
+        item = self.horizontalHeaderItem(column)
+        return item.data(role=ColumnRangedModel.maximumRole)
+
+    def setMaximumForColumn(self, column, maximum):
+        """ Set the maximum value for the items in `column`. """
+        item = self.horizontalHeaderItem(column)
+        item.setData(maximum, role=ColumnRangedModel.maximumRole)
+
+
 class LoggingItem(QtGui.QStandardItem):
 
     """ Add logging abilities to `StandardItem`. """
