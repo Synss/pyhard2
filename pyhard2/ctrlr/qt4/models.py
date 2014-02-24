@@ -61,7 +61,7 @@ class _CurveData(Qwt.QwtData):
 
 class LoggingItem(QtGui.QStandardItem):
 
-    """:class:`QtGui.StandardItem` remembering data history."""
+    """ Add logging abilities to `StandardItem`. """
 
     def __init__(self):
         super(LoggingItem, self).__init__()
@@ -81,7 +81,7 @@ class LoggingItem(QtGui.QStandardItem):
 
 class InstrumentItem(LoggingItem):
 
-    """`LoggingItem` managing communication with the hardware."""
+    """`StandardItem` managing communication with the hardware."""
 
     def __init__(self, instrument=None):
         super(InstrumentItem, self).__init__()
@@ -178,7 +178,7 @@ class InstrumentItem(LoggingItem):
 
 class SetpointItem(InstrumentItem):
 
-    """Model item handling setpoint ramps."""
+    """ `InstrumentItem` handling setpoint ramps. """
 
     def __init__(self):
         super(SetpointItem, self).__init__()
