@@ -92,8 +92,8 @@ class XonProtocol(drv.SerialProtocol):
         )
 
     def _xon(self):
-        assert(self.socket.read(1) == "/x13")  # XOFF
-        assert(self.socket.read(1) == "/x11")  # XON
+        assert(self.socket.read(1) == "\x13")  # XOFF
+        assert(self.socket.read(1) == "\x11")  # XON
 
     def _encode_read(self, subsys, param):
         cmd = self._fmt_cmd_read(subsys, param)
