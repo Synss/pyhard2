@@ -10,7 +10,7 @@ import PyQt4.Qwt5 as Qwt
 
 from .widgets import Spreadsheet, Monitor, Curve, MeasureEdit
 from .delegates import NumericDelegate
-from .models import InstrumentModel
+from .models import PollingInstrumentModel
 from .enums import ColumnName
 
 
@@ -383,14 +383,14 @@ class Controller(QtGui.QMainWindow):
 
     def _setModel(self, model=None):
         if model is None:
-            model = InstrumentModel(self)
+            model = PollingInstrumentModel(self)
         model.configLoaded.connect(self.updateInstrumentTable)
         self._instrTable.setModel(model)
 
-        model._pollingTimer.setInterval(self._refreshRateCtrl.value() * 1000)
+        model.setPollingInterval(self._refreshRateCtrl.value() * 1000)
         self._refreshRateCtrl.valueChanged.connect(
-            lambda dt: model._pollingTimer.setInterval(1000 * dt))
-        model._pollingTimer.timeout.connect(self._monitor.replot)
+            lambda dt: model.setPollingInterval(1000 * dt))
+        model.polling.connect(self._monitor.replot)
 
         self._pidMapper.setModel(model)
         self._instrTable.selectionModel().currentRowChanged.connect(
@@ -526,7 +526,7 @@ class Controller(QtGui.QMainWindow):
                 item = model.item(nRow, nCol)
                 loggingCurve.setData(item.loggedData())
                 loggingCurve.attach(self._monitor)
-                model._pollingTimer.timeout.connect(item.log)
+                model.polling.connect(item.log)
                 self.__loggingCurves.append(loggingCurve)
 
     def _updateProgramPreview(self, marker, curve):

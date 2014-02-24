@@ -126,12 +126,6 @@ class InstrumentItem(LoggingItem):
         cmd = "%s_minimum" % item.data(role=UserRole.CommandName)
         return reduce(getattr, cmd.split("."), self.__instr)()
 
-    def pollData(self):
-        """ Call enqueueData if polling is set on column """
-        item = self.model().horizontalHeaderItem(self.column())
-        if item.data(role=UserRole.PollingCheckStateRole):
-            self.enqueueData()
-
     def enqueueData(self):
         """
         Request reading data in hardware.
@@ -206,7 +200,7 @@ class SetpointItem(InstrumentItem):
 
         self.__profile = pid.Profile(profile)
         self.__ramp = self.__profile.ramp()
-        self.model()._pollingTimer.timeout.connect(self._updateSetpoint)
+        self.model().polling.connect(self._updateSetpoint)
         self.setCheckState(Qt.Checked)
 
     def stopRamp(self):
@@ -218,7 +212,7 @@ class SetpointItem(InstrumentItem):
 
         """
         if self.__ramp is not None:
-            self.model()._pollingTimer.timeout.disconnect(self._updateSetpoint)
+            self.model().polling.disconnect(self._updateSetpoint)
         self.setCheckState(Qt.Unchecked)
         self.__ramp = None
         self.__profile = None
@@ -251,34 +245,10 @@ class InstrumentModel(QtGui.QStandardItemModel):
 
     def __init__(self, parent=None):
         super(InstrumentModel, self).__init__(parent)
-        self.setItemPrototype(SetpointItem())
-
-        self._threads = []
-        self._pollingTimer = QtCore.QTimer(self)
-
+        self.setItemPrototype(InstrumentItem())
         self.configLoaded.connect(self._populateModel)
-        self.configLoaded.connect(self._pollingTimer.start)
-        self.configLoaded.connect(self.startPolling)
-
+        self._threads = []
         self._instrumentClass = {}
-
-    def setPollingOnColumn(self, column, polling=True):
-        """Set `PollingCheckStateRole` to `polling` for `column`."""
-        self.horizontalHeaderItem(column).setData(
-            polling, role=UserRole.PollingCheckStateRole)
-
-    def pollingOnColumn(self, column):
-        """Return `PollingCheckStateRole` for `column`."""
-        return self.horizontalHeaderItem(column).data(
-            role=UserRole.PollingCheckStateRole)
-
-    def startPolling(self):
-        """Start the polling timer."""
-        self._pollingTimer.start()
-
-    def stopPolling(self):
-        """Stop polling timer."""
-        self._pollingTimer.stop()
 
     def registerParameter(self, column, paramName):
         """Register `paramName` as the `Parameter` for `column`.
@@ -364,7 +334,6 @@ class InstrumentModel(QtGui.QStandardItemModel):
                     item = self.itemFromIndex(self.index(nrow, ncol))
                     item.setInstrument(adapter)
                     item.connectHardware()
-                    self._pollingTimer.timeout.connect(item.pollData)
             thread.start()
             self._threads.append(thread)
         self.configLoaded.emit()
@@ -374,6 +343,60 @@ class InstrumentModel(QtGui.QStandardItemModel):
         for thread in self._threads:
             thread.quit()
             thread.wait()
+        super(InstrumentModel, self).closeEvent(event)
+
+
+class PollingInstrumentModel(InstrumentModel):
+
+    """ `InstrumentModel` that handles polling its items' `enqueueData`. """
+
+    polling = Signal()
+
+    def __init__(self, parent=None):
+        super(PollingInstrumentModel, self).__init__(parent)
+        self.setItemPrototype(SetpointItem())
+        self.__timer = QtCore.QTimer(self)
+        self.__timer.timeout.connect(self.polling.emit)
+        self.configLoaded.connect(self._connectTimer)
+        self.configLoaded.connect(self.__timer.start)
+        self.configLoaded.connect(self.startPolling)
+
+    def _connectTimer(self):
+        def poll(item):
+            headerItem = self.horizontalHeaderItem(item.column())
+            if headerItem.data(role=UserRole.PollingCheckStateRole):
+                item.enqueueData()
+
+        for item in (self.itemFromIndex(self.index(row, column))
+                     for row in range(self.rowCount())
+                     for column in range(self.columnCount())):
+            self.__timer.timeout.connect(_partial(poll, item))
+
+    def setPollingOnColumn(self, column, polling=True):
+        """Set `PollingCheckStateRole` to `polling` for `column`."""
+        self.horizontalHeaderItem(column).setData(
+            polling, role=UserRole.PollingCheckStateRole)
+
+    def pollingOnColumn(self, column):
+        """Return `PollingCheckStateRole` for `column`."""
+        return self.horizontalHeaderItem(column).data(
+            role=UserRole.PollingCheckStateRole)
+
+    def setPollingInterval(self, interval):
+        self.__timer.setInterval(interval)
+
+    def pollingInterval(self):
+        return self.__timer.interval()
+
+    def startPolling(self):
+        """Start the polling timer."""
+        self.__timer.start()
+
+    def stopPolling(self):
+        """Stop polling timer."""
+        self.__timer.stop()
+
+    def closeEvent(self, event):
         self.stopPolling()
         super(InstrumentModel, self).closeEvent(event)
 
