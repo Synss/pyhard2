@@ -1,3 +1,5 @@
+CUR_BRANCH = $(shell git branch | sed -n -e 's,^\*[[:blank:]]*,,p')
+
 distribute:
 	python setup.py sdist --formats=gztar,zip
 
@@ -12,7 +14,7 @@ upload-doc:
 	rsync -avzP -e ssh html/ mathias_laurin@web.sourceforge.net:/home/project-web/pyhard2/htdocs/ 
 
 export:
-	git archive master --format=zip > /Users/laurin/Desktop/pyhard2-code.zip
+	git archive $(CUR_BRANCH) --format=zip > /Users/laurin/Desktop/pyhard2-code.zip
 
 rcc:
 	pyrcc4 -o pyhard2/rsc/__init__.py pyhard2/rsc/resources.qrc
