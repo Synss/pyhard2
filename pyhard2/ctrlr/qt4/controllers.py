@@ -159,12 +159,17 @@ class _ModelData(Qwt.QwtData):
 
     def sample(self, i):
         """Return `x,y` values at `i`."""
-        xItem, yItem = (self.__model.item(i, column)
-                        for column in (self.__xColumn, self.__yColumn))
-        if None in (xItem, yItem):
-            return (0.0, 0.0)
-        else:
-            return map(float, (xItem.text(), yItem.text()))
+        def convert(item):
+            if item is None:
+                return 0.0
+            else:
+                try:
+                    return float(item.text())
+                except ValueError:
+                    return 0.0
+
+        return map(convert, (self.__model.item(i, column)
+                             for column in (self.__xColumn, self.__yColumn)))
 
     def x(self, i):
         """Return `x` value."""
