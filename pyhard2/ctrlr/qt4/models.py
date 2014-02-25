@@ -81,6 +81,10 @@ class ColumnRangedItem(QtGui.QStandardItem):
 
 
 class ColumnRangedModel(QtGui.QStandardItemModel):
+    """
+    Model that stores minimum and maximum values column-wise.
+
+    """
 
     minimumRole = Qt.UserRole + 1
     maximumRole = Qt.UserRole + 2
