@@ -514,6 +514,13 @@ class Controller(QtGui.QMainWindow):
             editor = QtGui.QDoubleSpinBox(self._controlBox)
             editor.setReadOnly(not model.item(0, nCol).isEditable())
             self._controlBox.layout().addRow(QtGui.QLabel(label), editor)
+            self._controlMapper = QtGui.QDataWidgetMapper(self._controlBox)
+            self._controlMapper.setSubmitPolicy(self._controlMapper.AutoSubmit)
+            self._controlMapper.setModel(model)
+            self._instrTable.selectionModel().currentRowChanged.connect(
+                self._controlMapper.setCurrentModelIndex)
+            self._controlMapper.addMapping(editor, nCol)
+            self._controlMapper.toFirst()
 
         for previewCurve in self.previewCurves():
             previewCurve.attach(self._programPreview)
