@@ -39,6 +39,8 @@ def createController(opts):
     iface.addInstrumentClass(virtual.VirtualInstrument, "virtual",
                              virtual.virtual_mapper)
     iface.loadConfig(opts)
+    iface.singleInstrumentAction.trigger()
+    iface.showPidBoxAction.trigger()
     return iface
 
 
