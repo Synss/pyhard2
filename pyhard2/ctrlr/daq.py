@@ -131,8 +131,9 @@ class DioController(ctrlr.MeasureController):
         editor.setContextMenuPolicy(Qt.ActionsContextMenu)
         model = self._instrTable.model()
         model.itemChanged.connect(onValueChanged)
-
-        editor.toggled.connect(model.item(row, column).setCheckState)
+        item = model.item(row, column)
+        onValueChanged(item)  # set initial value
+        editor.toggled.connect(item.setCheckState)
 
         return editor
 
