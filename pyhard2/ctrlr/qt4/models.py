@@ -14,7 +14,7 @@ import pyhard2.driver as drv  # for Adapter
 from .enums import UserRole
 
 
-class _CurveData(Qwt.QwtData):
+class ListData(Qwt.QwtData):
     
     """
     Custom `QwtData` mapping a list onto `x,y` values.
@@ -27,8 +27,11 @@ class _CurveData(Qwt.QwtData):
     X, Y = range(2)
 
     def __init__(self, xy):
-        super(_CurveData, self).__init__()
+        super(ListData, self).__init__()
         self.__data = xy
+
+    def __iter__(self):
+        return self.__data.__iter__()
 
     def copy(self):
         """Return self."""
@@ -44,11 +47,11 @@ class _CurveData(Qwt.QwtData):
 
     def x(self, i):
         """Return `x` value."""
-        return self.sample(i)[_CurveData.X]
+        return self.sample(i)[ListData.X]
 
     def y(self, i):
         """Return `y` value."""
-        return self.sample(i)[_CurveData.Y]
+        return self.sample(i)[ListData.Y]
 
     def append(self, xy):
         """Add `x,y` values to the list."""
@@ -121,7 +124,7 @@ class LoggingItem(QtGui.QStandardItem):
     def __init__(self):
         super(LoggingItem, self).__init__()
         self.__start = _time.time()
-        self.__data = _CurveData([])
+        self.__data = ListData([])
 
     def loggedData(self):
         """Return logged data."""
