@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# vibeplot documentation build configuration file, created by
+# pyhard2 documentation build configuration file, created by
 # sphinx-quickstart on Sun Oct  2 15:13:29 2011.
 #
 # This file is execfile()d with the current directory set to its containing dir.
