@@ -202,6 +202,34 @@ class InstrumentTable(QtGui.QTableView):
         verticalHeader.setResizeMode(QtGui.QHeaderView.ResizeToContents)
 
 
+class PidBox(QtGui.QGroupBox):
+
+    """
+    GroupBox with spin boxes for P, I, and D.
+
+    .. image:: ../documentation/PidBox.png
+
+    """
+    def __init__(self, parent=None):
+        super(PidBox, self).__init__(u"PID settings", parent)
+        self.__setupUI()
+
+    def __setupUI(self):
+        self.pEditor = QtGui.QDoubleSpinBox(self)
+        self.iEditor = QtGui.QDoubleSpinBox(self)
+        self.dEditor = QtGui.QDoubleSpinBox(self)
+
+        self.layout = QtGui.QFormLayout(self)
+        self.layout.addRow(QtGui.QLabel(u"Proportional"), self.pEditor)
+        self.layout.addRow(QtGui.QLabel(u"Integral"), self.iEditor)
+        self.layout.addRow(QtGui.QLabel(u"Derivative"), self.dEditor)
+
+        self.showAction = QtGui.QAction(u"Show PID", self)
+        self.showAction.setCheckable(True)
+        self.showAction.setChecked(True)
+        self.showAction.triggered.connect(self.setVisible)
+
+
 class Controller(QtGui.QMainWindow):
     """
     User interface to the controllers.
