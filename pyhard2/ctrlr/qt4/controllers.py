@@ -246,6 +246,104 @@ class ControlPanelElement(QtGui.QWidget):
         self.showAction.triggered.connect(self.setVisible)
 
 
+class InstrumentPanel(ControlPanelElement):
+
+    """
+    Widget representing the instrument panel.
+
+    .. image:: ../documentation/InstrumentPanel.png
+
+    Attributes
+    ----------
+    refreshRateCtrl : QDoubleSpinBox
+    table : InstrumentTable
+    controlBox : QGroupBox
+    pidBox : PidBox
+    singleInstrumentAction : QAction
+        Switch between `table` and `single instrument` views.
+
+    """
+    def __init__(self, parent=None):
+        super(InstrumentPanel, self).__init__("instruments", parent)
+        self.__setupUI()
+
+    def __setupUI(self):
+        self.refreshRateCtrl = QtGui.QDoubleSpinBox()
+        self.refreshRateCtrl.setRange(0.1, 3600.0)
+        self.refreshRateCtrl.setValue(10.0)
+
+        formLayout = QtGui.QFormLayout()
+        formLayout.addRow(QtGui.QLabel(u"Refresh /s"), self.refreshRateCtrl)
+
+        self.table = InstrumentTable(self)
+        self.table.setItemDelegate(_InstrumentItemDelegate(self.table))
+
+        self.controlBox = QtGui.QGroupBox(u"Controls")
+        self.controlBox.hide()
+        self.controlBox.setLayout(QtGui.QFormLayout(self))
+
+        self.pidBox = PidBox()
+
+        self.layout = QtGui.QVBoxLayout(self)
+        self.layout.addLayout(formLayout)
+        self.layout.addWidget(self.table)
+        self.layout.addWidget(self.controlBox)
+        self.layout.addWidget(self.pidBox)
+
+        self.singleInstrumentAction = QtGui.QAction(u"single instrument", self)
+        self.singleInstrumentAction.setCheckable(True)
+        self.singleInstrumentAction.setChecked(False)
+        self.singleInstrumentAction.triggered.connect(
+            self.controlBox.setVisible)
+        self.singleInstrumentAction.triggered.connect(self.table.setHidden)
+
+    def setupModel(self, model):
+        """ Initialize GUI elements with the model. """
+        self.table.setModel(model)
+
+        model.setPollingInterval(self.refreshRateCtrl.value() * 1000)
+        self.refreshRateCtrl.valueChanged.connect(
+            lambda dt: model.setPollingInterval(1000 * dt))
+
+        self.pidMapper = QtGui.QDataWidgetMapper(self)
+        self.pidMapper.setSubmitPolicy(self.pidMapper.AutoSubmit)
+        self.pidMapper.setItemDelegate(NumericDelegate(self.pidMapper))
+        self.pidMapper.setModel(model)
+
+        self.controlMapper = QtGui.QDataWidgetMapper(self.controlBox)
+        self.controlMapper.setSubmitPolicy(QtGui.QDataWidgetMapper.AutoSubmit)
+        self.controlMapper.setModel(model)
+
+        self.table.selectionModel().currentRowChanged.connect(
+            self.controlMapper.setCurrentModelIndex)
+        self.table.selectionModel().currentRowChanged.connect(
+            self.pidMapper.setCurrentModelIndex)
+
+        for editor, column in (
+                (self.pidBox.pEditor, ColumnName.PidGainColumn),
+                (self.pidBox.iEditor, ColumnName.PidIntegralColumn),
+                (self.pidBox.dEditor, ColumnName.PidDerivativeColumn)):
+            self.pidMapper.addMapping(editor, column)
+
+        model.configLoaded.connect(self.pidMapper.toFirst)
+        model.configLoaded.connect(
+            partial(self.setupControlBoxFromModel, model))
+
+    def setupControlBoxFromModel(self, model):
+        """
+        Set up the instrument table according to the model currently loaded.
+
+        """
+        for column in range(model.columnCount()):
+            if self.table.isColumnHidden(column): continue
+            label = model.headerData(column, Qt.Horizontal)
+            editor = QtGui.QDoubleSpinBox(self.controlBox)
+            editor.setReadOnly(not model.item(0, column).isEditable())
+            self.controlBox.layout().addRow(QtGui.QLabel(label), editor)
+
+            self.controlMapper.addMapping(editor, column)
+            self.controlMapper.toFirst()
+
 
 class Controller(QtGui.QMainWindow):
     """
