@@ -345,6 +345,47 @@ class InstrumentPanel(ControlPanelElement):
             self.controlMapper.toFirst()
 
 
+class MonitorPanel(ControlPanelElement):
+
+    """
+    Widget representing the monitor panel.
+
+    .. image:: ../documentation/MonitorPanel.png
+
+    Attributes
+    ----------
+    monitor : Monitor
+
+    """
+    def __init__(self, parent=None):
+        super(MonitorPanel, self).__init__("monitor", parent)
+        self.__loggingCurves = []  # prevent garbage collection
+        self.__setupUI()
+
+    def __setupUI(self):
+        self.monitor = Monitor(self)
+
+        self.layout = QtGui.QVBoxLayout(self)
+        self.layout.addWidget(self.monitor)
+
+    def setupModel(self, model):
+        """ Initialize GUI elements with the model. """
+        model.polling.connect(self.monitor.replot)
+        model.configLoaded.connect(
+            partial(self.setupLoggingCurvesFromModel, model))
+
+    def setupLoggingCurvesFromModel(self, model):
+        """ Initialize GUI elements with the model. """
+        for row in range(model.rowCount()):
+            for column in range(model.columnCount()):
+                loggingCurve = Curve()
+                item = model.item(row, column)
+                loggingCurve.setData(item.loggedData())
+                loggingCurve.attach(self.monitor)
+                model.polling.connect(item.log)
+                self.__loggingCurves.append(loggingCurve)
+
+
 class Controller(QtGui.QMainWindow):
     """
     User interface to the controllers.
