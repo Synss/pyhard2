@@ -521,261 +521,63 @@ class ProgramPanel(ControlPanelElement):
 
 
 class Controller(QtGui.QMainWindow):
+
     """
     User interface to the controllers.
 
-    Attributes
-    ----------
-    singleInstrumentAction : QtGui.QAction
-    showPidBoxAction : QtGui.QAction
-    showMonitorAction : QtGui.QAction
-    showProgramBoxAction : QtGui.QAction
-    startProgramAction : QtGui.QAction
-    startAllProgramsAction : QtGui.QAction
-    stopAllProgramsAction : QtGui.QAction
+    .. image:: ../documentation/Controller.png
 
     """
     def __init__(self, parent=None):
         super(Controller, self).__init__(parent)
-        centralWidget = QtGui.QWidget()
-        centralWidget.setLayout(QtGui.QHBoxLayout())
-        self.setCentralWidget(centralWidget)
-        self.__loggingCurves = []  # prevent garbage collection
-        self.__previewCurves = []  # prevent garbage collection
-        self.__initInstrPane()
-        self.__initMonitorPane()
-        self.__initProgramPane()
-        self.__initMenuBar()
+        self.__setupUI()
         self._setModel()
 
     def __repr__(self):
         return "%s(parent=%r)" % (self.__class__.__name__, self.parent())
 
-    def __initMenuBar(self):
+    def __setupUI(self):
+        self._instrPanel = InstrumentPanel(self)
+        self._monitorPanel = MonitorPanel(self)
+        self._programPanel = ProgramPanel(self)
+        self._programPanel.startAllAction.triggered.connect(
+            self._startAllPrograms)
+        self._programPanel.stopAllAction.triggered.connect(
+            self._stopAllPrograms)
+
+        self._programPanel.setSizePolicy(QtGui.QSizePolicy.Fixed,
+                                        QtGui.QSizePolicy.Expanding)
+
         self._viewMenu = QtGui.QMenu(u"View", self.menuBar())
+        self._viewMenu.addAction(self._programPanel.showAction)
+        self._viewMenu.addAction(self._monitorPanel.showAction)
+        self._viewMenu.addAction(self._instrPanel.pidBox.showAction)
+        self._viewMenu.addAction(self._instrPanel.singleInstrumentAction)
         self.menuBar().addMenu(self._viewMenu)
 
-        self.singleInstrumentAction = QtGui.QAction(u"single instrument",
-                                                     self._viewMenu)
-        self.singleInstrumentAction.setCheckable(True)
-        self.singleInstrumentAction.triggered.connect(
-            self._controlBox.setVisible)
-        self.singleInstrumentAction.triggered.connect(
-            self._instrTable.setHidden)
-        self._viewMenu.addAction(self.singleInstrumentAction)
-
-        self.showPidBoxAction = QtGui.QAction(u"show PID", self._viewMenu)
-        self.showPidBoxAction.setCheckable(True)
-        self.showPidBoxAction.setChecked(True)
-        self.showPidBoxAction.triggered.connect(self._pidBox.setVisible)
-        self._viewMenu.addAction(self.showPidBoxAction)
-
-        self.showMonitorAction = (
-                QtGui.QAction(u"show monitor", self._viewMenu))
-        self.showMonitorAction.setCheckable(True)
-        self.showMonitorAction.setChecked(True)
-        self.showMonitorAction.triggered.connect(self._monitorPane.setVisible)
-        self._viewMenu.addAction(self.showMonitorAction)
-
-        self.showProgramBoxAction = (
-                QtGui.QAction(u"show program", self._viewMenu))
-        self.showProgramBoxAction.setCheckable(True)
-        self.showProgramBoxAction.setChecked(True)
-        self.showProgramBoxAction.triggered.connect(self._programPane.setVisible)
-        self._viewMenu.addAction(self.showProgramBoxAction)
-
-    def __initInstrPane(self):
-        self._instrPane = QtGui.QWidget(self)
-        paneLayout = QtGui.QVBoxLayout(self._instrPane)
-        self.centralWidget().layout().addWidget(self._instrPane)
-
-        self._refreshRateCtrl = QtGui.QDoubleSpinBox()
-        self._refreshRateCtrl.setRange(0.1, 3600.0)
-        self._refreshRateCtrl.setValue(10.0)
-        formLayout = QtGui.QFormLayout()
-        formLayout.addRow(QtGui.QLabel(u"Refresh /s"), self._refreshRateCtrl)
-        paneLayout.addLayout(formLayout)
-
-        self._instrTable = QtGui.QTableView(self)
-        self._instrTable.setItemDelegate(
-            _InstrumentItemDelegate(self._instrTable))
-        self._instrTable.horizontalHeader().setResizeMode(
-            QtGui.QHeaderView.Stretch)
-        self._instrTable.horizontalHeader().setResizeMode(
-            QtGui.QHeaderView.ResizeToContents)
-        self._instrTable.verticalHeader().setResizeMode(
-            QtGui.QHeaderView.ResizeToContents)
-        paneLayout.addWidget(self._instrTable)
-
-        self._controlBox = QtGui.QGroupBox(u"Controls")
-        self._controlBox.hide()
-        controlBoxLayout = QtGui.QFormLayout(self._controlBox)
-        paneLayout.addWidget(self._controlBox)
-
-        self._pidBox = QtGui.QGroupBox(u"PID settings")
-        paneLayout.addWidget(self._pidBox)
-        pidBoxLayout = QtGui.QFormLayout(self._pidBox)
-        self._pEditor = QtGui.QDoubleSpinBox(self._pidBox)
-        self._iEditor = QtGui.QDoubleSpinBox(self._pidBox)
-        self._dEditor = QtGui.QDoubleSpinBox(self._pidBox)
-        pidBoxLayout.addRow(QtGui.QLabel(u"Proportional"), self._pEditor)
-        pidBoxLayout.addRow(QtGui.QLabel(u"Integral"), self._iEditor)
-        pidBoxLayout.addRow(QtGui.QLabel(u"Derivative"), self._dEditor)
-
-        self._pidMapper = QtGui.QDataWidgetMapper(self._instrTable)
-        self._pidMapper.setSubmitPolicy(self._pidMapper.AutoSubmit)
-        self._pidMapper.setItemDelegate(NumericDelegate(self._pidMapper))
-
-    def __initMonitorPane(self):
-        self._monitorPane = QtGui.QWidget(self)
-        paneLayout = QtGui.QVBoxLayout(self._monitorPane)
-        self.centralWidget().layout().addWidget(self._monitorPane)
-
-        self._monitor = Monitor(self)
-        paneLayout.addWidget(self._monitor)
-
-    def __initProgramPane(self):
-        self._programPane = QtGui.QGroupBox(u"Program", self)
-        self._programPane.setSizePolicy(QtGui.QSizePolicy.Fixed,
-                                        QtGui.QSizePolicy.Expanding)
-        programPaneLayout = QtGui.QVBoxLayout(self._programPane)
-
-        self.centralWidget().layout().addWidget(self._programPane)
-
-        self._programToolBar = QtGui.QToolBar(self._programPane)
-        programPaneLayout.addWidget(self._programToolBar)
-
-        self.startProgramAction = QtGui.QAction(
-            QtGui.QIcon.fromTheme(
-                "media-playback-start",
-                QtGui.QIcon(":/icons/Tango/media-playback-start.svg")),
-            u"Start program", self._programPane)
-        self.startProgramAction.setCheckable(True)
-        self._startProgramBtn = QtGui.QToolButton(self._programToolBar)
-        self._startProgramBtn.setDefaultAction(self.startProgramAction)
-        self._programToolBar.addWidget(self._startProgramBtn)
-
-        self._startProgramMapper = QtGui.QDataWidgetMapper(self._instrTable)
-        self._startProgramMapper.setSubmitPolicy(
-            self._startProgramMapper.AutoSubmit)
-        self._startProgramMapper.setItemDelegate(_StartProgramDelegate(
-            self._startProgramMapper))
-
-        self.startAllProgramsAction = QtGui.QAction(
-            QtGui.QIcon.fromTheme(
-                "media-seek-forward",
-                QtGui.QIcon(":/icons/Tango/media-seek-forward.svg")),
-            u"Start all programs", self._programPane)
-        self.startAllProgramsAction.triggered.connect(self._startAllPrograms)
-        self._startAllProgramsBtn = QtGui.QToolButton(self._programToolBar)
-        self._startAllProgramsBtn.setDefaultAction(
-            self.startAllProgramsAction)
-        self._programToolBar.addWidget(self._startAllProgramsBtn)
-
-        self.stopAllProgramsAction = QtGui.QAction(
-            QtGui.QIcon.fromTheme(
-                "process-stop",
-                QtGui.QIcon(":/icons/Tango/process-stop.svg")),
-            u"Stop all programs", self._programPane)
-        self.stopAllProgramsAction.triggered.connect(self._stopAllPrograms)
-        self._stopAllProgramsBtn = QtGui.QToolButton(self._programToolBar)
-        self._stopAllProgramsBtn.setDefaultAction(self.stopAllProgramsAction)
-        self._programToolBar.addWidget(self._stopAllProgramsBtn)
-
-        self._programTable = Spreadsheet(self._programPane)
-        self._programTable.verticalHeader().setDefaultSectionSize(20)
-        self._programTable.horizontalHeader().setResizeMode(
-            QtGui.QHeaderView.Stretch)
-        self._programTable.horizontalHeader().setResizeMode(0,
-            QtGui.QHeaderView.ResizeToContents)
-
-        self._profileModelMapper = QtGui.QDataWidgetMapper(self._instrTable)
-        self._profileModelMapper.setSubmitPolicy(
-            self._profileModelMapper.AutoSubmit)
-        self._profileModelMapper.setItemDelegate(
-            _ProgramTableDelegate(self._profileModelMapper))
-
-        self._programToolBar.addSeparator()
-
-        self._copyProgramBtn = QtGui.QToolButton(self._programToolBar)
-        self._copyProgramBtn.setDefaultAction(self._programTable.copyAction)
-        self._programToolBar.addWidget(self._copyProgramBtn)
-
-        self._pasteProgramBtn = QtGui.QToolButton(self._programToolBar)
-        self._pasteProgramBtn.setDefaultAction(self._programTable.pasteAction)
-        self._programToolBar.addWidget(self._pasteProgramBtn)
-
-        self._programToolBar.addSeparator()
-
-        self._addRowProgramBtn = QtGui.QToolButton(self._programToolBar)
-        self._addRowProgramBtn.setDefaultAction(self._programTable.addRowAction)
-        self._programToolBar.addWidget(self._addRowProgramBtn)
-
-        self._removeRowProgramBtn = QtGui.QToolButton(self._programToolBar)
-        self._removeRowProgramBtn.setDefaultAction(
-            self._programTable.removeRowAction)
-        self._programToolBar.addWidget(self._removeRowProgramBtn)
-
-        timeDelegate = _NumericRangeDelegate(self._programTable)
-        timeDelegate.setRange(0.0, 7.0 * 24.0 * 3600.0)  # 7 days
-        self._programTable.setItemDelegateForColumn(0, timeDelegate)
-        setpointDelegate = NumericDelegate(self._programTable)
-        self._programTable.setItemDelegateForColumn(1, setpointDelegate)
-        programPaneLayout.addWidget(self._programTable, 3)
-
-        self._programPreview = Qwt.QwtPlot(self._programPane)
-        programPaneLayout.addWidget(self._programPreview, 2)
+        centralWidget = QtGui.QWidget()
+        layout = QtGui.QHBoxLayout(centralWidget)
+        layout.addWidget(self._instrPanel)
+        layout.addWidget(self._monitorPanel)
+        layout.addWidget(self._programPanel)
+        self.setCentralWidget(centralWidget)
 
     def _setModel(self, model=None):
         if model is None:
             model = PollingInstrumentModel(self)
-        model.configLoaded.connect(self.updateInstrumentTable)
-        self._instrTable.setModel(model)
 
-        model.setPollingInterval(self._refreshRateCtrl.value() * 1000)
-        self._refreshRateCtrl.valueChanged.connect(
-            lambda dt: model.setPollingInterval(1000 * dt))
-        model.polling.connect(self._monitor.replot)
+        self._instrPanel.setupModel(model)
+        self._monitorPanel.setupModel(model)
+        self._programPanel.setupModel(model)
 
-        self._pidMapper.setModel(model)
-        self._instrTable.selectionModel().currentRowChanged.connect(
-            self._pidMapper.setCurrentModelIndex)
-        for editor, column in (
-                (self._pEditor, ColumnName.PidGainColumn),
-                (self._iEditor, ColumnName.PidIntegralColumn),
-                (self._dEditor, ColumnName.PidDerivativeColumn)):
-            self._pidMapper.addMapping(editor, column)
-        model.configLoaded.connect(self._pidMapper.toFirst)
-
-        self._profileModelMapper.setModel(model)
-        self._instrTable.selectionModel().currentRowChanged.connect(
-            self._profileModelMapper.setCurrentModelIndex)
-        self._profileModelMapper.addMapping(
-            self._programTable, ColumnName.SetpointColumn)
-
-        self._startProgramMapper.setModel(model)
-        self._instrTable.selectionModel().currentRowChanged.connect(
-            self._startProgramMapper.setCurrentModelIndex)
-        self._startProgramMapper.addMapping(self._startProgramBtn,
-                                            ColumnName.SetpointColumn)
-        self.startProgramAction.toggled.connect(
-            self._startProgramMapper.submit)
-        model.configLoaded.connect(self._startProgramMapper.toFirst)
-
-    def previewCurves(self, column=ColumnName.SetpointColumn):
-        model = self._instrTable.model()
-        for row in range(model.rowCount()):
-            label = model.verticalHeaderItem(row).text()
-            previewCurve = Curve(label)
-            item = model.item(row, column)
-            profileModel = (item.profileModel() if item
-                            else QtGui.QStandardItemModel(self))
-            previewCurve.setData(_ModelData(profileModel))
-            yield previewCurve
+        self._instrPanel.table.selectionModel().currentRowChanged.connect(
+            self._programPanel.profileMapper.setCurrentModelIndex)
+        self._instrPanel.table.selectionModel().currentRowChanged.connect(
+            self._programPanel.startProgramMapper.setCurrentModelIndex)
 
     def _startAllPrograms(self, checked, column=ColumnName.SetpointColumn):
         """Start every program stored in this controller."""
-        model = self._instrTable.model()
+        model = self._instrPanel.table.model()
         for nRow in range(model.rowCount()):
             spItem = model.item(nRow, column)
             if spItem:
@@ -783,7 +585,7 @@ class Controller(QtGui.QMainWindow):
 
     def _stopAllPrograms(self, checked, column=ColumnName.SetpointColumn):
         """Stop every running program stored in this controller."""
-        model = self._instrTable.model()
+        model = self._instrPanel.table.model()
         for nRow in range(model.rowCount()):
             spItem = model.item(nRow, column)
             if spItem:
@@ -800,7 +602,7 @@ class Controller(QtGui.QMainWindow):
 
     def instrumentTable(self):
         """Return table containing the instruments."""
-        return self._instrTable
+        return self._instrPanel.table
 
     def createEditor(self, row, column=ColumnName.MeasureColumn):
         """
@@ -812,7 +614,7 @@ class Controller(QtGui.QMainWindow):
             if (item.column() == column and item.row() == row):
                 editor.setValue(item.data(role=Qt.DisplayRole))
 
-        model = self._instrTable.model()
+        model = self._instrPanel.table.model()
         editor = MeasureEdit()
         item = model.item(row, column)
         minimum, maximum = item.minimum(), item.maximum()
@@ -835,59 +637,11 @@ class Controller(QtGui.QMainWindow):
 
     def addInstrumentClass(self, instrCls, name=None, mapper=None):
         """Add instrument class to the controller."""
-        self._instrTable.model().addInstrumentClass(instrCls, name, mapper)
+        self._instrPanel.table.model().addInstrumentClass(instrCls, name, mapper)
 
     def loadConfig(self, opts):
         """Load config file into the controller."""
-        self._instrTable.model().loadConfig(opts)
-
-    def updateInstrumentTable(self):
-        """
-        Set up the instrument table according to the model currently loaded.
-
-        """
-        model = self._instrTable.model()
-        for nCol in range(model.columnCount()):
-            if self._instrTable.isColumnHidden(nCol):
-                continue
-            label = model.headerData(nCol, Qt.Horizontal)
-            editor = QtGui.QDoubleSpinBox(self._controlBox)
-            editor.setReadOnly(not model.item(0, nCol).isEditable())
-            self._controlBox.layout().addRow(QtGui.QLabel(label), editor)
-            self._controlMapper = QtGui.QDataWidgetMapper(self._controlBox)
-            self._controlMapper.setSubmitPolicy(self._controlMapper.AutoSubmit)
-            self._controlMapper.setModel(model)
-            self._instrTable.selectionModel().currentRowChanged.connect(
-                self._controlMapper.setCurrentModelIndex)
-            self._controlMapper.addMapping(editor, nCol)
-            self._controlMapper.toFirst()
-
-        for previewCurve in self.previewCurves():
-            previewCurve.attach(self._programPreview)
-            self.__previewCurves.append(previewCurve)
-
-            marker = Qwt.QwtPlotMarker()
-            marker.setLabel(previewCurve.title())
-            marker.attach(self._programPreview)
-            previewCurve.data().model().dataChanged.connect(
-                partial(self._updateProgramPreview, marker, previewCurve))
-
-        for nRow in range(model.rowCount()):
-            for nCol in range(model.columnCount()):
-                loggingCurve = Curve()
-                item = model.item(nRow, nCol)
-                loggingCurve.setData(item.loggedData())
-                loggingCurve.attach(self._monitor)
-                model.polling.connect(item.log)
-                self.__loggingCurves.append(loggingCurve)
-
-    def _updateProgramPreview(self, marker, curve):
-        """Update program preview."""
-        data = curve.data()
-        x, y = (0.5 * (sample(data.size() - 2) + sample(data.size() - 1))
-                for sample in (data.x, data.y))
-        marker.setValue(x, y)
-        curve.plot().replot()
+        self._instrPanel.table.model().loadConfig(opts)
 
 
 class MeasureController(Controller):
@@ -910,9 +664,9 @@ class MeasureController(Controller):
         model.registerParameter(ColumnName.MeasureColumn, "measure")
         model.setPollingOnColumn(ColumnName.MeasureColumn)        
 
-        self.showPidBoxAction.trigger()
-        self.showMonitorAction.trigger()
-        self.showProgramBoxAction.trigger()
+        self._instrPanel.pidBox.showAction.trigger()
+        self._monitorPanel.showAction.trigger()
+        self._programPanel.showAction.trigger()
 
 
 class MonitorController(MeasureController):
@@ -928,7 +682,7 @@ class MonitorController(MeasureController):
     def __init__(self, parent=None):
         super(MonitorController, self).__init__(parent)
 
-        self.showMonitorAction.trigger()
+        self._monitorPanel.showAction.trigger()
 
 
 class SetpointController(MonitorController):
@@ -970,9 +724,9 @@ class SetpointController(MonitorController):
         for column in (ColumnName.PidGainColumn,
                        ColumnName.PidIntegralColumn,
                        ColumnName.PidDerivativeColumn):
-            self._instrTable.setColumnHidden(column, True)
+            self._instrPanel.table.setColumnHidden(column, True)
 
-        self.showProgramBoxAction.trigger()
+        self._programPanel.showAction.trigger()
 
 if __name__ == "__main__":
     import sys
