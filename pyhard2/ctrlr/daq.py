@@ -66,16 +66,12 @@ class ValveButton(QtGui.QAbstractButton):
             return self._rendererOff.defaultSize()
 
 
-class DaqModel(ctrlr.InstrumentModel):
+class DaqModel(ctrlr.PollingInstrumentModel):
 
     """Model handling non-serial configuration file."""
 
     def __init__(self, parent=None):
         super(DaqModel, self).__init__(parent)
-        self.insertColumn(0)
-        self.setHorizontalHeaderItem(ctrlr.ColumnName.MeasureColumn,
-                                     QtGui.QStandardItem(u"state"))
-        self.registerParameter(ctrlr.ColumnName.MeasureColumn, "state")
 
     def loadConfig(self, opts):
         for port in opts.config:
@@ -105,13 +101,21 @@ class DioController(ctrlr.MeasureController):
 
     def __init__(self, parent=None):
         super(DioController, self).__init__(parent)
-        self.instrumentTable().setModel(DaqModel(self.instrumentTable()))
+        self.__setupUI()
+        model = self._instrPanel.table.model()
+        model.setHorizontalHeaderItem(ctrlr.ColumnName.MeasureColumn,
+                                      QtGui.QStandardItem(u"state"))
+        model.registerParameter(ctrlr.ColumnName.MeasureColumn, "state")
 
-        editor = ctrlr.ButtonDelegate(ValveButton(), self._instrTable)
-        self._instrTable.setItemDelegateForColumn(0, editor)
-        editTriggers = QtGui.QAbstractItemView.SelectedClicked |\
-                QtGui.QAbstractItemView.CurrentChanged
-        self._instrTable.setEditTriggers(editTriggers)  # FIXME make accessor
+    def __setupUI(self):
+        self._instrPanel.table.setItemDelegateForColumn(
+            0, ctrlr.ButtonDelegate(ValveButton(), self._instrPanel))
+        self._instrPanel.table.setEditTriggers(
+            QtGui.QAbstractItemView.SelectedClicked |
+            QtGui.QAbstractItemView.CurrentChanged)
+
+    def _setModel(self):
+        super(DioController, self)._setModel(DaqModel(self))
 
     def createEditor(self, row, column=ctrlr.ColumnName.MeasureColumn):
 
@@ -122,7 +126,7 @@ class DioController(ctrlr.MeasureController):
 
         editor = ValveButton()
         editor.setContextMenuPolicy(Qt.ActionsContextMenu)
-        model = self._instrTable.model()
+        model = self._instrPanel.table.model()
         model.itemChanged.connect(onValueChanged)
         item = model.item(row, column)
         onValueChanged(item)  # set initial value
@@ -145,6 +149,7 @@ def createController(opts):
                                    for idx in range(13)]}
     if opts.virtual:
         iface.setWindowTitle(iface.windowTitle() + u" [virtual]")
+
     iface.addInstrumentClass(VirtualDioInstrument, "virtual")
     iface.addInstrumentClass(daq.DioInstrument, "valve")
     iface.loadConfig(opts)

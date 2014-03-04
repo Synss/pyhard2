@@ -41,7 +41,7 @@ class Dashboard(QtGui.QMainWindow):
         self.setAttribute(Qt.WA_DeleteOnClose)
         self._ctrlrList = []
         self.__initUI()
-        self.__initProgramPane()
+        self.__initProgramPanel()
         self.__initScene()
         self.__initStatusBar()
         self.__initMenuBar()
@@ -81,7 +81,7 @@ class Dashboard(QtGui.QMainWindow):
 
         self._windowMenu.addSeparator()
 
-    def __initProgramPane(self):
+    def __initProgramPanel(self):
 
         def previewAllPrograms(column=ColumnName.SetpointColumn):
             previewWindow = QtGui.QDialog()

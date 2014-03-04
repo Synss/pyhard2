@@ -36,34 +36,41 @@ class _ButtonDelegate(QtGui.QAbstractItemDelegate):
         model.setData(index, editor.isChecked())
 
 
+class PowerSwitchWidget(QtGui.QWidget):
+
+    def __init__(self, title, parent=None):
+        super(PowerSwitchWidget, self).__init__(parent)
+        self.title = title
+        self.__setupUI()
+
+    def __setupUI(self):
+        self.powerBtn = QtGui.QPushButton(u"Power")
+        self.gateBtn = QtGui.QPushButton(u"Gate")
+
+        self.powerBtn.setCheckable(True)
+        self.gateBtn.setCheckable(True)
+
+        self.layout = QtGui.QHBoxLayout(self)
+        self.layout.addWidget(self.powerBtn)
+        self.layout.addWidget(self.gateBtn)
+
+
 class AmtronController(ctrlr.SetpointController):
 
     def __init__(self, parent=None):
         super(AmtronController, self).__init__(parent)
-        self.__initPowerBox()
-        self._updateModel()
+        self.__setupUI()
 
-    def __initPowerBox(self):
-        paneLayout = self._instrPane.layout()
-        powerBoxLayout = QtGui.QHBoxLayout()
-        paneLayout.addLayout(powerBoxLayout)
-        self._powerBtn = QtGui.QPushButton(u"Power")
-        self._powerBtn.setCheckable(True)
-        self._gateBtn = QtGui.QPushButton(u"Gate")
-        self._gateBtn.setCheckable(True)
-        powerBoxLayout.addWidget(self._powerBtn)
-        powerBoxLayout.addWidget(self._gateBtn)
+    def __setupUI(self):
+        self.powerSwitches = PowerSwitchWidget("power", self)
+        self._instrPanel.layout.addWidget(self.powerSwitches)
 
-        self._powerBoxMapper = QtGui.QDataWidgetMapper(self._instrTable)
-        self._powerBoxMapper.setItemDelegate(
-            _ButtonDelegate(self._powerBoxMapper))
-        self._powerBoxMapper.setSubmitPolicy(self._powerBoxMapper.AutoSubmit)
+    def setupModel(self, model):
+        super(AmtronController, self).setupModel(model)
 
-    def _updateModel(self):
-        model = self.instrumentTable().model()
         model.insertColumns(model.columnCount(), 2)
         powerColumn = model.columnCount() - 2
-        gateColumn  = model.columnCount() - 1
+        gateColumn = model.columnCount() -1
         for column, name in (
                 (powerColumn, u"power"),
                 (gateColumn, u"gate")):
@@ -71,15 +78,20 @@ class AmtronController(ctrlr.SetpointController):
             model.registerParameter(column, str(name))
             model.setPollingOnColumn(column)
 
-        self._powerBoxMapper.setModel(model)
-        self._instrTable.selectionModel().currentRowChanged.connect(
-            self._powerBoxMapper.setCurrentModelIndex)
+        self.powerMapper = QtGui.QDataWidgetMapper(self)
+        self.powerMapper.setItemDelegate(
+            _ButtonDelegate(self.powerMapper))
+        self.powerMapper.setModel(model)
+
+        self._instrPanel.table.selectionModel().currentRowChanged.connect(
+            self.powerMapper.setCurrentModelIndex)
         for editor, column in (
                 (self._powerBtn, powerColumn),
                 (self._gateBtn, gateColumn)):
-            self._powerBoxMapper.addMapping(editor, column)
-            editor.toggled.connect(self._powerBoxMapper.submit)
-        model.configLoaded.connect(self._powerBoxMapper.toFirst)
+            self.powerMapper.addMapping(editor, column)
+            editor.toggled.connect(self.powerMapper.submit)
+
+        model.configLoaded.connect(self.powerMapper.toFirst)
 
 
 def scale(factor):
