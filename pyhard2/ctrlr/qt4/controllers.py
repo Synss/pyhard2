@@ -180,6 +180,28 @@ class _ModelData(Qwt.QwtData):
         return self.sample(i)[_ModelData.Y]
 
 
+class InstrumentTable(QtGui.QTableView):
+
+    """
+    TableView with a context menu.
+
+    The context menu has two actions:
+    - setting polling on or off on a column
+    - setting logging on or off on a column.
+
+    """
+    def __init__(self, parent=None):
+        super(InstrumentTable, self).__init__(parent)
+        self.__setupUI()
+
+    def __setupUI(self):
+        horizontalHeader = self.horizontalHeader()
+        horizontalHeader.setResizeMode(QtGui.QHeaderView.Stretch)
+        horizontalHeader.setResizeMode(QtGui.QHeaderView.ResizeToContents)
+        verticalHeader = self.verticalHeader()
+        verticalHeader.setResizeMode(QtGui.QHeaderView.ResizeToContents)
+
+
 class Controller(QtGui.QMainWindow):
     """
     User interface to the controllers.
