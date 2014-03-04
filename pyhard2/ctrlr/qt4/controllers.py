@@ -386,6 +386,140 @@ class MonitorPanel(ControlPanelElement):
                 self.__loggingCurves.append(loggingCurve)
 
 
+class ProgramPanel(ControlPanelElement):
+
+    """
+    Widget representing the programmable panel.
+
+    .. image:: ../documentation/ProgramPanel.png
+
+    Attributes
+    ----------
+    table : Spreadsheet
+    preview : QwtPlot
+    startAction : QAction
+        Start the program.
+    startAllAction : QAction
+        Start all programs.
+    stopAllAction : QAction
+        Stop all programs.
+
+    """
+    def __init__(self, parent=None):
+        super(ProgramPanel, self).__init__("program", parent)
+        self.__previewCurves = []  # prevent garbage collection
+        self.__setupUI()
+
+    def __setupUI(self):
+        self.table = Spreadsheet(self)
+        self.table.verticalHeader().setDefaultSectionSize(20)
+        self.table.horizontalHeader().setResizeMode(QtGui.QHeaderView.Stretch)
+        self.table.horizontalHeader().setResizeMode(
+            0, QtGui.QHeaderView.ResizeToContents)
+
+        timeColumnDelegate = _NumericRangeDelegate(self.table)
+        timeColumnDelegate.setRange(0.0, 7.0 * 24.0 * 3600.0)  # 7 days
+        setpointColumnDelegate = NumericDelegate(self.table)
+
+        self.table.setItemDelegateForColumn(0, timeColumnDelegate)
+        self.table.setItemDelegateForColumn(1, setpointColumnDelegate)
+
+        self.preview = Qwt.QwtPlot(self)
+
+        self.startAction = QtGui.QAction(
+            QtGui.QIcon.fromTheme(
+                "media-playback-start",
+                QtGui.QIcon(":/icons/Tango/media-playback-start.svg")),
+            u"Start program", self)
+        self.startAction.setCheckable(True)
+        self.startAllAction = QtGui.QAction(
+            QtGui.QIcon.fromTheme(
+                "media-seek-forward",
+                QtGui.QIcon(":/icons/Tango/media-seek-forward.svg")),
+            u"Start all programs", self)
+        self.stopAllAction = QtGui.QAction(
+            QtGui.QIcon.fromTheme(
+                "process-stop",
+                QtGui.QIcon(":/icons/Tango/process-stop.svg")),
+            u"Stop all programs", self)
+
+        self.startBtn = QtGui.QToolButton(self)
+        self.startAllBtn = QtGui.QToolButton(self)
+        self.stopAllBtn = QtGui.QToolButton(self)
+
+        self.startBtn.setDefaultAction(self.startAction)
+        self.startAllBtn.setDefaultAction(self.startAllAction)
+        self.stopAllBtn.setDefaultAction(self.stopAllAction)
+
+        self.toolBar = QtGui.QToolBar(self)
+        self.toolBar.addWidget(self.startBtn)
+        self.toolBar.addWidget(self.startAllBtn)
+        self.toolBar.addWidget(self.stopAllBtn)
+        self.toolBar.addSeparator()
+        self.toolBar.addAction(self.table.copyAction)
+        self.toolBar.addAction(self.table.pasteAction)
+        self.toolBar.addSeparator()
+        self.toolBar.addAction(self.table.addRowAction)
+        self.toolBar.addAction(self.table.removeRowAction)
+
+        self.layout = QtGui.QVBoxLayout(self)
+        self.layout.addWidget(self.toolBar, 2)
+        self.layout.addWidget(self.table, 3)
+        self.layout.addWidget(self.preview, 2)
+
+    def setupModel(self, model):
+        """ Initialize GUI elements with the model. """
+        self.profileMapper = QtGui.QDataWidgetMapper(self)
+        self.profileMapper.setSubmitPolicy(QtGui.QDataWidgetMapper.AutoSubmit)
+        self.profileMapper.setItemDelegate(
+            _ProgramTableDelegate(self.profileMapper))
+        self.profileMapper.setModel(model)
+        self.profileMapper.addMapping(self.table, ColumnName.SetpointColumn)
+
+        self.startProgramMapper = QtGui.QDataWidgetMapper(self)
+        self.startProgramMapper.setSubmitPolicy(
+            QtGui.QDataWidgetMapper.AutoSubmit)
+        self.startProgramMapper.setItemDelegate(_StartProgramDelegate(
+            self.startProgramMapper))
+        self.startProgramMapper.setModel(model)
+        self.startProgramMapper.addMapping(
+            self.startBtn, ColumnName.SetpointColumn)
+        self.startAction.toggled.connect(self.startProgramMapper.submit)
+        model.configLoaded.connect(self.startProgramMapper.toFirst)
+        model.configLoaded.connect(
+            partial(self.setupPreviewCurvesFromModel, model))
+
+    def setupPreviewCurvesFromModel(self, model):
+        """ Initialize GUI elements with the model. """
+        def previewCurves(column=ColumnName.SetpointColumn):
+            for row in range(model.rowCount()):
+                item = model.item(row, column)
+                profileModel = (item.profileModel() if item
+                                else QtGui.QStandardItemModel(self))
+                label = model.verticalHeaderItem(row).text()
+                previewCurve = Curve(label)
+                previewCurve.setData(_ModelData(profileModel))
+                yield previewCurve
+
+        def updatePreview(marker, curve):
+            """Update program preview."""
+            data = curve.data()
+            x, y = (0.5 * (sample(data.size() - 2) + sample(data.size() - 1))
+                    for sample in (data.x, data.y))
+            marker.setValue(x, y)
+            curve.plot().replot()
+
+        for previewCurve in previewCurves():
+            previewCurve.attach(self.preview)
+            self.__previewCurves.append(previewCurve)
+
+            marker = Qwt.QwtPlotMarker()
+            marker.setLabel(previewCurve.title())
+            marker.attach(self.preview)
+            previewCurve.data().model().dataChanged.connect(
+                partial(updatePreview, marker, previewCurve))
+
+
 class Controller(QtGui.QMainWindow):
     """
     User interface to the controllers.
