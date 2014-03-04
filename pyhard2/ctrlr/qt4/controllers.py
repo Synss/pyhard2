@@ -230,6 +230,23 @@ class PidBox(QtGui.QGroupBox):
         self.showAction.triggered.connect(self.setVisible)
 
 
+class ControlPanelElement(QtGui.QWidget):
+
+    """ Widget representing panel elements. """
+
+    def __init__(self, title, parent=None):
+        super(ControlPanelElement, self).__init__(parent)
+        self.title = title
+        self.__setupUI()
+
+    def __setupUI(self):
+        self.showAction = QtGui.QAction(u"show %s" % self.title.lower(), self)
+        self.showAction.setCheckable(True)
+        self.showAction.setChecked(True)
+        self.showAction.triggered.connect(self.setVisible)
+
+
+
 class Controller(QtGui.QMainWindow):
     """
     User interface to the controllers.
