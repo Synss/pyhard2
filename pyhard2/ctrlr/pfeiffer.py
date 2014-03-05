@@ -24,8 +24,8 @@ class VirtualMaxigauge(virtual.VirtualInstrument):
 
     """Virtual instrument with a `node`."""
 
-    def __init__(self, ss=None, node=0):
-        super(VirtualMaxigauge, self).__init__(ss)
+    def __init__(self, socket, async, node=0):
+        super(VirtualMaxigauge, self).__init__()
         self.node = node
 
 
