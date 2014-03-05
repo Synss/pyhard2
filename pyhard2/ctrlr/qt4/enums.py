@@ -24,5 +24,6 @@ class UserRole(object):
     CommandType = Qt.UserRole + 2
     CommandName = Qt.UserRole + 3
     PollingCheckStateRole = Qt.UserRole + 4
+    LoggingCheckStateRole = Qt.UserRole + 5
 
 

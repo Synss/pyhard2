@@ -389,10 +389,8 @@ class MonitorPanel(ControlPanelElement):
         for row in range(model.rowCount()):
             for column in range(model.columnCount()):
                 loggingCurve = Curve()
-                item = model.item(row, column)
-                loggingCurve.setData(item.loggedData())
+                loggingCurve.setData(model.item(row, column).timeSeries())
                 loggingCurve.attach(self.monitor)
-                model.polling.connect(item.log)
                 self.__loggingCurves.append(loggingCurve)
 
 
@@ -632,7 +630,7 @@ class Controller(QtGui.QMainWindow):
             editor.setMinimum(minimum)
         if maximum is not None:
             editor.setMaximum(maximum)
-        editor.setCurveData(item.loggedData())
+        editor.setCurveData(item.timeSeries())
         model.itemChanged.connect(updateEditor)
         model.itemChanged.connect(editor.monitor().replot)
 

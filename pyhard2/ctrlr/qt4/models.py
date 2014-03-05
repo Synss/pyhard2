@@ -1,6 +1,7 @@
 """ Models for pyhard2.ctrlr.qt4 """
 
 import time as _time
+import csv as _csv
 from functools import partial as _partial
 
 from PyQt4 import QtCore, QtGui
@@ -26,9 +27,9 @@ class ListData(Qwt.QwtData):
     """
     X, Y = range(2)
 
-    def __init__(self, xy):
+    def __init__(self):
         super(ListData, self).__init__()
-        self.__data = xy
+        self.__data = []
 
     def __iter__(self):
         return self.__data.__iter__()
@@ -138,18 +139,17 @@ class LoggingItem(QtGui.QStandardItem):
 
     def __init__(self):
         super(LoggingItem, self).__init__()
-        self.__start = _time.time()
-        self.__data = ListData([])
+        self._timeSeries = TimeSeriesData()
 
-    def loggedData(self):
+    def timeSeries(self):
         """Return logged data."""
-        return self.__data
+        return self._timeSeries
 
     def log(self, role=Qt.DisplayRole):
         """Log the value in `role`."""
         value = self.data(role)
         if value is not None:
-            self.__data.append((_time.time() - self.__start, value))
+            self._timeSeries.append(value)
 
 
 class InstrumentItem(LoggingItem):
@@ -436,11 +436,12 @@ class PollingInstrumentModel(InstrumentModel):
         self.setItemPrototype(SetpointItem())
         self.__timer = QtCore.QTimer(self)
         self.__timer.timeout.connect(self.polling.emit)
-        self.configLoaded.connect(self._connectTimer)
+        self.configLoaded.connect(self._connectPolling)
+        self.configLoaded.connect(self._connectLogging)
         self.configLoaded.connect(self.__timer.start)
         self.configLoaded.connect(self.startPolling)
 
-    def _connectTimer(self):
+    def _connectPolling(self):
         def poll(item):
             headerItem = self.horizontalHeaderItem(item.column())
             if headerItem.data(role=UserRole.PollingCheckStateRole):
@@ -450,6 +451,17 @@ class PollingInstrumentModel(InstrumentModel):
                      for row in range(self.rowCount())
                      for column in range(self.columnCount())):
             self.__timer.timeout.connect(_partial(poll, item))
+
+    def _connectLogging(self):
+        def log(item):
+            headerItem = self.horizontalHeaderItem(item.column())
+            if headerItem.data(role=UserRole.LoggingCheckStateRole):
+                item.timeSeries().append(item.data(role=item._connectedRole))
+
+        for item in (self.itemFromIndex(self.index(row, column))
+                     for row in range(self.rowCount())
+                     for column in range(self.columnCount())):
+            self.__timer.timeout.connect(_partial(log, item))
 
     def setPollingOnColumn(self, column, polling=True):
         """Set `PollingCheckStateRole` to `polling` for `column`."""
