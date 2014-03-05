@@ -62,6 +62,21 @@ class ListData(Qwt.QwtData):
         self.__data = []
 
 
+class TimeSeriesData(ListData):
+    """
+    A `ListData` to plot values against time.
+
+    """
+    def __init__(self):
+        super(TimeSeriesData, self).__init__()
+        self.__start = _time.time()
+
+    def append(self, value):
+        """Add `time, value` values to the data."""
+        super(TimeSeriesData, self).append(
+            (_time.time() - self.__start, value))
+
+
 class ColumnRangedItem(QtGui.QStandardItem):
     """
     Item that returns the minimum and maximum values for the column set
