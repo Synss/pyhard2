@@ -24,8 +24,8 @@ class VirtualBronkhorstInstrument(virtual.VirtualInstrument):
 
     """Virtual instrument with a `node`."""
 
-    def __init__(self, socket, node, protocol=None, ss=None):
-        super(VirtualBronkhorstInstrument, self).__init__(socket, protocol, ss)
+    def __init__(self, socket, async=False, node=128):
+        super(VirtualBronkhorstInstrument, self).__init__(socket, async)
         self.node = node
 
 
