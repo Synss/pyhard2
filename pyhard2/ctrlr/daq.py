@@ -22,28 +22,21 @@ Parameter, Action = drv.Parameter, drv.Action
 import pyhard2.driver.daq as daq
 
 
-class VirtualDioSubsystem(drv.Subsystem):
+class VirtualDio(object):
 
-    def __init__(self, instrument):
-        super(VirtualDioSubsystem, self).__init__(instrument)
-        self._state = False
-
-    def __get_state(self):
-        return self._state
-
-    def __set_state(self, state):
-        self._state = state
-
-    state = Parameter(__get_state, __set_state)
+    def __init__(self):
+        self.state = False
 
 
 class VirtualDioInstrument(drv.Instrument):
 
     """Virtual instrument for DIO signal."""
 
-    def __init__(self, socket):
-        super(VirtualDioInstrument, self).__init__(socket)
-        self.main = VirtualDioSubsystem(self)
+    def __init__(self, socket, async=False):
+        super(VirtualDioInstrument, self).__init__(socket, async)
+        wrapper = drv.WrapperProtocol(VirtualDio(), async)
+        self.main = drv.Subsystem(wrapper)
+        self.main.add_parameter_by_name("state", "state")
 
 
 class ValveButton(QtGui.QAbstractButton):
