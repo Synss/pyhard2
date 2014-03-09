@@ -439,7 +439,6 @@ class PollingInstrumentModel(InstrumentModel):
         self.configLoaded.connect(self._connectPolling)
         self.configLoaded.connect(self._connectLogging)
         self.configLoaded.connect(self.__timer.start)
-        self.configLoaded.connect(self.startPolling)
 
     def _connectPolling(self):
         def poll(item):
@@ -473,22 +472,26 @@ class PollingInstrumentModel(InstrumentModel):
         return self.horizontalHeaderItem(column).data(
             role=UserRole.PollingCheckStateRole)
 
-    def setPollingInterval(self, interval):
+    def setLoggingOnColumn(self, column, logging=True):
+        """Set `LoggingCheckStateRole` to `logging` for `column`."""
+        self.horizontalHeaderItem(column).setData(
+            logging, role=UserRole.LoggingCheckStateRole)
+
+    def loggingOnColumn(self, column):
+        """Return `LoggingCheckStateRole` for `column`."""
+        return self.horizontalHeaderItem(column).data(
+            role=UserRole.LoggingCheckStateRole)
+
+    def setInterval(self, interval):
+        """Set polling/logging `interval`."""
         self.__timer.setInterval(interval)
 
-    def pollingInterval(self):
+    def interval(self):
+        """Return polling/logging `interval`."""
         return self.__timer.interval()
 
-    def startPolling(self):
-        """Start the polling timer."""
-        self.__timer.start()
-
-    def stopPolling(self):
-        """Stop polling timer."""
-        self.__timer.stop()
-
     def closeEvent(self, event):
-        self.stopPolling()
+        self.__timer.stop()
         super(InstrumentModel, self).closeEvent(event)
 
 
