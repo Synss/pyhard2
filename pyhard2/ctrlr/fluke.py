@@ -15,7 +15,7 @@ for cls in "QDate QDateTime QString QTextStream QTime QUrl QVariant".split():
 from PyQt4 import QtGui
 
 import pyhard2.ctrlr as ctrlr
-from pyhard2.driver.virtual import VirtualInstrument
+import pyhard2.driver.virtual as virtual
 import pyhard2.driver.fluke as fluke
 
 
@@ -30,7 +30,8 @@ def createController(opts):
         opts.config = {"virtual": [dict(name="Fluke 18x", driver="virtual")]}
     if opts.virtual:
         iface.setWindowTitle(iface.windowTitle() + u" [virtual]")
-    iface.addInstrumentClass(VirtualInstrument, "virtual")
+    iface.addInstrumentClass(virtual.VirtualInstrument, "virtual",
+                             virtual.virtual_mapper)
     iface.addInstrumentClass(fluke.Fl18x, "fluke18x")
     iface.loadConfig(opts)
     return iface
