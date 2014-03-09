@@ -93,11 +93,10 @@ class VirtualOutputSubsystem(drv.Subsystem):
     state-space representation given in `system`.
 
     """
-    def __init__(self, system):
+    def __init__(self):
         super(VirtualOutputSubsystem, self).__init__(
             drv.ProtocolLess(None, async=False))
-        self._system = (sig.tf2ss([10.0], [20.0, 2.0])
-                        if system is None else system)
+        self.system = sig.tf2ss([10.0], [20.0, 2.0])
         self._inputs = [0.0, 0.0]  # U
         self._times = [0.0, 0.01]  # T
         self._noise = 1.0          # %
@@ -110,8 +109,9 @@ class VirtualOutputSubsystem(drv.Subsystem):
         self._inputs.append(input)
 
     def __get_output(self):
-        times, yout, xout = sig.lsim(self._system, self._inputs, self._times)
-        return yout[-1] + random.gauss(yout[-1], self._noise)
+        times, yout, xout = sig.lsim(self.system, self._inputs, self._times)
+        output = yout[-1] + random.gauss(yout[-1], self._noise)
+        return output.item()  # conversion from numpy.float64
 
     output = Parameter(__get_output, read_only=True)
 
@@ -137,14 +137,14 @@ class VirtualInstrument(drv.Instrument):
     output : VirtualOutputSubsystem
 
     """
-    def __init__(self, system=None, async=False):
-        super(VirtualInstrument, self).__init__()
+    def __init__(self, socket=None, async=None):
+        super(VirtualInstrument, self).__init__(socket, async)
         self.pid = PidSubsystem()
         self.input = VirtualInputSubsystem()
-        self.output = VirtualOutputSubsystem(system)
+        self.output = VirtualOutputSubsystem()
 
         self.input.measure_signal().connect(self.pid.compute_output)
-        self.pid.output_signal().connect(self.output.append_input)
+        self.pid.output.connect(self.output.append_input)
         self.output.output_signal().connect(self.input.set_sysout)
 
 
