@@ -470,7 +470,7 @@ class PollingInstrumentModel(InstrumentModel):
     def pollingOnColumn(self, column):
         """Return `PollingCheckStateRole` for `column`."""
         return self.horizontalHeaderItem(column).data(
-            role=UserRole.PollingCheckStateRole)
+            role=UserRole.PollingCheckStateRole) is True
 
     def setLoggingOnColumn(self, column, logging=True):
         """Set `LoggingCheckStateRole` to `logging` for `column`."""
@@ -480,7 +480,7 @@ class PollingInstrumentModel(InstrumentModel):
     def loggingOnColumn(self, column):
         """Return `LoggingCheckStateRole` for `column`."""
         return self.horizontalHeaderItem(column).data(
-            role=UserRole.LoggingCheckStateRole)
+            role=UserRole.LoggingCheckStateRole) is True
 
     def setInterval(self, interval):
         """Set polling/logging `interval`."""
