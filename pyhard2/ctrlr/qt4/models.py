@@ -133,32 +133,14 @@ class ColumnRangedModel(QtGui.QStandardItemModel):
         item.setData(maximum, role=ColumnRangedModel.maximumRole)
 
 
-class LoggingItem(QtGui.QStandardItem):
-
-    """ Add logging abilities to `StandardItem`. """
-
-    def __init__(self):
-        super(LoggingItem, self).__init__()
-        self._timeSeries = TimeSeriesData()
-
-    def timeSeries(self):
-        """Return logged data."""
-        return self._timeSeries
-
-    def log(self, role=Qt.DisplayRole):
-        """Log the value in `role`."""
-        value = self.data(role)
-        if value is not None:
-            self._timeSeries.append(value)
-
-
-class InstrumentItem(LoggingItem):
+class InstrumentItem(QtGui.QStandardItem):
 
     """`StandardItem` managing communication with the hardware."""
 
     def __init__(self, instrument=None):
         super(InstrumentItem, self).__init__()
         self.__instr = instrument
+        self._timeSeries = TimeSeriesData()
         self._connectedRole = Qt.EditRole
 
     def type(self):
@@ -168,6 +150,10 @@ class InstrumentItem(LoggingItem):
     def clone(self):
         """Reimplemented from :class:`QtGui.QStandardItem`."""
         return self.__class__()
+
+    def timeSeries(self):
+        """Return logged data."""
+        return self._timeSeries
 
     def instrument(self):
         """Return the `Instrument`."""
