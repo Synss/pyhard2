@@ -301,9 +301,9 @@ class InstrumentPanel(ControlPanelElement):
         """ Initialize GUI elements with the model. """
         self.table.setModel(model)
 
-        model.setPollingInterval(self.refreshRateCtrl.value() * 1000)
+        model.setInterval(self.refreshRateCtrl.value() * 1000)
         self.refreshRateCtrl.valueChanged.connect(
-            lambda dt: model.setPollingInterval(1000 * dt))
+            lambda dt: model.setInterval(1000 * dt))
 
         self.pidMapper = QtGui.QDataWidgetMapper(self)
         self.pidMapper.setSubmitPolicy(self.pidMapper.AutoSubmit)
@@ -671,6 +671,7 @@ class MeasureController(Controller):
                                       QtGui.QStandardItem(u"measure"))
         model.registerParameter(ColumnName.MeasureColumn, "measure")
         model.setPollingOnColumn(ColumnName.MeasureColumn)        
+        model.setLoggingOnColumn(ColumnName.MeasureColumn)
 
         self._instrPanel.pidBox.showAction.trigger()
         self._monitorPanel.showAction.trigger()
@@ -728,6 +729,8 @@ class SetpointController(MonitorController):
             model.registerParameter(column, paramName)
 
         model.setPollingOnColumn(ColumnName.OutputColumn)
+        model.setLoggingOnColumn(ColumnName.SetpointColumn)
+        model.setLoggingOnColumn(ColumnName.OutputColumn)
 
         for column in (ColumnName.PidGainColumn,
                        ColumnName.PidIntegralColumn,
