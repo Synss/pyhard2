@@ -201,6 +201,31 @@ class InstrumentTable(QtGui.QTableView):
         verticalHeader = self.verticalHeader()
         verticalHeader.setResizeMode(QtGui.QHeaderView.ResizeToContents)
 
+        self.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.customContextMenuRequested.connect(self._showRightClickMenu)
+
+    def _showRightClickMenu(self, pos):
+        column = self.horizontalHeader().logicalIndexAt(pos)
+
+        enablePollingAction = QtGui.QAction("Polling on column",
+                                            self, checkable=True)
+        enableLoggingAction = QtGui.QAction("Logging on column",
+                                            self, checkable=True)
+        enablePollingAction.setChecked(self.model().pollingOnColumn(column))
+        enableLoggingAction.setChecked(self.model().loggingOnColumn(column))
+
+        rightClickMenu = QtGui.QMenu(self)
+        rightClickMenu.addAction(enablePollingAction)
+        rightClickMenu.addAction(enableLoggingAction)
+
+        action = rightClickMenu.exec_(self.mapToGlobal(pos))
+        if action is None:
+            return
+        elif action == enablePollingAction:
+            self.model().setPollingOnColumn(column, action.isChecked())
+        elif action == enableLoggingAction:
+            self.model().setLoggingOnColumn(column, action.isChecked())
+
 
 class PidBox(QtGui.QGroupBox):
 
