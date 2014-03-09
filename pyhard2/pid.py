@@ -79,7 +79,7 @@ class PidController(object):
         self.vmax = vmax
         self.setpoint = 0.0
         self.anti_windup = 0.25
-        self.proportional_on_pv = True
+        self.proportional_on_pv = False
 
         self._old_input = 0.0
         self._integral = 0.0
