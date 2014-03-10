@@ -4,3 +4,10 @@
 *.patch
 toto.py
 Backup_of_*.cdr
+
+MANIFEST
+TODO.TXT
+
+dist/*
+html/*
+tmp/*
