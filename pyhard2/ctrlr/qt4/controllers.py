@@ -651,7 +651,7 @@ class MeasureController(Controller):
     The instrument table contains a single column registered to the
     parameter `measure`.
 
-    .. image::  ../documentation/Controller.png
+    .. image::  ../documentation/MeasureController.png
 
     """
     def __init__(self, parent=None):
