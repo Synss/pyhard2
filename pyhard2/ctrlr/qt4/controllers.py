@@ -340,8 +340,18 @@ class InstrumentPanel(ControlPanelElement):
             editor = QtGui.QDoubleSpinBox(self.controlBox)
             editor.setReadOnly(not model.item(0, column).isEditable())
             self.controlBox.layout().addRow(QtGui.QLabel(label), editor)
-
             self.controlMapper.addMapping(editor, column)
+
+            item = model.item(0, column)
+            try:
+                editor.setMinimum(item.minimum())
+            except TypeError:
+                pass
+            try:
+                editor.setMaximum(item.maximum())
+            except TypeError:
+                pass
+
         model.configLoaded.connect(self.controlMapper.toFirst)
 
 
