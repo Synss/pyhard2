@@ -342,7 +342,7 @@ class InstrumentPanel(ControlPanelElement):
             self.controlBox.layout().addRow(QtGui.QLabel(label), editor)
 
             self.controlMapper.addMapping(editor, column)
-            self.controlMapper.toFirst()
+        model.configLoaded.connect(self.controlMapper.toFirst)
 
 
 class MonitorPanel(ControlPanelElement):
