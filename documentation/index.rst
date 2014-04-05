@@ -55,10 +55,7 @@ Tutorials
    tuthw2
    tuthw3
    tuthw4
-   tutgui0
-   tutgui1
-   tutgui2
-   tutgui3
+   tutgui
 
 DDK API documentation
 =====================
