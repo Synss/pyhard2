@@ -51,10 +51,7 @@ Tutorials
 .. toctree::
    :maxdepth: 1
 
-   tuthw1
-   tuthw2
-   tuthw3
-   tuthw4
+   tuthw
    tutgui
 
 DDK API documentation
