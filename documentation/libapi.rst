@@ -7,6 +7,9 @@ DDK Library API
 .. automodule:: pyhard2.driver
    :members:
 
+.. automodule:: pyhard2.driver.virtual
+   :members:
+
 .. apimisc
 
 .. automodule:: pyhard2.pid

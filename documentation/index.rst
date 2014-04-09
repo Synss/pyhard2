@@ -61,22 +61,7 @@ DDK API documentation
    :maxdepth: 1
 
    libapi
-
-Drivers API documentation
--------------------------
-
-.. toctree::
-   :maxdepth: 1
-
    drv
-
-Controllers API documentation
------------------------------
-
-.. toctree::
-   :maxdepth: 1
-
-   ctrlr
 
 
 License
