@@ -60,10 +60,7 @@ DDK API documentation
 .. toctree::
    :maxdepth: 1
 
-   apidrv
-   apimisc
-   apictrlr
-   apiqt4
+   libapi
 
 Drivers API documentation
 -------------------------
