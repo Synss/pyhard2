@@ -412,8 +412,12 @@ class MonitorPanel(ControlPanelElement):
     def setupLoggingCurvesFromModel(self, model):
         """ Initialize GUI elements with the model. """
         for row in range(model.rowCount()):
+            vItem = model.verticalHeaderItem(row)
             for column in range(model.columnCount()):
-                loggingCurve = Curve()
+                hItem = model.horizontalHeaderItem(column)
+                text = "%s%%%s" % (vItem.text() if vItem else row,
+                                   hItem.text() if hItem else column)
+                loggingCurve = Curve(text)
                 loggingCurve.setData(model.item(row, column).timeSeries())
                 loggingCurve.attach(self.monitor)
                 self.__loggingCurves.append(loggingCurve)
