@@ -69,11 +69,9 @@ class Monitor(Qwt.QwtPlot):
         try:
             with open(QtGui.QFileDialog.getSaveFileName(self), "w") as csvfile:
                 csvwriter = _csv.writer(csvfile, delimiter="\t")
-                xdata = self.itemList()[0].data()
-                for i in range(xdata.size()):
-                    row = [xdata.x(i)]
-                    row.extend(curve.data().y(i) for curve in self.itemList())
-                    csvwriter.writerow(row)
+                for curve in self.itemList():
+                    csvfile.write("%s\n" % curve.title().text())
+                    csvwriter.writerows(curve.data())
         except IOError:
             pass  # User canceled QFileDialog
 
