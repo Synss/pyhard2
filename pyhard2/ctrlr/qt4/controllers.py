@@ -663,6 +663,10 @@ class Controller(QtGui.QMainWindow):
         model.itemChanged.connect(updateEditor)
         model.itemChanged.connect(editor.monitor().replot)
 
+        editor.monitor().setWindowTitle(u"%s [%s]" % (
+            self.windowTitle().partition("controller")[0],
+            model.verticalHeaderItem(row).text()))
+
         if (column is ColumnName.MeasureColumn and
                 model.columnCount() - 1 >= ColumnName.SetpointColumn):
             editor.enableSetpointAction(True)
