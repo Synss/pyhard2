@@ -9,6 +9,23 @@ Qt = QtCore.Qt
 import PyQt4.Qwt5 as Qwt
 
 
+class _DoubleClickEvent(QtCore.QObject):
+    """
+    Filter `MouseButtonDblClick` and emit a `doubleClicked` signal.
+
+    """
+    doubleClicked = Signal()
+
+    def __init__(self, parent):
+        super(_DoubleClickEvent, self).__init__(parent)
+
+    def eventFilter(self, obj, event):
+        if event.type() == QtCore.QEvent.MouseButtonDblClick:
+            self.doubleClicked.emit()
+            return True
+        return False
+
+
 class Curve(Qwt.QwtPlotCurve):
 
     """ Curve deriving from :class:`Qwt.QwtPlotCurve`. """
@@ -98,23 +115,6 @@ class ScientificSpinBox(QtGui.QDoubleSpinBox):
 
     def valueFromText(self, text):
         return float(text)
-
-
-class _DoubleClickEvent(QtCore.QObject):
-    """
-    Filter `MouseButtonDblClick` and emit a `doubleClicked` signal.
-
-    """
-    doubleClicked = Signal()
-
-    def __init__(self, parent):
-        super(_DoubleClickEvent, self).__init__(parent)
-
-    def eventFilter(self, obj, event):
-        if event.type() == QtCore.QEvent.MouseButtonDblClick:
-            self.doubleClicked.emit()
-            return True
-        return False
 
 
 class MeasureEdit(ScientificSpinBox):
