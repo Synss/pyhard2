@@ -10,10 +10,8 @@ import PyQt4.Qwt5 as Qwt
 
 
 class _DoubleClickEvent(QtCore.QObject):
-    """
-    Filter `MouseButtonDblClick` and emit a `doubleClicked` signal.
+    """ Filter `MouseButtonDblClick` and emit a `doubleClicked` signal. """
 
-    """
     doubleClicked = Signal()
 
     def __init__(self, parent):
