@@ -2,6 +2,7 @@
 
 import csv as _csv
 import StringIO as _StringIO
+from functools import partial as _partial
 
 from PyQt4 import QtCore, QtGui
 Slot, Signal = QtCore.pyqtSlot, QtCore.pyqtSignal
@@ -165,6 +166,10 @@ class MeasureEdit(ScientificSpinBox):
         self._showTraceAction = QtGui.QAction("show trace...", self)
         self._showTraceAction.setCheckable(True)
         self._showTraceAction.triggered.connect(self._monitor.setVisible)
+        hideEventFilter = _HideEvent(self._monitor)
+        hideEventFilter.hidden.connect(
+            _partial(self._showTraceAction.setChecked, False))
+        self._monitor.installEventFilter(hideEventFilter)
         self.addAction(self._showTraceAction)
 
         dblClickFilter = _DoubleClickEvent(self.lineEdit())
