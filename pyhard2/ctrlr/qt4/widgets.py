@@ -24,6 +24,21 @@ class _DoubleClickEvent(QtCore.QObject):
         return False
 
 
+class _HideEvent(QtCore.QObject):
+    """ Filter `HideEvent` and emit `Hidden` signal. """
+
+    hidden = Signal()
+
+    def __init__(self, parent):
+        super(_HideEvent, self).__init__(parent)
+
+    def eventFilter(self, obj, event):
+        if event.type() == QtCore.QEvent.Hide:
+            self.hidden.emit()
+            return True
+        return False
+
+
 class Curve(Qwt.QwtPlotCurve):
 
     """ Curve deriving from :class:`Qwt.QwtPlotCurve`. """
