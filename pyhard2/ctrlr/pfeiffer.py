@@ -24,8 +24,8 @@ class VirtualMaxigauge(virtual.VirtualInstrument):
 
     """Virtual instrument with a `node`."""
 
-    def __init__(self, socket, async, node=0):
-        super(VirtualMaxigauge, self).__init__()
+    def __init__(self, socket, async=False, node=0):
+        super(VirtualMaxigauge, self).__init__(socket, async)
         self.node = node
 
 
@@ -34,15 +34,21 @@ def createController(opts):
     Register `VirtualMaxigauge` and `Maxigauge`.
 
     """
-    iface = ctrlr.MonitorController()
-    iface.setWindowTitle(u"Pfeiffer Maxigauge controller")
     if not opts.config:
         opts.config = {"virtual": [dict(name="G%i" % idx,
                                         extra={"node": idx},
                                         driver="virtual")
                                    for idx in range(1, 5)]}
     if opts.virtual:
+        iface = ctrlr.SetpointController()
         iface.setWindowTitle(iface.windowTitle() + u" [virtual]")
+    else:
+        iface = ctrlr.MonitorController()
+
+    for column in (ctrlr.ColumnName.OutputColumn,
+                   ctrlr.ColumnName.SetpointColumn):
+        iface._instrPanel.table.setColumnHidden(column, True)
+    iface.setWindowTitle(u"Pfeiffer Maxigauge controller")
     iface.addInstrumentClass(pfeiffer.Maxigauge, "maxigauge")
     iface.addInstrumentClass(VirtualMaxigauge, "virtual",
                              virtual.virtual_mapper)
