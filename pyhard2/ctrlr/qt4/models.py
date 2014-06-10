@@ -55,7 +55,11 @@ class ListData(Qwt.QwtData):
         return self.sample(i)[ListData.Y]
 
     def append(self, xy):
-        """Add `x,y` values to the list."""
+        """Add `x,y` values to the list.
+
+        Does nothing if None is in `xy`.
+        """
+        if None in xy: return
         self.__data.append(xy)
 
     def clear(self):
