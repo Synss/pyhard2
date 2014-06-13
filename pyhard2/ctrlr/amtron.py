@@ -61,13 +61,7 @@ class AmtronController(ctrlr.SetpointController):
         super(AmtronController, self).__init__(parent)
         self.__setupUI()
 
-    def __setupUI(self):
-        self.powerSwitches = PowerSwitchWidget("power", self)
-        self._instrPanel.layout.addWidget(self.powerSwitches)
-
-    def setupModel(self, model):
-        super(AmtronController, self).setupModel(model)
-
+        model = self.instrumentTable().model()
         model.insertColumns(model.columnCount(), 2)
         powerColumn = model.columnCount() - 2
         gateColumn = model.columnCount() -1
@@ -86,12 +80,16 @@ class AmtronController(ctrlr.SetpointController):
         self._instrPanel.table.selectionModel().currentRowChanged.connect(
             self.powerMapper.setCurrentModelIndex)
         for editor, column in (
-                (self._powerBtn, powerColumn),
-                (self._gateBtn, gateColumn)):
+                (self.powerSwitches.powerBtn, powerColumn),
+                (self.powerSwitches.gateBtn, gateColumn)):
             self.powerMapper.addMapping(editor, column)
             editor.toggled.connect(self.powerMapper.submit)
 
         model.configLoaded.connect(self.powerMapper.toFirst)
+
+    def __setupUI(self):
+        self.powerSwitches = PowerSwitchWidget("power", self)
+        self._instrPanel.layout.addWidget(self.powerSwitches)
 
 
 def scale(factor):
@@ -129,29 +127,18 @@ class AmtronDaqInstrument(drv.Instrument):
         self.pid.output.connect(self.output.set_total_power)
 
 
-class _VirtualAmtron(object):
+class _VirtualCommand(object):
 
     def __init__(self):
         self.laser_state = False
         self.gate_state = False
-        self.total_power = 0.0
-        self.measure = 0.0
 
 
 class VirtualAmtronInstrument(virtual.VirtualInstrument):
 
     def __init__(self, socket, async=False):
         super(VirtualAmtronInstrument, self).__init__(socket, async)
-        self.pid = virtual.PidSubsystem()
-        protocol = drv.WrapperProtocol(_VirtualAmtron(), async=async)
-        self.output = drv.Subsystem(protocol)
-        for name in """ total_power
-                    """.split():
-            self.output.add_parameter_by_name(name, name)
-        self.input = drv.Subsystem(protocol)
-        for name in """ measure
-                    """.split():
-            self.input.add_parameter_by_name(name, name)
+        protocol = drv.WrapperProtocol(_VirtualCommand(), async=async)
         self.command = drv.Subsystem(protocol)
         for name in """ laser_state
                         gate_state
@@ -171,6 +158,12 @@ mapper = dict(
 )
 
 
+virtual_mapper = dict(virtual.virtual_mapper)
+virtual_mapper.update(dict(
+    power="command.laser_state",
+    gate="command.gate_state"))
+
+
 def createController(opts):
     """Register `xxx` and `yyy`."""
 
@@ -181,7 +174,8 @@ def createController(opts):
     if opts.virtual:
         iface.setWindowTitle(iface.windowTitle() + u" [virtual]")
     iface.addInstrumentClass(AmtronDaqInstrument, "CS400", mapper)
-    iface.addInstrumentClass(VirtualAmtronInstrument, "virtual", mapper)
+    iface.addInstrumentClass(VirtualAmtronInstrument, "virtual",
+                             virtual_mapper)
     iface.loadConfig(opts)
     return iface
 
