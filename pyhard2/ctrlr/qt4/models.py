@@ -1,5 +1,7 @@
 """ Models for pyhard2.ctrlr.qt4 """
 
+import logging
+
 import time as _time
 import csv as _csv
 from functools import partial as _partial
@@ -13,6 +15,10 @@ from pyhard2 import pid
 import pyhard2.driver as drv  # for Adapter
 
 from .enums import UserRole
+
+
+logging.basicConfig()
+logger = logging.getLogger("pyhard2")
 
 
 class ListData(Qwt.QwtData):
@@ -354,6 +360,8 @@ class InstrumentModel(QtGui.QStandardItemModel):
         
         """
         if mapper is None:
+            logger.warning("Instrument %s uses the default mapper." %
+                           instrCls.__name__)
             labels = [str(self.headerData(ncol, Qt.Horizontal))
                       for ncol in range(self.columnCount())]
             mapper = dict(zip(labels, labels))
