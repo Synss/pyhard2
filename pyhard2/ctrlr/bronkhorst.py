@@ -1,13 +1,8 @@
 # -*- coding: utf-8 -*-
-"""
-Bronkhorst GUI controllers
-==========================
-
-Graphical user interface to Bronkhorst flow and pressure controllers.
-
-"""
+"""Graphical user interface to Bronkhorst flow and pressure controllers."""
 
 import sys
+from itertools import izip_longest
 import sip
 for cls in "QDate QDateTime QString QTextStream QTime QUrl QVariant".split():
     sip.setapi(cls, 2)
@@ -17,45 +12,39 @@ Qt = QtCore.Qt
 
 import pyhard2.ctrlr as ctrlr
 import pyhard2.driver.virtual as virtual
-from pyhard2.driver.bronkhorst import MFC, PC
+import pyhard2.driver as drv
+from pyhard2.driver.bronkhorst import MFC
 
 
-class VirtualBronkhorstInstrument(virtual.VirtualInstrument):
-
-    """Virtual instrument with a `node`."""
-
-    def __init__(self, socket, async=False, node=128):
-        super(VirtualBronkhorstInstrument, self).__init__(socket, async)
-        self.node = node
-
-
-def createController(opts):
-    """
-    Register VirtualBronkhorstInstrument, PC and MFC.
-
-    """
-    iface = ctrlr.SetpointController()
-    iface.setWindowTitle(u"Bronkhorst controller")
-    if not opts.config:
-        opts.config = {"virtual": [dict(name="Instr %i" % idx,
-                                        extra={"node": idx},
-                                        driver="virtual")
-                                   for idx in range(10, 17)]}
-    if opts.virtual:
-        iface.setWindowTitle(iface.windowTitle() + u" [virtual]")
-    iface.addInstrumentClass(VirtualBronkhorstInstrument, "virtual",
-                             virtual.virtual_mapper)
-    bronkhorstMapper = dict(
-        output="controller.valve_output",
-        measure="direct_reading.fmeasure",
-        setpoint="direct_reading.fsetpoint",
-        pid_gain="controller.PIDKp",
-        pid_derivative="controller.PIDKd",
-        pid_integral="controller.PIDKi",
-        valve_mode="control_mode")
-    iface.addInstrumentClass(PC, "PC", bronkhorstMapper)
-    iface.addInstrumentClass(MFC, "MFC", bronkhorstMapper)
-    iface.loadConfig(opts)
+def createController():
+    """Initialize controller."""
+    args = ctrlr.Config("bronkhorst")
+    if not args.nodes:
+        args.nodes = range(10, 16)
+        args.names = ["MFC%i" % node for node in args.nodes]
+    if args.virtual:
+        driver = virtual.VirtualInstrument()
+        iface = ctrlr.Controller.virtualInstrumentController(
+            driver, u"Bronkhorst")
+    else:
+        driver = MFC(drv.Serial(args.port))
+        iface = ctrlr.Controller(driver, u"Bronkhorst")
+        iface.addCommand(driver.direct_reading.measure, "measure",
+                         poll=True, log=True)
+        iface.addCommand(driver.direct_reading.setpoint, "setpoint",
+                         log=True, specialColumn="programmable")
+        iface.addCommand(driver.controller.valve_output, "output",
+                         poll=True, log=True)
+        iface.addCommand(driver.controller.PIDKp, "PID P", hide=True,
+                         specialColumn="pidp")
+        iface.addCommand(driver.controller.PIDKi, "PID I", hide=True,
+                         specialColumn="pidi")
+        iface.addCommand(driver.controller.PIDKd, "PID D", hide=True,
+                         specialColumn="pidd")
+    iface.programPool.default_factory = ctrlr.SetpointRampProgram
+    for node, name in izip_longest(args.nodes, args.names):
+        iface.addNode(node, name if name else "G{0}".format(node))
+    iface.populate()
     return iface
 
 
@@ -63,13 +52,7 @@ def main(argv):
     """Start controller."""
     app = QtGui.QApplication(argv)
     app.lastWindowClosed.connect(app.quit)
-    opts = ctrlr.cmdline()
-    if opts.config:
-        try:
-            opts.config = opts.config["bronkhorst"]
-        except KeyError:
-            pass
-    iface = createController(opts)
+    iface = createController()
     iface.show()
     sys.exit(app.exec_())
 

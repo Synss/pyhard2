@@ -1,38 +1,29 @@
-"""
-NI-DAQ drivers
-==============
+"""Drivers for National Instrument hardware.
 
-Drivers for National Instrument hardware.  The materials supported is
-the one supported by NI-DAQmx on Windows and comedi on Linux.
+The materials supported is the one supported by NI-DAQmx on Windows and
+comedi on Linux.
 
+Note:
+    - The driver depends on `pycomedi <https://pypi.python.org/pypi/pycomedi/>`_
+      on Linux or `PyLibNIDAQmx <http://code.google.com/p/pylibnidaqmx/>`_
+      on Windows.
+    - The driver requires `numpy` on all platform.
 
-Notes
------
-- The driver depends on `pycomedi
-  <https://pypi.python.org/pypi/pycomedi/>`_ on Linux or `PyLibNIDAQmx
-  <http://code.google.com/p/pylibnidaqmx/>`_ on Windows.
-- The driver requires `numpy` on all platform.
-
-
-References
-----------
-- `NI-DAQmx Software <http://www.ni.com/dataacquisition/d/nidaqmx.htm>`_
-- `comedi <http://www.comedi.org/>`_
+Reference:
+   - `NI-DAQmx Software <http://www.ni.com/dataacquisition/d/nidaqmx.htm>`_
+   - `comedi <http://www.comedi.org/>`_
 
 """
-
 from time import sleep
 import sys
-import numpy as np
 
 if sys.platform == "linux2":
-    from lindaq import *
+    from lindaq import DioProtocol, AioProtocol
 else:
-    from windaq import *
+    from windaq import DioProtocol, AioProtocol
 
 import pyhard2.driver as drv
-Parameter = drv.Parameter
-Action = drv.Action
+Access = drv.Access
 
 
 # NI 622x range | precision
@@ -42,74 +33,73 @@ Action = drv.Action
 #  -0.2 to  +0.2 V -> 6.4 muV
 
 
-class DioSubsystem(drv.Subsystem):
-    """Subsystem for digital input/output."""
+class DioCommand(drv.Command):
 
-    def __get_state(self):
-        return bool(self.protocol.socket.read())
+    """Command for digital in-out lines."""
 
-    def __set_state(self, state):
-        self.protocol.socket.write(bool(state))
+    def __init__(self, read_line, write_line=None, access=Access.RW):
+        super(DioCommand, self).__init__(read_line, write_line, access)
 
-    state = Parameter(__get_state, __set_state)
+    def switch(self):
+        """Change the state."""
+        self.write(not self.read())
 
-    def __do_switch(self):
-        self.state = not self.state
-
-    switch = Action(__do_switch)
-
-    def __do_pulse(self, time_on, time_off=0.0):
+    def pulse(self, time_on, time_off=0.0):
+        """Create a pulse."""
         for delay in (time_on, time_off):
             self.switch()
             sleep(delay)
 
-    pulse = Action(__do_pulse)
+
+class AiCommand(drv.Command):
+
+    """Command for analog in lines."""
+
+    def __init__(self, phys_channel, minimum=-10, maximum=10):
+        super(AiCommand, self).__init__(phys_channel, None,
+                                        minimum=minimum, maximum=maximum,
+                                        access=Access.RO)
 
 
-class DioInstrument(drv.Instrument):
-    """Instrument for digital input/output."""
+class AoCommand(drv.Command):
 
-    def __init__(self, socket, async=False):
-        super(DioInstrument, self).__init__()
-        self.main = DioSubsystem(drv.ProtocolLess(socket, async))
+    """Command for analog out lines."""
 
-
-class AiSubsystem(drv.Subsystem):
-    """Subsystem for analog input."""
-
-    samples = 100
-
-    def __init__(self, protocol, func):
-        super(AiSubsystem, self).__init__(protocol)
-        self._func = func
-
-    def __get_measure(self):
-        return self._func(
-            float(np.average(self.protocol.socket.read(self.samples))))
-
-    measure = Parameter(__get_measure, read_only=True)
+    def __init__(self, phys_channel, minimum=-10, maximum=10):
+        super(AoCommand, self).__init__(None, phys_channel,
+                                        minimum=minimum, maximum=maximum,
+                                        access=Access.WO)
 
 
-class AiInstrument(drv.Instrument):
-    """Instrument for analog input."""
+class Ni622x(drv.Subsystem):
 
-    def __init__(self, socket, func=drv.identity, async=False):
-        super(AiInstrument, self).__init__()
-        self.main = AiSubsystem(drv.ProtocolLess(socket, async), func)
+    """Driver for the NI 622x cards."""
 
+    def __init__(self, address):
+        ## Digital channels
+        self.digitalIO = drv.Subsystem(self)
+        self.digitalIO.setProtocol(DioProtocol(self))
+        # port 0, 16 DIO channels
+        for channel in range(32):
+            phys_channel = "%s/port0/line%i" % (address, channel)
+            self.digitalIO.__setattr__(phys_channel, DioCommand(phys_channel))
+        # port 1, 8 DIO channels
+        for channel in range(8):
+            phys_channel = "%s/port0/line%i" % (address, channel)
+            self.digitalIO.__setattr__(phys_channel, DioCommand(phys_channel))
+        # port 2, 8 DIO channels
+        for channel in range(8):
+            phys_channel = "%s/port0/line%i" % (address, channel)
+            self.digitalIO.__setattr__(phys_channel, DioCommand(phys_channel))
+        ## Analog channels
+        self.analogIO = drv.Subsystem(self)
+        self.analogIO.setProtocol(AioProtocol(self))
+        # 4 AO channels
+        for channel in range(4):
+            phys_channel = "%s/ao%i" % (address, channel)
+            self.analogIO.__setattr__(phys_channel, AoCommand(phys_channel))
+        # 4 AI channels
+        for channel in range(4):
+            phys_channel = "%s/ai%i" % (address, channel)
+            self.analogIO.__setattr__(phys_channel, AiCommand(phys_channel))
 
-class AoSubsystem(drv.Subsystem):
-    """Subsystem for analog output."""
-
-    def __set_measure(self, data):
-        self.protocol.socket.write(data)
-
-    measure = Parameter(None, __set_measure)
-
-
-class AoInstrument(drv.Instrument):
-    """Instrument for analog output."""
-
-    def __init__(self, socket, async=False):
-        super(AoInstrument, self).__init__()
-        self.main = AoSubsystem(drv.ProtocolLess(socket, async))

@@ -12,56 +12,58 @@ free hardware projects on Arduino/Raspberry Pi/BeagleBone hardware.
 - Written entirely in Python, pyhard2 is completely free and open source.
 - Runs on any platform Python supports (including, but not limited to, MS
   Windows, Mac OS X, Linux and the BSDs).
-- New drivers take 0.5 day to write and do not require a large amount of code.
+- New drivers should take about 0.5 to 1 day to write and do not require a large
+  amount of code.
 - Graphical user interfaces are loosely coupled to the driver.
-- The library takes care of threading when the driver is used in a GUI.
-- Easily create a Dashboard presenting a live overview over different
-  controllers.
+- The library takes care of threading when the driver is used in a GUI (in
+  progress).
+- Easily create a Dashboard presenting a live overview over every running
+  controller.
 
 
 Example
 =======
 
-The following is one of the graphical user interfaces provided by pyhard2.
+The following shows what pyhard2's Dashboard looks like.
 
-.. image::  MonitorSetpointController.png
+.. image::  screenshot.gif
    :alt: Screenshot of an GUI
-   :scale: 85%
 
 And an interactive session using a pyhard2 driver may look like the following:
 
 >>> import pyhard2.driver as drv
 >>> import pyhard2.driver.fluke as fluke
 >>> ser = drv.Serial("COM1")
->>> multimeter = fluke.Fl18x(ser)
->>> multimeter.measure
+>>> multimeter = fluke.Fluke18x(ser)
+>>> multimeter.measure.read()
 26.1
->>> multimeter.unit
+>>> multimeter.unit.read()
 "Deg C"
->>> multimeter.press_button_blue()
->>> multimeter.measure
+>>> multimeter.press_button_blue.write()
+>>> multimeter.measure.read()
 69.1
->>> multimeter.unit
+>>> multimeter.unit.read()
 "Deg F"
 
 
-Tutorials
-=========
+API documentation
+=================
 
 .. toctree::
    :maxdepth: 1
 
-   tuthw
-   tutgui
+   apidrv
+   apictrlr
+   apimisc
 
-DDK API documentation
-=====================
+Drivers and controllers
+=======================
 
 .. toctree::
-   :maxdepth: 1
+   :maxdepth: 2
 
-   libapi
    drv
+   ctrlr
 
 
 License
@@ -90,7 +92,7 @@ this program.  If not, see <http://www.gnu.org/licenses/>.
 Installation
 ============
 
-The project is hosted on `github <https://github.com/Synss/pyhard2>`_ and
+The project is hosted on `github <https://github.com/Synss/pyhard2>`__ and
 `sourceforge <http://pyhard2.sourceforge.net>`_.  Follow the sourceforge link
 for the HTML documentation.
 
@@ -109,9 +111,11 @@ pyhard2 depends on
 - pyserial_: Multiplatform Serial Port Module for Python (Win32, Jython, Linux,
   BSD and more).
 - PyQt4_: version 4.8 or higher.
+- PyQwt5_: current version is 5.2.
 
 .. _pyserial: http://pyserial.sourceforge.net
 .. _PyQt4: http://www.riverbankcomputing.com/software/pyqt/download
+.. _PyQwt5: http://pyqwt.sourceforge.net
 
 and optionally on
 
@@ -119,7 +123,6 @@ and optionally on
   (used in the module :mod:`pyhard2.driver.daq`).
 - matplotlib_: Python plotting.
 - pyyaml_: YAML implementations for Python (recommended).
-- ezodf_: create new or open existing OpenDocumentFormat files.
 - comedi_: Linux control and measurement device interface (used on Linux,
   in the module :mod:`pyhard2.driver.daq`), or
 - pylibnidaqmx_: a Python wrapper to libnidaqmx library (used on Windows
@@ -140,7 +143,7 @@ and optionally on
 Development and contributing
 ============================
 
-Please file issues on `github <https://github.com/Synss/pyhard2/issues>`_.
+Please file issues on `github <https://github.com/Synss/pyhard2/issues>`__.
 Questions may be asked on the `mailing list
 <https://sourceforge.net/p/pyhard2/mailman/>`_.
 

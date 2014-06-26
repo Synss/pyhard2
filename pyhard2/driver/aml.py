@@ -1,38 +1,13 @@
-"""
-Arun Microelectronics Ltd. gauge drivers
-========================================
+"""Arun Microelectronics Ltd. gauge drivers
 
 Driver for Arun Microelectronics Ltd. (AML) gauges according to the
 manual of an NGC2D instrument, the driver should also support PGC1
 instruments.
 
-
-Communication is read only:
-
-.. uml::
-
-    group Query
-    User    ->  Instrument: *{command}{node}
-    note right: {node} is not used on NGC2D instruments
-    User    <-- Instrument: 17-bytes response
-    end
-
 """
-
+import unittest
 import pyhard2.driver as drv
-Action = drv.Action
-Parameter = drv.Parameter
-
-__all__ = ["NGC2D"]
-
-
-class TestSocket(drv.TestSocketBase):
-
-    def __init__(self):
-        # Return a pressure of 1.3e-7 mbar.
-        super(TestSocket, self).__init__(
-            msg={"*S0\r\n": "GI1\x65\x001.3E-07,M0\r\n"},
-            newline="\r\n")
+Cmd, Access = drv.Command, drv.Access
 
 
 def _parse_stat_byte(stat):
@@ -52,9 +27,9 @@ def _parse_err_byte(err):
 def _parser(type_):
     """Wrap message parsers.
 
-    Parameters
-    ----------
-    type_ : {"measure", "unit", "type", "status", "error"}
+    Parameters:
+        type_ (str): {"measure", "unit", "type", "status", "error"}
+
     """
     def parser(status):
         """Parse message."""
@@ -77,62 +52,75 @@ def _parser(type_):
     return parser
 
 
-class Subsystem(drv.Subsystem):
+class Protocol(drv.CommunicationProtocol):
 
-    """Main subsystem."""
+    """Communication protocol.
 
-    poll = Action("P")
+    Communication is read only:
 
-    # control
-    # release
+    .. uml::
 
-    reset_error = Action("E")
+        group Query
+        User    ->  Instrument: *{command}{node}
+        note right: {node} is not used on NGC2D instruments
+        User    <-- Instrument: 17-bytes response
+        end
 
-    measure = Parameter("S", getter_func=_parser("measure"))
-    unit = Parameter("S", getter_func=_parser("unit"))
-    IG_type = Parameter("S", getter_func=_parser("type"))
-    error = Parameter("S", getter_func=_parser("error"))
-    status = Parameter("S", getter_func=_parser("status"))
+    """
+    def __init__(self, socket):
+        super(Protocol, self).__init__(socket)
+        self._socket.baudrate = 9600
+        self._socket.timeout = 0.1
+        self._socket.newline = "\r\n"
+        self._node = 0  # required for compatibility with older hardware
 
-    # emission
-
-    #def select_IG(self, gauge_ID):
-    #    gauge_ID = in_bounds(gauge_ID, 1, 2)
-    #    self.socket.set("i0%i" % gauge_ID)
-
-    # gauge off
-    # override
-    # inhibit
-
-
-class NGC2D(drv.Instrument):
-
-    """Instrument for AML NGC2D and PGC1 gauge controllers."""
-
-    def __init__(self, socket, async=False, node=0):
-        super(NGC2D, self).__init__()
-
-        socket.baudrate = 9600
-        socket.timeout = 0.1
-        socket.newline = "\r\n"
-
-        protocol = drv.SerialProtocol(
-            socket,
-            fmt_read="*{param[getcmd]}{protocol[node]}\r\n",
-            )
-        protocol.node = node
-
-        self.main = Subsystem(protocol)
+    def read(self, context):
+        self._socket.write("*{reader}{node}\r\n".format(
+            reader=context.reader, node=self._node))
+        return self._socket.readline()
 
 
-def main():
-    """Unit tests.""" 
-    s = TestSocket()
-    i = NGC2D(s)
-    assert i.measure == 1.3e-7
-    assert i.unit == "mBar"
+class Ngc2d(drv.Subsystem):
+
+    """Driver for NGC2D ion gauges."""
+
+    def __init__(self, socket):
+        super(Ngc2d, self).__init__()
+        self.setProtocol(Protocol(socket))
+        # Commands
+        self.poll = Cmd("P", Access.WO)
+        # control
+        # release
+        self.reset_error = Cmd("E", Access.WO)
+        self.measure = Cmd("S", rfunc=_parser("measure"))
+        self.unit = Cmd("S", rfunc=_parser("unit"))
+        self.IG_type = Cmd("S", rfunc=_parser("type"))
+        self.error = Cmd("S", rfunc=_parser("error"))
+        self.status = Cmd("S", rfunc=_parser("status"))
+        # emission
+        # gauge off
+        # override
+        # inhibit
+
+
+class TestAml(unittest.TestCase):
+
+    def setUp(self):
+        socket = drv.TesterSocket()
+        # Return a pressure of 1.3e-7 mbar.
+        socket.msg = {"*S0\r\n": "GI1\x65\x001.3E-07,M0\r\n"}
+        self.i = Ngc2d(socket)
+
+    def test_measure(self):
+        self.assertEqual(self.i.measure.read(), 1.3e-7)
+
+    def test_unit(self):
+        self.assertEqual(self.i.unit.read(), "mBar")
 
 
 if __name__ == "__main__":
-    main()
-
+    import logging
+    logging.basicConfig()
+    logger = logging.getLogger("pyhard2")
+    logger.setLevel(logging.DEBUG)
+    unittest.main()

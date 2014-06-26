@@ -11,6 +11,12 @@ def byte2hex(bstr):
 def hex2byte(hstr):
     return "".join(chr(int(hstr[i:i+2], 16)) for i in range(0, len(hstr), 2))
 
+def long2float(value):
+    return BFloat32("").parse(UBInt32("").build(value))
+
+def float2long(value):
+    return UBInt32("").parse(BFloat32("").build(value))
+
 
 class ByteHex(object):
 
@@ -211,73 +217,4 @@ _status_message = Struct("FLOW-BUS status",
 
 
 status_message = ByteHex(_status_message)
-
-
-# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# Simple unit tests in main
-# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-if __name__ == '__main__':
-    ''' Manual 917027, examples pp. 18-24 '''
-    # send SP (node 3, process 1, param 1, int = 16000)
-    write_command.parse(':\x06\x03\x01\x01\x21\x3e\x80\r\n')
-    # answer (status)
-    status_message.parse(':\x04\x03\x00\x00\x05\r\n')  # was node 1 in manual
-
-    write_command.parse(''.join((':',
-                '\x1d\x03\x01',
-                '\x80',                     # process 1
-                '\x0a\x40',                 # param   1.1
-                '\x81',                     # process 2
-                '\xc5\x00\x00\x00\x00',     # param   2.1
-                '\xc6\x3f\x80\x00\x00',     # param   2.2
-                '\xc7\x00\x00\x00\x00',     # param   2.3
-                '\x48\x00\x00\x00\x00',     # param   2.4 <- chained in manual
-                '\x00',                     # process 3
-                '\x0a\x52',                 # param   3.1
-                '\r\n')))
-    # answer
-    status_message.parse(':\x04\x03\x00\x00\x1c\r\n')
-
-    # req SP (node 3, process 1, param 1, int)
-    read_command.parse(':\x06\x03\x04\x01\x21\x01\x21\r\n')
-    # ans (1600)
-    write_command.parse(':\x06\x03\x02\x01\x21\x3e\x80\r\n')
-
-    # req chain
-    #query_param.parse(':\x1a\x03\x04\xf1\xec\xf1\x63\x14\r\n')
-    #^^^ para.chained = process.chained = False?
-    read_command.parse(''.join((':',
-            '\x1a\x03\x04\xf1\xec\x71\x63\x14\x6d\x71\x66\x00',
-            '\x01\xae\x01\x20\xcf\x01\x4d\xf0\x01\x7f\x07\x71',
-            '\x01\x71\x0a\r\n')))   # <-- original
-    # ans
-    write_command.parse(''.join((':',
-            '\x41\x03\x02',
-            '\xf1',                                     # process 1
-            '\xec\x14'                                  # param   1.1
-            '\x4d\x36\x32\x31\x32\x33\x34\x35\x41\x20', # value   1.1
-            '\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20',
-            '\x6d\x00',                                 # param   1.2
-            '\x55\x53\x45\x52\x54\x41\x47\x00',         # value   1.2
-            '\x01',                                     # process 2
-            '\xae',                                     # param   2.1
-            '\x1c\xd8',                                 # value   2.1
-            '\xcf',                                     # param   2.2
-            '\x3f\x80\x00\x00',                         # value   2.2
-            '\xf0\x07',                                 # param   2.3
-            '\x6d\x6c\x6e\x2f\x6d\x69\x6e',             # value   2.3
-            '\x71\x0a',                                 # param   2.4
-            '\x4e\x32\x20\x20\x20\x20\x20\x20\x20\x20', # value   2.4
-            '\r\n')))
-
-    # req meas (node 3, process 1, int)
-    read_command.parse(':\x06\x03\x04\x01\x21\x01\x20\r\n')
-    # ans (1600)
-    write_command.parse(':\x06\x03\x02\x01\x21\x3e\x80\r\n')
-
-    # req counter val (node 3, process 104, float)
-    read_command.parse(':\x06\x03\x04\x68\x41\x68\x41\r\n')
-    # ans 5023.96
-    write_command.parse(':\x08\x03\x02\x68\x41\x45\x9c\xff\xae\r\n')
 

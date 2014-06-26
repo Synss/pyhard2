@@ -1,63 +1,54 @@
+"""pylibnidaqmx wrappers to communicate with DAQ hardware on Windows.
+
+"""
 import numpy as np
 
 # http://code.google.com/p/pylibnidaqmx
 from nidaqmx import DigitalOutputTask, DigitalInputTask
 from nidaqmx import AnalogInputTask, AnalogOutputTask
 
+import pyhard2.driver as drv
 
-class DioTask(DigitalOutputTask, DigitalInputTask):
+class DioProtocol(drv.Protocol):
 
-    channel_type = "DO"
+    """Protocol for Digital IO lines."""
 
-    def __init__(self, name=""):
-        super(DioTask, self).__init__(name)
+    def read(self, context):
+        task = DigitalInputTask()
+        task.create_channel(context.reader)  # phys_channel
+        return np.average(task.read()).item()  # XXX
 
-
-# - - - - - - - - - - - - - - - - - - - - - - - - - - - - Tasks/Sockets
-
-class AiSocket(AnalogInputTask):
-
-    def __init__(self, phys_channel, name="", terminal="default",
-                 min_val=-10, max_val=10, units="volts",
-                 custom_scale_name=None):
-        super(AiSocket, self).__init__(name)  # FIXME ch name / task name?
-        self.create_voltage_channel(phys_channel, name, terminal,
-                                    min_val, max_val, units, custom_scale_name)
-
-    def read(self, n=100):
-        data = np.average(AnalogInputTask.read(self, n))
-        return data
-
-    def write(self, x):
-        raise NotImplementedError
+    def write(self, context):
+        task = DigitalOutputTask()
+        task.create_channel(context.writer)
+        task.write(context.value)
 
 
-class AoSocket(AnalogOutputTask):
+class AioProtocol(drv.Protocol):
 
-    def __init__(self, phys_channel, name="",
-                 min_val=-10, max_val=10, units="volts",
-                 custom_scale_name=None):
-        super(AoSocket, self).__init__(name)  # FIXME
-        self.create_voltage_channel(phys_channel, name,
-                                    min_val, max_val, units, custom_scale_name)
+    """Protocol for Analog Input and Analog Output lines."""
 
-    def read(self):
-        raise NotImplementedError
+    def read(self, context):
+        task = AnalogInputTask()
+        minimum, maximum = context.minimum, context.maximum
+        if not minimum:
+            minimum = -10
+        if not maximum:
+            maximum = 10
+        task.create_voltage_channel(context.reader,  # phys channel
+                                    min_val=minimum,
+                                    max_val=maximum)
+        return np.average(task.read(100)).item()
 
-    def write(self, x):
-        AnalogOutputTask.write(self, x)
-
-
-class DioSocket(DioTask):
-
-    def __init__(self, lines, name="", grouping="per_line"):
-        super(DioSocket, self).__init__()
-        self.create_channel(lines, name, grouping)
-
-    def read(self):
-        return DioTask.read(self, 1)[0].item()
-
-    def write(self, state):
-        DioTask.write(self, state if not hasattr(state, "tolist")
-                                  else state.tolist()[0])  # numpy compatibility
+    def write(self, context):
+        task = AnalogOutputTask()
+        minimum, maximum = context.minimum, context.maximum
+        if not minimum:
+            minimum = -10
+        if not maximum:
+            maximum = 10
+        task.create_voltage_channel(context.writer,  # phys channel
+                                    min_val=minimum,
+                                    max_val=maximum)
+        task.write(self, context.value)
 

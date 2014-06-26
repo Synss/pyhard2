@@ -1,189 +1,113 @@
-"""
-SCPI drivers
-============
-
-Standard commands for programmable instruments.
-
-
-Commands may be added using the method
-:meth:`ScpiInstrument.add_subsystems_from_tree`.
-
-The syntax follows the SCPI standard as closely as possible as can be seen in
-the following example::
-
-    instr = ScpiInstrument(Serial())
-    instr.add_subsystems_from_tree(yaml.load(\"\"\"
-        SYSTem:
-            P_ERRor:
-            P_VERSion:
-        STATus:
-            OPERation:
-                &op
-                P_CONDition:
-                P_ENABle: {read_only: true}
-                P_EVENt:
-            A_PRESet:
-            QUESTionable:
-                *op
-    \"\"\"))
-
-creates an instrument with the subsystems `system`, `status`,
-`status.operation` and `status.questionable`.  The SCPI mnemonics are the
-capitalized part of the name and the `subsystem` is named with the whole
-word(s), in lower case.  The commands are prefixed with ``P_`` or ``A_`` adding
-a `parameter` or an `action` to the subsystem, respectively.  Subsystems can be
-nested and extra arguments required at the construction of the command are
-given in a dictionary (`status.operation.enable` is read-only, here).
+"""Standard commands for programmable instruments (SCPI).
 
 """
-import yaml
-
+import unittest
 import pyhard2.driver as drv
+Cmd, Access = drv.Command, drv.Access
+import ieee488_2
 
 # SCPI std. mandates IEEE488.2, excluding IEEE488.1
-from ieee488_2 import Mandatory as Ieee488_2
-from ieee488_2 import IeeeProtocol
 
 
-def _bool(setter):
-    def setter(b):
-        return "ON" if b else "OFF"
-    def getter(b):
-        return b == "ON"
-    return dict(setter=setter,
-                getter=getter)
+class ScpiError(drv.DriverError): pass
 
 
-def _strip_lower(string):
-    """Only return upper case from `string`."""
-    return "".join((char for char in string if char.isupper()))
-
-
-def _paths(tree, current=()):
-    """Traverse tree and yield path to leaves with corresponding list
-       of leaves."""
-    for node, subtree in tree.iteritems():
-        if node[:2] in ("A_", "P_"):
-            yield current, {node: subtree}
-        else:
-            for path in _paths(subtree, current + (node,)):
-                yield path
-
-
-class ScpiProtocol(drv.SerialProtocol):
+class ScpiCommunicationProtocol(drv.CommunicationProtocol):
 
     """SCPI protocol."""
 
-    def __init__(self):
-        super(ScpiProtocol, self).__init__(
-            fmt_read="{subsys[mnemonic]}:{param[getcmd]}?\r",
-            fmt_write="{subsys[mnemonic]}:{param[setcmd]} {val}\r",
-        )
+    def __init__(self, socket, parent=None):
+        socket.newline = "\n"
+        super(ScpiCommunicationProtocol, self).__init__(socket, parent)
+
+    @staticmethod
+    def _scpiPath(context):
+        return ":".join(subsystem.mnemonic
+                        for subsystem in reversed(context.path)
+                        if isinstance(subsystem, ScpiSubsystem))
+
+    @staticmethod
+    def _scpiStrip(path):
+        return "".join((c for c in path if c.isupper() or not c.isalpha()))
+
+    def read(self, context):
+        msg = "{path}?{nl}".format(
+            path=self._scpiStrip(":".join((self._scpiPath(context),
+                                           context.reader))),
+            nl=self._socket.newline)
+        self._socket.write(msg)
+        return self._socket.readline().strip()
+
+    def write(self, context):
+        if context.value is True:
+            context.value = "ON"
+        elif context.value is False:
+            context.value = "OFF"
+        msg = "{path} {value}{nl}".format(
+            path=self._scpiStrip(":".join((self._scpiPath(context),
+                                           context.writer))),
+            value=context.value,
+            nl=self._socket.newline)
+        self._socket.write(msg)
 
 
 class ScpiSubsystem(drv.Subsystem):
 
-    """
-    `Subsystem` with a mnemonic.
-    
-    Parameters
-    ----------
-    instrument
-    mnemonic : str
+    """`Subsystem` with a mnemonic."""
 
-    """
-    def __init__(self, instrument, mnemonic):
-        super(ScpiSubsystem, self).__init__(instrument)
+    def __init__(self, mnemonic, parent=None):
+        super(ScpiSubsystem, self).__init__(parent)
         self.mnemonic = mnemonic
 
 
-# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-class ScpiInstrument(drv.Instrument):
+class ScpiRequired(ieee488_2.Ieee488_2Subsystem):
 
-    """Construct SCPI subsystems from YAML formula."""
+    """Required commands from the IEEE 488.2 standard."""
 
-    def __init__(self, socket, protocol=None):
-        super(ScpiInstrument, self).__init__(socket, ScpiProtocol()
-                                             if protocol is None else
-                                             protocol)
-
-    def add_subsystems_from_tree(self, tree):
-        """Create subsystems and commands from a YAML formula mimicking
-           the SCPI standard."""
-
-        def get_subsystem(path, parent=self):
-            """Return `subsystem` at `path`."""
-            mnemo, path = path[0], path[1:]
-            try:
-                subsys = getattr(parent, mnemo.lower())
-            except AttributeError:
-                subsys = type(mnemo.lower(), (ScpiSubsystem,), {})(self, "")
-                setattr(parent, mnemo.lower(), subsys)
-            return get_subsystem(path, subsys) if path else subsys
-
-        for path, nodes in _paths(tree):
-            subsys = get_subsystem(path)
-            node, kwargs = nodes.iteritems().next()
-            typ, sep, name = node.partition("_")
-            getcmd = ":".join(_strip_lower(mnemo) for mnemo in path + (name,))
-            if kwargs is None: kwargs = {}
-            dict(A=subsys.add_action_by_name,
-                 P=subsys.add_parameter_by_name)[typ](
-                     name.lower(), getcmd,
-                     **({} if kwargs is None else kwargs))
+    def __init__(self, socket, parent=None):
+        super(ScpiRequired, self).__init__(socket, parent)
+        self._scpi = drv.Subsystem(self)
+        self._scpi.setProtocol(ScpiCommunicationProtocol(socket, self))
+        # SYSTem
+        self.system = ScpiSubsystem("SYSTem", self._scpi)
+        self.system.error = ScpiSubsystem("ERRor", self.system)
+        self.system.error.next = Cmd("NEXT", access=Access.RO)
+        self.system.version = Cmd("VERSion", access=Access.RO)
+        # STATus
+        self.status = ScpiSubsystem("STATus", self._scpi)
+        self.status.operation = ScpiSubsystem("OPERation", self.status)
+        self.status.operation.event = Cmd("EVENt", access=Access.RO)
+        self.status.operation.condition = Cmd("CONDition", access=Access.RO)
+        self.status.operation.enable = Cmd("ENABle", access=Access.RW)
+        self.status.questionable = ScpiSubsystem("QUEStionable", self.status)
+        self.status.preset = Cmd("PRESet", access=Access.WO)
 
 
-class ScpiInstrumentMinimal(ScpiInstrument):
+class ScpiDigitalMeter(ScpiRequired):
 
-    """`ScpiInstrument` implementing required SCPI commands."""
+    """SCPI Instrument Classes - 3 Digital Meters
 
-    def __init__(self, socket):
-        super(ScpiInstrumentMinimal, self).__init__(socket, ScpiProtocol())
-        self.ieee488_2 = Ieee488_2(IeeeProtocol())
-        self.add_subsystems_from_tree(yaml.load(
-            # required commands:
-            """
-            SYSTem:
-              P_ERRor:
-              P_VERSion:
-            STATus:
-              OPERation:
-                &leaves
-                P_CONDition:
-                P_ENABle: {read_only: true}
-                P_EVENt:
-              A_PRESet:
-              QUESTionable:
-                *leaves
-            """))
+    Base functionality of a digital meter.
 
-
-# SCPI Instrument Classes - 3 Digital Meters
-class ScpiDigitalMeter(ScpiInstrumentMinimal):
-
-    """Base functionality of a digital meter."""
-
-    def __init__(self, socket, meter_fun):
-        super(ScpiDigitalMeter, self).__init__(socket)
-        # Base measurement instructions
-        self.add_subsystems_from_tree(yaml.load(
-        """
-        CONFigure:
-          SCALar:
-            P_%(meter_fun)s:
-        FETCh:
-          &scalar
-          SCALar:
-            P_%(meter_fun)s: {read_only: true}
-        READ:
-          *scalar
-        MEASure:
-          *scalar
-        """ % {"meter_fun": meter_fun}))
+    """
+    def __init__(self, socket, meter_fn, parent=None):
+        super(ScpiDigitalMeter, self).__init__(socket, parent)
+        if meter_fn not in ("VOLTage VOLTage:DC VOLTage:AC".split() +
+                            "CURRent CURRent:DC CURRent:AC".split() +
+                            "RESistance FRESistance".split()):
+            raise ScpiError("Unknown digital meter")
+        self.configure = ScpiSubsystem("CONFigure", self._scpi)
+        # SCALar:meter_fn
+        self.fetch = ScpiSubsystem("FETCh", self._scpi)
+        # SCALar:meter_fn
+        self.read = ScpiSubsystem("READ", self._scpi)
+        # SCALar:meter_fn
+        self.measure = ScpiSubsystem("MEASure", self._scpi)
+        # SCALar:meter_fn
         # Base device-oriented functions
-        self.add_subsystems_from_tree(yaml.load(
+        self.sense = ScpiSubsystem("SENSe", self._scpi)
+        self.sense.function = ScpiSubsystem("FUNCtion", self.sense)
         """
-        # SENSe subsystem
         SENSe:
           FUNCtion:
             ON: function
@@ -192,91 +116,98 @@ class ScpiDigitalMeter(ScpiInstrumentMinimal):
                 P_UPPer_range: # num
                 P_AUTO_range:  # bool
               RESolution # num
-        # TRIGger subsystem
-        #INITitiate:
-        #  IMM:
-        #    A_ALL: initiate_trigger  # write-only
-        #A_ABORt: abort_trigger  # write-only
-        TRIGger:
-          SEQuence:
-            P_COUNt:  # num
-            P_DELay:  # num
-            P_SOURce: # str
-        """ % {"meter_fun": meter_fun}))
+        """
+        self.initiate = ScpiSubsystem("INITitiate", self._scpi)
+        self.initiate.immediate = ScpiSubsystem("IMMediate", self.initiate)
+        self.initiate.immediate.all = Cmd("ALL", access=Access.WO)
+        self.initiate.abort = Cmd("ABORt", access=Access.WO)
+        self.trigger = ScpiSubsystem("TRIGger", self._scpi)
+        self.trigger.sequence = ScpiSubsystem("SEQuence", self.trigger)
+        self.trigger.sequence.count = Cmd("COUNt")  # num
+        self.trigger.sequence.delay = Cmd("DELay")  # num
+        self.trigger.sequence.source = Cmd("SOURce")  # str
 
 
 class ScpiDCVoltmeter(ScpiDigitalMeter):
 
-    def __init__(self, socket):
-        super(ScpiDCVoltmeter, self).__init__(socket, "VOLT")
+    def __init__(self, socket, parent=None):
+        super(ScpiDCVoltmeter, self).__init__(socket, "VOLTage", parent)
         # SENSe: see Command Ref 18.20
 
 
 class ScpiACVoltmeter(ScpiDigitalMeter):
     
-    def __init__(self, socket):
-        super(ScpiACVoltmeter, self).__init__(socket, "VOLT:AC")
+    def __init__(self, socket, parent=None):
+        super(ScpiACVoltmeter, self).__init__(socket, "VOLTage:AC", parent)
 
 
 class ScpiDCAmmeter(ScpiDigitalMeter):
     
-    def __init__(self, socket):
-        super(ScpiDCAmmeter, self).__init__(socket, "CURR")
+    def __init__(self, socket, parent=None):
+        super(ScpiDCAmmeter, self).__init__(socket, "CURRent", parent)
 
 
 class ScpiACAmmeter(ScpiDigitalMeter):
 
-    def __init__(self, socket):
-        super(ScpiACAmmeter, self).__init__(socket, "CURR:AC")
+    def __init__(self, socket, parent=None):
+        super(ScpiACAmmeter, self).__init__(socket, "CURRent:AC", parent)
 
 
 class ScpiOhmmeter(ScpiDigitalMeter):
     
-    def __init_(self, socket):
-        super(ScpiOhmmeter, self).__init__(socket, "RES")
+    def __init_(self, socket, parent=None):
+        super(ScpiOhmmeter, self).__init__(socket, "RESistance", parent)
 
 
 class ScpiFourWireOhmmeter(ScpiDigitalMeter):
 
-    def __init__(self, socket):
-        super(ScpiFourWireOhmmeter, self).__init__(socket, "FRES")
+    def __init__(self, socket, parent=None):
+        super(ScpiFourWireOhmmeter, self).__init__(socket, "FRESistance", parent)
 
 
-# SCPI Instrument Classes - 7 Power Supplies
-class ScpiPowerSupply(ScpiInstrumentMinimal):
+class ScpiPowerSupply(ScpiRequired):
 
-    def __init__(self, socket):
-        super(ScpiPowerSupply, self).__init__(socket)
-        self.add_subsystems_from_tree(yaml.load(
-            """
-            OUTPUT:
-              P_STATe # bool //FIXME// status?
-            SOURce:
-                &cv
-                P_CURRent:
-                P_VOLTage:
-            STATus:
-              QUEST:
-                *cv
-              # bit 1 for current; bit 0 for voltage; bit 0+1 for both
-            MEASure:
-                *cv
-              # multiple
-              # trigger
-            """))
+    """SCPI Instrument Classes - 7 Power Supplies."""
+
+    def __init__(self, socket, parent=None):
+        super(ScpiPowerSupply, self).__init__(socket, parent)
+        self.output = ScpiSubsystem("OUTPUT", self._scpi)
+        self.output.state = Cmd("STATe")
+        self.source = ScpiSubsystem("SOURce", self._scpi)
+        # bit 1 for current; bit 0 for voltage; bit 0+1 for both
+        self.source.current = Cmd("CURRent", rfunc=float)
+        self.source.voltage = Cmd("VOLTage", rfunc=float)
+        self.status.questionable.current = Cmd("CURRent")
+        self.status.questionable.voltage = Cmd("CURRent")
+        self.measure = ScpiSubsystem("MEASure", self._scpi)
+        self.measure.current = Cmd("CURRent", rfunc=float)
+        self.measure.voltage = Cmd("VOLTage", rfunc=float)
 
 
-def _test():
-    instr = ScpiInstrumentMinimal(drv.Serial())
-    print(instr)
-    print("\nSTAT:")
-    print(instr.status)
-    print("\nQUEST:")
-    print(instr.status.questionable)
-    print("\nOPER:")
-    print(instr.status.operation)
+class TestScpi(unittest.TestCase):
+
+    def setUp(self):
+        socket = drv.TesterSocket()
+        socket.msg = {"SOUR:VOLT?\n": "1.7\n",
+                      "SOUR:CURR?\n": "0.5\n",
+                      "SYST:VERS?\n": "1.2345\n",
+                      "*RST\n": "",
+                     }
+        self.i = ScpiPowerSupply(socket)
+
+    def test_read_voltage(self):
+        self.assertEqual(self.i.source.voltage.read(), 1.7)
+
+    def test_read_current(self):
+        self.assertEqual(self.i.source.current.read(), 0.5)
+
+    def test_required_subsystem(self):
+        self.assertEqual(self.i.system.version.read(), "1.2345")
+
+    def test_4882(self):
+        self.i.reset.write()
 
 
 if __name__ == "__main__":
-    _test()
+    unittest.main()
 

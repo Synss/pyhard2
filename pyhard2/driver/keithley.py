@@ -1,93 +1,66 @@
-from scpi import *
+"""Keithley driver.
+
+"""
+import unittest
+import pyhard2.driver as drv
+Cmd, Access = drv.Command, drv.Access
+import pyhard2.driver.ieee.scpi as scpi
 
 
-class ScpiKeithleyCalculate(ScpiSubsystem):
+class Model6487(scpi.ScpiRequired):
 
-    calc = """
-    CALC:
-      FORM: format  # <name>
-      KMAT:
-        MMF: m_factor  # <NRf>
-        MA1: ma1  # same as MMF
-        MBF: b_factor
-        MA0F: ma0f  # same as MBF
-        MUN: m_units  # <name>
-      STAT: state  # bool
-      DATA:
-        ? '':
-          - data
-          - {read_only: true}
-        LAT:
-          - last_reading
-          - {read_only: true}
-    """
+    """Driver for Keithley Model 6487 Picoammeter/Voltage Source."""
 
-    calc2 = """
-    CALC2:
-      # FEED: write only
-      LIM:
-        UPP:
-          DATA:
-          - upper_limit
-          - minimum=-9.99999e20
-          - maximum=9.99999e20
-          SOUR2:
-          - fail_pattern
-          - minimum=0
-          - maximum=15
-        STAT: enable_limit_testing
-        FAIL:
-        - test  # return limit of lim test
-        - {read_only: true}
-          """
-
-class ScpiKeithleyDisplay(ScpiSubsystem):
-    
-    disp = """
-    DISP:
-      DIG:
-      - resolution
-      - minimum=4
-      - maximum=7
-      ENAB: enable_display  # bool
-      WIND:
-        TEXT:
-          DATA: value
-          STAT: enable_text_message
-          """
+    def __init__(self, socket, parent=None):
+        super(Model6487, self).__init__(socket, parent)
+        # CALCulate subsystem
+        self.calculate = scpi.ScpiSubsystem("CALCulate", self._scpi)
+        self.calculate.format = Cmd("FORMat")
+        self.calculate.kmath = scpi.ScpiSubsystem("KMATh", self.calculate)
+        self.calculate.kmath.mmfactor = Cmd("MMFactor", rfunc=float,
+                                            minimum=-9.99999e20,
+                                            maximum= 9.99999e20)
+        self.calculate.kmath.ma1factor = self.calculate.kmath.mmfactor
+        self.calculate.kmath.mbfactor = Cmd("MBFactor", rfunc=float,
+                                            minimum=-9.99999e20,
+                                            maximum= 9.99999e20)
+        self.calculate.kmath.ma0factor = self.calculate.kmath.mbfactor
+        self.calculate.kmath.units = Cmd("MUNits")
+        self.calculate.state = Cmd("STATe")
+        self.calculate.data = Cmd("DATA", access=Access.RO, rfunc=float)
+        # DISPlay subsystem
+        self.display = scpi.ScpiSubsystem("DISPlay", self._scpi)
+        self.display.digits = Cmd("DIGits", minimum=4, maximum=7, rfunc=int)
+        self.display.enable = Cmd("ENABle")
+        self.display.window = scpi.ScpiSubsystem("WINDow", self.display)
+        self.display.window.text = scpi.ScpiSubsystem("TEXT", self.display.window)
+        self.display.window.data = Cmd("DATA")
+        self.display.window.state = Cmd("STATe")
 
 
-class ScpiKeithleyFormat(ScpiSubsystem):
-    pass
+class Model6487Test(unittest.TestCase):
+
+    def setUp(self):
+        socket = drv.TesterSocket()
+        socket.msg = {"CALC:STAT ON\n": "",
+                      "CALC:KMAT:MMF 0.002\n": "",
+                      "CALC:DATA?\n": "12",}
+        self.i = Model6487(socket)
 
 
-class ScpiKeithleySense(ScpiSubsystem):
-    pass
+    def test_read(self):
+        self.assertEqual(self.i.calculate.data.read(), 12)
+
+    def test_write(self):
+        self.i.calculate.kmath.mmfactor.write(2e-3)
+
+    def test_write_bool(self):
+        self.i.calculate.state.write(True)
 
 
-class ScpiKeithleySource(ScpiSubsystem):
-    pass
-
-
-class ScpiKeithleyTrace(ScpiSubsystem):
-    pass
-
-
-class ScpiKeithleyTrigger(ScpiSubsystem):
-    pass
-
-
-class Keithley(Instrument):
-
-    def __init__(self, socket):
-        super(SCPIKeithley, self).__init__(socket)
-        protocol = ScpiProtocol(socket)
-        self.system = SCPIKeithleySystem(protocol)
-        self.status = SCPIKeithleyStatus(protocol)
-        self.calculate = SCPIKeithleyCalculate(protocol)
-        self.display = SCPIKeithleyDisplay(protocol)
-        self.format = SCPIKeithleyFormat(protocol)
-        self.sense = SCPIKeithleySense(protocol)
-        self.source = SCPIKeithleySource(protocol)
-        self.trace = SCPIKeithleyTrace(protocol)
-        self.trigger = SCPIKeithleyTrigger(protocol)
+if __name__ == "__main__":
+    import logging
+    logging.basicConfig()
+    logger = logging.getLogger("pyhard2")
+    logger.setLevel(logging.DEBUG)
+    unittest.main()

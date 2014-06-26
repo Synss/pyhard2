@@ -1,11 +1,6 @@
-"""
-Virtual instrument drivers
-==========================
-
-Virtual instrument driver used to test GUIs.
+"""Virtual instrument driver used to test GUIs.
 
 """
-
 import sys
 import time
 import random
@@ -17,144 +12,124 @@ except ImportError:
     sys.stderr.flush()
     raise
 
+import sip as _sip
+for _type in "QDate QDateTime QString QTextStream QTime QUrl QVariant".split():
+    _sip.setapi(_type, 2)
+
 import pyhard2.driver as drv
-Parameter = drv.Parameter
-Action = drv.Action
+Cmd, Access = drv.Command, drv.Access
 import pyhard2.pid as pid
 
 
 warnings.simplefilter("once")
 
 
-class PidSubsystem(drv.Subsystem):
+class Pid(pid.PidController):
 
-    """
-    Wrap `pyhard2.pid.PidController`.
-
-    See also
-    --------
-    pyhard2.pid.PidController : The PID controller.
-    pyhard2.driver.WrapperProtocol : The wrapper.
-    
-    """
-    output = drv.SignalProxy()
-
-    def __init__(self, spmin=0.0, spmax=99.0):
-        self.__pid = pid.PidController()
-        protocol = drv.WrapperProtocol(self.__pid, async=True)
-        super(PidSubsystem, self).__init__(protocol)
-        for name in """ proportional
-                        integral_time
-                        derivative_time
-                        vmin
-                        vmax
-                        anti_windup
-                        proportional_on_pv
-                    """.split():
-            self.add_parameter_by_name(name, name)
-        self.add_parameter_by_name("setpoint", "setpoint",
-                                   minimum=spmin, maximum=spmax)
-        self.add_action_by_name("reset", "reset")
-
-    #@Slot(float)
-    def compute_output(self, measure):
-        """ Return the output from the PID, provided `measure`. """
-        pidout = self.__pid.compute_output(measure)
-        self.output.emit(pidout)
-
-
-class VirtualInputSubsystem(drv.Subsystem):
-
-    """
-    Virtual subsystem that returns a measure as a function of the
-    output of the system.
+    """Wrap `pyhard2.pid.PidController` to handle asynchronous setting
+    of `output` and `measure`.
 
     """
     def __init__(self):
-        super(VirtualInputSubsystem, self).__init__(
-            drv.ProtocolLess(None, async=False))
-        self._sysout = 0.0
+        super(Pid, self).__init__()
+        self._output = 0.0
+        self.__measure = 0.0
 
-    #@Slot(float)
-    def set_sysout(self, sysout):
-        """ Set the output of the system. """
-        self._sysout = sysout
+    @property
+    def measure(self):
+        return self.__measure
 
-    def __get_measure(self):
-        return self._sysout / 2.0
+    @measure.setter
+    def measure(self, value):
+        self.__measure = value
+        self._output = self.compute_output(value)
 
-    measure = Parameter(__get_measure, read_only=True)
+    @property
+    def output(self):
+        return self._output
 
 
-class VirtualOutputSubsystem(drv.Subsystem):
+class Input(object):
 
-    """
-    Virtual subsystem that computes a response from the system using the
-    state-space representation given in `system`.
+    """Linear input simulator."""
 
-    """
     def __init__(self):
-        super(VirtualOutputSubsystem, self).__init__(
-            drv.ProtocolLess(None, async=False))
+        self.sysout = 0.0
+
+    @property
+    def measure(self):
+        return self.sysout / 2.0
+
+
+class Output(object):
+
+    """Output simulator using a transfer function."""
+
+    def __init__(self):
         self.system = sig.tf2ss([10.0], [20.0, 2.0])
-        self._inputs = [0.0, 0.0]  # U
-        self._times = [0.0, 0.01]  # T
-        self._noise = 1.0          # %
-        self._start = time.time()
+        self.noise = 1.0          # %
+        self.inputs = [0.0, 0.0]  # U
+        self.times = [0.0, 0.01]  # T
+        self.start = time.time()
 
-    #@Slot(float)
-    def append_input(self, input):
-        """ Sets current `input`. """
-        self._times.append(time.time() - self._start)
-        self._inputs.append(input)
+    @property
+    def input(self):
+        return self.inputs[-1]
 
-    def __get_output(self):
-        times, yout, xout = sig.lsim(self.system, self._inputs, self._times)
-        output = yout[-1] + random.gauss(yout[-1], self._noise)
+    @input.setter
+    def input(self, value):
+        self.times.append(time.time() - self.start)
+        self.inputs.append(value)
+
+    @property
+    def output(self):
+        times, yout, xout = sig.lsim(self.system, self.inputs, self.times)
+        output = yout[-1] + random.gauss(yout[-1], self.noise)
         return output.item()  # conversion from numpy.float64
 
-    output = Parameter(__get_output, read_only=True)
 
-    def __get_noise(self):
-        return self._noise
+class PidSubsystem(drv.Subsystem):
 
-    def __set_noise(self, value):
-        self._noise = value
+    """The subsystem for the PID."""
 
-    noise = Parameter(__get_noise, __set_noise)
-
-
-class VirtualInstrument(drv.Instrument):
-
-    """
-    Virtual instrument that links the `VirtualInputSubsystem` and
-    the `VirtualOutputSubsystem` via the `PidSubsystem`.
-
-    Attributes
-    ----------
-    pid : PidSubsystem
-    input : VirtualInputSubsystem
-    output : VirtualOutputSubsystem
-
-    """
-    def __init__(self, socket=None, async=None):
-        super(VirtualInstrument, self).__init__(socket, async)
-        self.pid = PidSubsystem()
-        self.input = VirtualInputSubsystem()
-        self.output = VirtualOutputSubsystem()
-
-        self.input.measure_signal().connect(self.pid.compute_output)
-        self.pid.output.connect(self.output.append_input)
-        self.output.output_signal().connect(self.input.set_sysout)
+    def __init__(self, parent=None):
+        super(PidSubsystem, self).__init__(parent)
+        self.setProtocol(drv.ObjectWrapperProtocol(Pid()))
+        self.measure = Cmd("measure", access=Access.WO)
+        self.output = Cmd("output", access=Access.RO)
+        self.setpoint = Cmd("setpoint")
+        self.proportional = Cmd("proportional")
+        self.integral_time = Cmd("integral_time")
+        self.derivative_time = Cmd("derivative_time")
+        self.vmin = Cmd("vmin")
+        self.vmax = Cmd("vmax")
+        self.anti_windup = Cmd("anti_windup")
 
 
-virtual_mapper = dict(
-    setpoint="pid.setpoint",
-    pid_gain="pid.proportional",
-    pid_integral="pid.integral_time",
-    pid_derivative="pid.derivative_time",
-    output="output.output",
-    measure="input.measure")
+class VirtualInstrument(drv.Subsystem):
+
+    """Driver for virtual instruments with a PID."""
+
+    def __init__(self, socket=None):
+        super(VirtualInstrument, self).__init__()
+        self.pid = PidSubsystem(self)
+        # Input subsystem
+        self.input = drv.Subsystem(self)
+        self.input.setProtocol(drv.ObjectWrapperProtocol(Input()))
+        self.input.sysout = Cmd("sysout")
+        self.input.measure = Cmd("measure", access=Access.RO)
+        # Output subsystem
+        self.output = drv.Subsystem(self)
+        self.output.setProtocol(drv.ObjectWrapperProtocol(Output()))
+        self.output.input = Cmd("input")
+        self.output.output = Cmd("output", access=Access.RO)
+        self.output.noise = Cmd("noise")
+        # Connections
+        self.input.measure.signal.connect(self.pid.measure.write)
+        self.input.measure.signal.connect(
+            lambda value, node: self.pid.output.read(node))
+        self.pid.output.signal.connect(self.output.input.write)
+        self.output.output.signal.connect(self.input.sysout.write)
 
 
 def main(argv):
@@ -163,10 +138,11 @@ def main(argv):
     vi = VirtualInstrument()
     #vi.input.noise = 0.0
 
-    vi.pid.gain = 4.0
-    vi.pid.integral = 1.0
-    vi.pid.setpoint = 0.0
-    vi.output.noise = 0.0
+    vi.pid.proportional.write(1.0)
+    vi.pid.integral_time.write(4.0)
+    vi.pid.derivative_time.write(0.8)
+    vi.pid.setpoint.write(0.0)
+    vi.output.noise.write(0.0)
     step_done = False
 
     measure = []
@@ -179,12 +155,12 @@ def main(argv):
     print("Please wait\t")
     while time.time() - start < 10.0 * time_factor:
         if (not step_done and time.time() - start > 1.5 * time_factor):
-            vi.pid.setpoint += 10.0
+            vi.pid.setpoint.write(vi.pid.setpoint.read() + 10.0)
             step_done = True
         time_.append((time.time() - start) / time_factor)
-        measure.append(vi.input.measure)
-        output.append(vi.output.output)
-        setpoint.append(vi.pid.setpoint)
+        measure.append(vi.input.measure.read())
+        output.append(vi.output.output.read())
+        setpoint.append(vi.pid.setpoint.read())
         print ("MEAS: %s  OUT: %s  SP: %s" % (
             measure[-1], output[-1], setpoint[-1]))
         time.sleep(0.5 * time_factor)

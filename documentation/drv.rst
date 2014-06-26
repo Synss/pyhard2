@@ -1,58 +1,62 @@
-Available drivers
------------------
+Drivers
+=======
 
+
+Virtual instrument driver
+-------------------------
+
+.. automodule:: pyhard2.driver.virtual
+   :members:
+
+AML
+---
 .. automodule:: pyhard2.driver.aml
    :members:
-   :undoc-members:
 
+Amtron
+------
 .. automodule:: pyhard2.driver.amtron
    :members:
-   :undoc-members:
 
-.. automodule:: pyhard2.driver.daq
-   :members:  DioInstrument, AiInstrument, AoInstrument
-   :undoc-members:
-
-.. automodule:: pyhard2.ctrlr.daq
-   :members:
-   :undoc-members:
-
+Bronkhorst
+----------
 .. automodule:: pyhard2.driver.bronkhorst
-   :members:  ControllerInstr, MFC, PC
-   :undoc-members:
-
-.. automodule:: pyhard2.ctrlr.bronkhorst
    :members:
-   :undoc-members:
 
+DAQ
+---
+.. automodule:: pyhard2.driver.daq
+   :members:
+
+Fluke
+-----
 .. automodule:: pyhard2.driver.fluke
    :members:
-   :undoc-members:
 
-.. automodule:: pyhard2.ctrlr.fluke
-   :members:
-   :undoc-members:
-
+SCPI
+----
 .. automodule:: pyhard2.driver.ieee
    :members:
 
-.. automodule:: pyhard2.driver.peaktech
-   :members:  PT1885
-   :undoc-members:
+.. automodule:: pyhard2.driver.ieee.ieee488_1
 
+.. automodule:: pyhard2.driver.ieee.ieee488_2
+
+.. automodule:: pyhard2.driver.ieee.scpi
+   :members:
+
+Peaktech
+--------
+.. automodule:: pyhard2.driver.peaktech
+   :members:
+
+Pfeiffer
+--------
 .. automodule:: pyhard2.driver.pfeiffer
    :members:
-   :undoc-members:
 
-.. automodule:: pyhard2.ctrlr.pfeiffer
-   :members:
-   :undoc-members:
-
+Watlow
+------
 .. automodule:: pyhard2.driver.watlow
    :members:
-   :undoc-members:
-
-.. automodule:: pyhard2.ctrlr.watlow
-   :members:
-   :undoc-members:
 

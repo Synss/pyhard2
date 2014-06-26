@@ -1,16 +1,17 @@
-"""
-Pfeiffer drivers
-================
-
-Drivers for the Pfeiffer TPG 256 A MaxiGauge controller.
+# vim: tw=120
+"""Drivers for the Pfeiffer TPG 256 A MaxiGauge controller.
 
 """
-
+import unittest
 import logging
 import ascii
 
 import pyhard2.driver as drv
-Param = drv.Parameter
+Cmd, Access = drv.Command, drv.Access
+
+
+logging.basicConfig()
+logger = logging.getLogger("pyhard2")
 
 
 class PfeifferHardwareError(drv.HardwareError): pass
@@ -19,50 +20,7 @@ class PfeifferHardwareError(drv.HardwareError): pass
 class PfeifferDriverError(drv.DriverError): pass
 
 
-class Protocol(drv.SerialProtocol):
-
-    """
-    The protocol used is close to ANSI X3.
-
-    .. uml::
-
-        User    ->  Instrument: {query}
-        User    <-- Instrument: ACK
-        User    ->  Instrument: ENQ
-        User    <-- Instrument: {answer}
-    
-    """
-
-    def __init__(self, socket, async, fmt_read, fmt_write):
-        super(Protocol, self).__init__(socket, async, fmt_read, fmt_write)
-
-    def _encode_read(self, subsys, param):
-        cmd = self._fmt_cmd_read(subsys, param) + self.socket.newline
-        self.socket.write(cmd)             # master: "MNEMONIC <CR><LF>"
-        ack = self.socket.readline()       # remote: "ACK<CR><LF>"
-        self._check_error(cmd, ack)
-        ENQ = chr(ascii.ENQ) + self.socket.newline
-        self.socket.write(ENQ)             # master: "ENQ<CR><LF>"
-        ans = self.socket.readline()       # remote: "VALUE <CR><LF>"
-        return ans.strip()
-
-    def _encode_write(self, subsys, param, val):
-        cmd = self._fmt_cmd_write(subsys, param, val)
-        self.socket.write(cmd)             # master: "MNEMONIC VAL <CR><LF>"
-        ack = self.socket.readline()       # remote: "ACK<CR><LF>"
-        self._check_error(cmd, ack)
-
-    @staticmethod
-    def _check_error(cmd, ack):
-        if ack.startswith(chr(ascii.NAK)):
-            raise drv.PfeifferHardwareError(
-                "Command %s not acknowledged." % cmd.strip())
-        elif not ack.startswith(chr(ascii.ACK)):
-            raise drv.PfeifferDriverError(
-                "Command %s raised unknown error." % cmd.strip())
-
-
-def parse_pressure(msg):
+def _parse_pressure(msg):
     """Parser for measurement:PRx."""
     status_msg = {0: "Measurement data okay",
                   1: "Underrange",
@@ -75,13 +33,13 @@ def parse_pressure(msg):
     status, value = msg.split(",")
     status = int(status)
     if status != 0:
-        logging.info("Sensor status: %s" % status_msg[status])
+        logger.info("Sensor status: %s" % status_msg[status])
         raise PfeifferHardwareError("Sensor returned: %s" % status_msg[status])
     else:
         return float(value)
 
 
-def parse_error(ans):
+def _parse_error(ans):
 
     """Parser for errors."""
 
@@ -118,61 +76,56 @@ def parse_error(ans):
         raise drv.HardwareError(err)
 
 
-class GaugeSubsystem(drv.Subsystem):
+class CommunicationProtocol(drv.CommunicationProtocol):
 
-    """Gauge subsystem.
+    """Driver for the Pfeiffer Maxigauge.
 
-    .. warning::
+    The protocol used is similar to ANSI X3.
 
-        Only the parameters `pressure` and `measure` are implemented.
+    .. uml::
 
-    Parameters
-    ----------
-    instrument
-    node : int
-        Sensor identifier.
+        User    ->  Instrument: {query}
+        User    <-- Instrument: ACK
+        User    ->  Instrument: ENQ
+        User    <-- Instrument: {answer}
     
     """
+    def __init__(self, socket):
+        super(CommunicationProtocol, self).__init__(socket)
+        self._socket.timeout = 5.0
+        self._socket.newline = "\r\n"
 
-    # Measurement
-    # SEN bool
-    # SCx
-    # PRx
-    pressure = Param("PR", read_only=True, getter_func=parse_pressure)
-    measure = Param("PR", read_only=True, getter_func=parse_pressure)
+    def read(self, context):
+        line = "{reader}{node}\r\n".format(reader=context.reader,
+                                           node=context.node if context.node is not None else "")
+        self._socket.write(line)        # master: "MNEMONIC <CR><LF>
+        ack = self._socket.readline()   # remote: "ACK<CR><LF>"
+        self._check_error(line, ack)
+        self._socket.write("%c\r\n" % ascii.ENQ)    # master: "ENQ<CR><LF>"
+        ans = self._socket.readline()   # remote: "VALUE <CR><LF>"
+        return ans.strip()
 
-    # DCD
-    # CID
+    def write(self, context):
+        line = "{writer}{node} {value}\r\n".format(writer=context.writer,
+                                                   node=context.node if context.node is not None else "",
+                                                   value=context.value)
+        self._socket.write(line)        # master: "MNEMONIC VAL <CR><LF>"
+        ack = self.socket.readline()    # remote: "ACK<CR><LF>"
+        self._check_error(line, ack)
 
-    # Display
-    # UNI
-    # DCB
-    # DCC
-    # DCS
-
-    # Switching
-    # SPx
-    # SPS
-    # PUC
-
-    # Parameters
-    # LOC
-    # FIL
-    # CAx
-    # OFC
-    # FSR
-    # DGS
-    # SAV
-
-    # Interfaces
-    # RSX
-    # BAU
-    # NAD
+    @staticmethod
+    def _check_error(line, ack):
+        if ack.startswith(chr(ascii.NAK)):
+            raise drv.PfeifferHardwareError(
+                "Command %s not acknowledged." % line.strip())
+        elif not ack.startswith(chr(ascii.ACK)):
+            raise drv.PfeifferDriverError(
+                "Command %s raised unknown error." % line.strip())
 
 
-class ControllerSubsystem(drv.Subsystem):
+class Maxigauge(drv.Subsystem):
 
-    """Controller subsystem.
+    """Maxigauge subsystem.
 
     .. warning::
 
@@ -180,30 +133,60 @@ class ControllerSubsystem(drv.Subsystem):
 
     """
 
-    errors = Param("ERR", read_only=True, getter_func=parse_error)
-    unit = Param("UNI", read_only=True, getter_func=lambda msg: 
-                 {0: "mbar", 1: "Torr", 2: "Pascal"}[int(msg)])
-
-
-class Maxigauge(drv.Instrument):
-
-    """Driver for Pfeiffer Maxigauge."""
-
-    def __init__(self, socket, async, node):
+    def __init__(self, socket):
         super(Maxigauge, self).__init__()
-        socket.timeout = 5.0
-        socket.newline = "\r\n"
-        gaugeProtocol = Protocol(
-            socket,
-            async,
-            fmt_read="{param[getcmd]}{protocol[node]}",
-            fmt_write="{param[setcmd]}{protocol[node]} {val}")
-        gaugeProtocol.node = node
-        self.main = GaugeSubsystem(gaugeProtocol)
-        controllerProtocol = Protocol(
-            socket,
-            async,
-            fmt_read="{param[getcmd]}",
-            fmt_write="{param[setcmd]}")
-        self.controller = ControllerSubsystem(controllerProtocol)
+        self.setProtocol(CommunicationProtocol(socket))
+        # Controller subsystem
+        self.errors = Cmd("ERR", access=Access.RO, rfunc=_parse_error)
+        self.unit = Cmd("UNI", access=Access.RO, rfunc=lambda msg: 
+                        {0: "mbar", 1: "Torr", 2: "Pascal"}[int(msg)])
+        # Display subsystem
+        # UNI
+        # DCB
+        # DCC
+        # DCS
+        # Switching subsystem
+        # SPx
+        # SPS
+        # PUC
+        # Parameters subsystem
+        # LOC
+        # FIL
+        # CAx
+        # OFC
+        # FSR
+        # DGS
+        # SAV
+        # Interfaces subsystem
+        # RSX
+        # BAU
+        # NAD
+        # Gauge subsystem
+        self.gauge = drv.Subsystem(self)
+        # SEN bool
+        # SCx
+        # PRx
+        self.gauge.pressure = Cmd("PR", access=Access.RO, rfunc=_parse_pressure)
+        # DCD
+        # CID
 
+
+class TestMaxigauge(unittest.TestCase):
+
+    def setUp(self):
+        socket = drv.TesterSocket()
+        socket.msg = {"PR1\r\n": "\x06\r\n0,1.234E-2\r\n",
+                      "UNI\r\n": "\x06\r\n0\r\n",
+                      "\x05\r\n": ""}
+        self.i = Maxigauge(socket)
+
+    def test_read_sensor(self):
+        self.assertEqual(self.i.gauge.pressure.read(node=1), 0.01234)
+
+    def test_read_controller(self):
+        self.assertEqual(self.i.unit.read(), "mbar")
+
+
+if __name__ == "__main__":
+    logger.setLevel(logging.DEBUG)
+    unittest.main()

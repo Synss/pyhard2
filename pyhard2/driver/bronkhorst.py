@@ -1,36 +1,32 @@
-"""
-Bronkhorst drivers
-==================
+# vim: tw=120
+"""Drivers for Bronkhorst flow and pressure controllers.
 
-Drivers for Bronkhorst flow and pressure controllers.
+Communication uses the ASCII protocol described in the instruction
+manual number 9.17.027.  The commands and subsystems are described in
+the instruction manual number 9.17.023.
 
-Communication uses the ASCII protocol described in the instruction manual
-number 9.17.027. [1]_  The commands and subsystems are described in the
-instruction manual number 9.17.023. [2]_
+Note:
+    - The ASCII protocol is implemented.
+    - This driver requires the `Construct library
+      <http://construct.readthedocs.org/en/latest/>`_.
 
-Notes
------
-- The ASCII protocol is implemented.
-- This driver requires the `Construct library
-  <http://construct.readthedocs.org/en/latest/>`_.
-
-References
-----------
-.. [1] `"RS232 interface with FLOW-BUS protocol for digital Mass
-        Flow/Pressure instruments." <http://www.bronkhorst.com>`_ Doc.
-        no.: 9.17.027J 13-05-2008.
-.. [2] `"Operation instructions digital Mass Flow/Pressure instruments
-        parameters and properties." <http://www.bronkhorst.com>`_ Doc.
-        no.: 9.17.023L 27-05-2008.
+Reference:
+    - `"RS232 interface with FLOW-BUS protocol for digital Mass
+      Flow/Pressure instruments." <http://www.bronkhorst.com>`_
+      Doc. no.: 9.17.027J 13-05-2008.
+    - `"Operation instructions digital Mass Flow/Pressure instruments
+      parameters and properties." <http://www.bronkhorst.com>`_
+      Doc. no.: 9.17.023L 27-05-2008.
 
 """
-
+import unittest
 import logging
 
 import pyhard2.driver as drv
+Access = drv.Access
 
 from _bronkhorst import read_command, write_command
-from _bronkhorst import status_message, extract_values
+from _bronkhorst import status_message, extract_values, float2long
 
 
 logging.basicConfig()
@@ -43,16 +39,22 @@ class BronkhorstHardwareError(drv.HardwareError): pass
 class BronkhorstDriverError(drv.DriverError): pass
 
 
-def measure_to_pct(x):
+def _measure_to_pct(x):
     if x >= 41943:
         x -= 65536
     return float(x) / 320.0
 
-def pct_to_measure(x):
+def _pct_to_measure(x):
     x = int(round(x * 320.0))
     if x < 0:
         x += 65536
     return x
+
+def _valve_output_to_pct(x):
+    return x / 167772.15
+
+def _pct_to_valve_output(x):
+    return int(round(x * 167772.15))
 
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -65,11 +67,11 @@ ULONG = 'l'
 STRING = 's'
 
 
-class BHParameter(object):
+class _BHParameter(object):
 
     """API for `Construct <http://construct.wikispaces.com/>`_."""
 
-    index = 10
+    index = 0
 
     def __init__(self, number, type, parent=None, value=None, chained=False):
         self.number = number
@@ -80,20 +82,20 @@ class BHParameter(object):
         self.string_length = 0
         if parent:
             # READ repeats process
-            self.process = BHProcess(parent.number, parent.chained)
+            self.process = _BHProcess(parent.number, parent.chained)
             # READ contains index
-            self.idx = BHParameter(
-                    BHParameter.index, self.type, self.chained)
-            BHParameter.index += 1
-            BHParameter.index %= 255
+            self.idx = _BHParameter(
+                    _BHParameter.index, self.type, self.chained)
+            _BHParameter.index += 1
+            _BHParameter.index %= 31
 
     def __repr__(self):
-        return "%s(number=%s, type=%s, parent=%s, value=0x%x, chained=%s)" % (
+        return "%s(number=%s, type=%s, parent=%s, value=%r, chained=%s)" % (
             self.__class__.__name__,
             self.number, self.type, self.parent, self.value, self.chained)
 
 
-class BHProcess(object):
+class _BHProcess(object):
 
     """API for `Construct <http://construct.wikispaces.com/>`_."""
 
@@ -108,21 +110,21 @@ class BHProcess(object):
             self.number, self.param_list, self.chained)
 
     @classmethod
-    def from_param(cls, process_number, param, value=None):
-        process = BHProcess(process_number)
-        process.param_list = [BHParameter(
-            param.getcmd, param.type, parent=process, value=value)]
+    def from_param(cls, process_number, cmd, value=None):
+        process = _BHProcess(process_number)
+        process.param_list = [_BHParameter(
+            cmd.reader, cmd.type, parent=process, value=value)]
         return process
 
     @classmethod
     def from_default_process(cls, number, type, value=None, chained=False):
-        process = BHProcess(1)
-        process.param_list = [BHParameter(
+        process = _BHProcess(1)
+        process.param_list = [_BHParameter(
             number, type, parent=process, value=value, chained=False)]
         return process
 
 
-class BHProcessList(object):
+class _BHProcessList(object):
 
     """API for `Construct <http://construct.wikispaces.com/>`_."""
 
@@ -161,43 +163,20 @@ class BHProcessList(object):
 
     def lift_security(self):
         """Add `soft_init` and `reset_init` to the process_list."""
-        soft_init = BHProcess(0, [BHParameter(10, type=CHAR, value=0x40)])
-        reset_init = BHProcess(0, [BHParameter(10, type=CHAR, value=0x52)])
+        soft_init = _BHProcess(0, [_BHParameter(10, type=CHAR, value=0x40)])
+        reset_init = _BHProcess(0, [_BHParameter(10, type=CHAR, value=0x52)])
         process_list, self.process_list = self.process_list, [soft_init]
         for process in process_list:
             self.append_process(process)
         self.append_process(reset_init)
 
 
-class Param(drv.Parameter):
-
-    """
-    `Parameter` extended with `type` and `secured`
-
-    Parameters
-    ----------
-    type : {CHAR, UINT, FLOAT, ULONG, STRING}
-        Parameter type.
-    secured : bool
-        True if parameter is secured.
-
-    """
-
-    def __init__(self, getcmd, type=None, secured=False, **kwargs):
-        super(Param, self).__init__(getcmd, **kwargs)
-        self.type = type
-        self.secured = secured
-        if secured:
-            self.read_only = secured
-
-
-class AsciiProtocol(drv.SerialProtocol):
+class AsciiProtocol(drv.CommunicationProtocol):
 
     """ASCII protocol."""
 
-    def __init__(self, socket, async, node):
-        super(AsciiProtocol, self).__init__(socket, async)
-        self.node = node
+    def __init__(self, socket):
+        super(AsciiProtocol, self).__init__(socket)
 
     err = {":0101": "no ':' at the start of the message",
            ":0102": "error in first byte",
@@ -207,35 +186,42 @@ class AsciiProtocol(drv.SerialProtocol):
            ":0108": "timeout during sending",
            ":0109": "no answer received within timeout"}
 
-    def _encode_read(self, subsys, param):
-        msg = BHProcessList(self.node, "read",
-                            [BHProcess.from_param(subsys.process, param)])
+    def read(self, context):
+        subsys, cmd = context.path[0], context._command
+        msg = _BHProcessList(context.node, "read",
+                             [_BHProcess.from_param(subsys.process, cmd)])
         msg.length = (len(read_command.build(msg)) - 5) / 2
-        self.socket.write(read_command.build(msg))
-        ans = self.socket.readline()
+        type_ = cmd.type
+        self._socket.write(read_command.build(msg))
+        ans = self._socket.readline()
         try:
             #return filter(lambda ppv: 
             #              ppv not in [(1, 10, 0x40),   # soft init
             #                          (1, 10, 0x52)],  # reset init
             #              extract_values(ans))
-            vals = [val for process, param, val in extract_values(ans)]
+            vals = [val for process, cmd, val in extract_values(ans)]
             if len(vals) is 1:
-                return vals.pop()
+                val = vals.pop()
+                # Float and long have the same enum in this protocol
+                # there is no way to check which type we have earlier.
+                # We check it here.
+                return float2long(val) if type_ == "l" else val
             else:
                 return vals
         except:
             # format is not WRITE, check STATUS
             self._check_error(msg, ans)
 
-    def _encode_write(self, subsys, param, value):
-        msg = BHProcessList(self.node, "write",
-                            [BHProcess.from_param(subsys.process,
-                                                  param, value)])
-        if param.secured and not param.read_only:
+    def write(self, context):
+        subsys, cmd, value = context.path[0], context._command, context.value
+        msg = _BHProcessList(context.node, "write",
+                            [_BHProcess.from_param(subsys.process,
+                                                  cmd, value)])
+        if cmd.secured and not cmd.access == Access.RO:
             msg.lift_security()
         msg.length = (len(write_command.build(msg)) - 5) / 2
-        self.socket.write(write_command.build(msg))
-        ans = self.socket.readline()
+        self._socket.write(write_command.build(msg))
+        ans = self._socket.readline()
         self._check_error(msg, ans)
 
     @staticmethod
@@ -255,209 +241,220 @@ class AsciiProtocol(drv.SerialProtocol):
         except Exception:
             # not a STATUS message, assume PROTOCOL error or UNKNOWN
             raise BronkhorstHardwareError(
-                "Node %i: Command %s returned error: %s" %
+                "Node %i: Command %r returned error: %s" %
                 (msg.node, msg,
-                 AsciiProtocol.err.get(ans.strip(),
-                                       "unknown message %s" % ans.strip())))
+                 AsciiProtocol.err.get(ans.strip(), "unknown message %r" % ans)))
 
 
 class Subsystem(drv.Subsystem):
 
     """Subsystem with process number."""
 
-    def __init__(self, protocol, process):
-        super(Subsystem, self).__init__(protocol)
+    def __init__(self, process, parent=None):
+        super(Subsystem, self).__init__(parent)
         self.process = process
 
 
-class NormalSubsystem(Subsystem):
+class Cmd(drv.Command):
 
-    """Normal operation parameters."""
+    """`Command` with parameters `type` and `secured`.
 
-    ## fget(proc, reg, unit=UINT, secured=False)
-    ## fset(proc, reg, minx, maxx, unit=UINT, secured=False)
+    Parameters:
+        type (str): {CHAR, UINT, FLOAT, ULONG, STRING}
+            Parameter type.
+        secured (bool): True if parameter is secured.
 
-    measure = Param(0, getter_func=measure_to_pct,
-                       setter_func=pct_to_measure,
-                       read_only=True, type=UINT)
-    setpoint = Param(1, getter_func=measure_to_pct, 
-                        setter_func=pct_to_measure,
-                        minimum=0, maximum=3200, type=UINT)
-    setpoint_slope = Param(2, minimum=0, maximum=30000, type=UINT)
-    analog_input = Param(3, type=UINT)
-    control_mode = Param(4, minimum=0, maximum=255, type=CHAR)
-    #init = Param(10, minimum=0, maximum=255, type=CHAR)
-    fluid_ptr = Param(16, minimum=0, maximum=7, type=CHAR)
-    fluid = Param(17, type=STRING, secured=True)
-    info = Param(20, type=CHAR)
-    capacity_100pct = Param(13, minimum=0.0, type=FLOAT, secured=True)
-    sensor_type = Param(14, minimum=0, maximum=4, type=CHAR, secured=True)
-    capacity_unit_ptr = Param(15, minimum=0, maximum=9, type=CHAR, secured=True)
-    capacity_unit = Param(31, type=STRING, secured=True)
+    """
+    def __init__(self, reader, type=None, secured=False, **kwargs):
+        super(Cmd, self).__init__(reader, **kwargs)
+        self.type = type
+        self.secured = secured
+        if secured:
+            self.access = Access.RO
 
 
-class DirectReadingSubsystem(Subsystem):
+class Controller(Subsystem):
 
-    """Direct reading parameters."""
+    """Driver for Bronkhorst controllers.
 
-    capacity_0pct = Param(22, type=FLOAT, secured=True)
-    fmeasure = Param(0, read_only=True, type=FLOAT)
-    fsetpoint = Param(3, type=FLOAT)
-    master_slave_ratio = Param(1, minimum=0, maximum=500, type=FLOAT)
+    Note:
+        Node 128 broadcasts to every node.
 
-
-class IdentificationSubsystem(Subsystem):
-
-    """Identification parameters."""
-
-    model_number = Param(2, type=STRING)
-    serial_number = Param(3, type=STRING)
-    config_string = Param(4, type=STRING, secured=True)
-    firmware = Param(5, type=STRING)
-    usertag = Param(6, type=STRING, secured=True)
-    device_type_ptr = Param(12, type=CHAR)
-
-
-class AlarmSubsystem(Subsystem):
-
-    """Alarm/status parameters."""
-
-    max_limit = Param(1, minimum=0, maximum=32000, type=UINT, secured=True)
-    min_limit = Param(2, minimum=0, maximum=32000, type=UINT, secured=True)
-    mode = Param(3, minimum=0, maximum=3, type=CHAR, secured=True)
-    output_mode = Param(4, minimum=0, maximum=2, type=CHAR, secured=True)
-    setpoint_mode = Param(5, minimum=0, maximum=1, type=CHAR, secured=True)
-    new_setpoint = Param(6, minimum=0, maximum=32000, type=UINT, secured=True)
-    delay_time = Param(7, minimum=0, maximum=255, type=CHAR, secured=True)
-
-    #reset = Param(process=115, param=4, minimum=0, maximum=15,
-    #              type=CHAR, secured=True)
-
-
-class CounterSubsystem(Subsystem):
-
-    """Counter parameters."""
-
-    value = Param(1, minimum=0.0, maximum=1e+07, type=FLOAT, secured=True)
-    unit_ptr = Param(2, minimum=0, maximum=13, type=CHAR, secured=True)
-    limit = Param(3, minimum=0.0, maximum=1e+07, type=FLOAT, secured=True)
-    output_mode = Param(4, minimum=0, maximum=2, type=CHAR, secured=True)
-    setpoint_mode = Param(5, minimum=0, maximum=1, type=CHAR, secured=True)
-    new_setpoint = Param(6, minimum=0, maximum=32000, type=UINT, secured=True)
-    unit = Param(7, type=STRING)
-    mode = Param(8, minimum=0, maximum=2, type=CHAR, secured=True)
-
-
-class ControllerSubsystem(Subsystem):
-
-    """Controller parameters."""
-
-    valve_output = Param(1, minimum=0, maximum=16777215,
-                         type=ULONG, secured=True)
-    response_on_setpoint_change = Param(5, minimum=0, maximum=255,
-                                        type=CHAR, secured=True)
-    response_when_stable = Param(17, minimum=0, maximum=255,
-                                 type=CHAR, secured=True)
-    response_on_startup = Param(18, minimum=0, maximum=255,
-                                type=CHAR, secured=True)
-    PIDKp = Param(21, minimum=0.0, maximum=1e+10, type=FLOAT, secured=True)
-    PIDKi = Param(22, minimum=0.0, maximum=1e+10, type=FLOAT, secured=True)
-    PIDKd = Param(23, minimum=0.0, maximum=1e+10, type=FLOAT, secured=True)  ## double check
-
-    #TDS_up = Param(param=12, minimum=0.0, maximum=1e+10, type=FLOAT, secured=True)
-    #TDS_down = Param(param=11, minimum=0.0, maximum=1e+10, type=FLOAT, secured=True)
-    #smoothing = Param(process=117, param=4, minimum=0.0, maximum=1.0, type=FLOAT,
-    #                  secured=True)
-    #smoothing_rate = Param(process=117, param=5, minimum=0.0, maximum=1.0,
-    #                       type=FLOAT, secured=True)
+    """
+    def __init__(self, socket):
+        socket.baudrate = 38400
+        socket.timeout = 3
+        super(Controller, self).__init__(1)
+        self.setProtocol(AsciiProtocol(socket))
+        # Process 1
+        self.measure = Cmd(0, rfunc=_measure_to_pct, wfunc=_pct_to_measure,
+                           access=Access.RO, type=UINT)
+        self.setpoint = Cmd(1, rfunc=_measure_to_pct, wfunc=_pct_to_measure,
+                            minimum=0, maximum=3200, type=UINT)
+        self.setpoint_slope = Cmd(2, minimum=0, maximum=30000, type=UINT)
+        self.analog_input = Cmd(3, type=UINT)
+        self.control_mode = Cmd(4, minimum=0, maximum=255, type=CHAR)
+        #init = Cmd(10, minimum=0, maximum=255, type=CHAR)
+        self.fluid_ptr = Cmd(16, minimum=0, maximum=7, type=CHAR)
+        self.fluid = Cmd(17, type=STRING, secured=True)
+        self.info = Cmd(20, type=CHAR)
+        self.capacity_100pct = Cmd(13, minimum=0.0, type=FLOAT, secured=True)
+        self.sensor_type = Cmd(14, minimum=0, maximum=4, type=CHAR, secured=True)
+        self.capacity_unit_ptr = Cmd(15, minimum=0, maximum=9, type=CHAR, secured=True)
+        self.capacity_unit = Cmd(31, type=STRING, secured=True)
+        # Direct reading subsystem, process 33
+        self.direct_reading = Subsystem(33, self)
+        self.direct_reading.capacity_0pct = Cmd(22, type=FLOAT, secured=True)
+        self.direct_reading.measure = Cmd(0, access=Access.RO, type=FLOAT)
+        self.direct_reading.setpoint = Cmd(3, type=FLOAT)
+        self.direct_reading.master_slave_ratio = Cmd(1, minimum=0, maximum=500, type=FLOAT)
+        # Identification subsystem, process 113
+        self.identification = Subsystem(113, self)
+        self.identification.model_number = Cmd(2, type=STRING)
+        self.identification.serial_number = Cmd(3, type=STRING)
+        self.identification.config_string = Cmd(4, type=STRING, secured=True)
+        self.identification.firmware = Cmd(5, type=STRING)
+        self.identification.usertag = Cmd(6, type=STRING, secured=True)
+        self.identification.device_type_ptr = Cmd(12, type=CHAR)
+        # Alarm/status parameters subsystem, process 97
+        self.alarm = Subsystem(97, self)
+        self.alarm.max_limit = Cmd(1, minimum=0, maximum=32000, type=UINT, secured=True)
+        self.alarm.min_limit = Cmd(2, minimum=0, maximum=32000, type=UINT, secured=True)
+        self.alarm.mode = Cmd(3, minimum=0, maximum=3, type=CHAR, secured=True)
+        self.alarm.output_mode = Cmd(4, minimum=0, maximum=2, type=CHAR, secured=True)
+        self.alarm.setpoint_mode = Cmd(5, minimum=0, maximum=1, type=CHAR, secured=True)
+        self.alarm.new_setpoint = Cmd(6, minimum=0, maximum=32000, type=UINT, secured=True)
+        self.alarm.delay_time = Cmd(7, minimum=0, maximum=255, type=CHAR, secured=True)
+        #self.alarm.reset = Cmd(process=115, param=4, minimum=0, maximum=15, type=CHAR, secured=True)
+        # Counter subsystem, process 104
+        self.counter = Subsystem(104, self)
+        self.counter.value = Cmd(1, minimum=0.0, maximum=1e+07, type=FLOAT, secured=True)
+        self.counter.unit_ptr = Cmd(2, minimum=0, maximum=13, type=CHAR, secured=True)
+        self.counter.limit = Cmd(3, minimum=0.0, maximum=1e+07, type=FLOAT, secured=True)
+        self.counter.output_mode = Cmd(4, minimum=0, maximum=2, type=CHAR, secured=True)
+        self.counter.setpoint_mode = Cmd(5, minimum=0, maximum=1, type=CHAR, secured=True)
+        self.counter.new_setpoint = Cmd(6, minimum=0, maximum=32000, type=UINT, secured=True)
+        self.counter.unit = Cmd(7, type=STRING)
+        self.counter.mode = Cmd(8, minimum=0, maximum=2, type=CHAR, secured=True)
+        # Controller subsystem, process 114
+        self.controller = Subsystem(114, self)
+        self.controller.valve_output = Cmd(1, minimum=0, maximum=100,
+                                           rfunc=_valve_output_to_pct, wfunc=_pct_to_valve_output,
+                                           type=ULONG, secured=True)
+        self.controller.response_on_setpoint_change = Cmd(5, minimum=0, maximum=255, type=CHAR, secured=True)
+        self.controller.response_when_stable = Cmd(17, minimum=0, maximum=255, type=CHAR, secured=True)
+        self.controller.response_on_startup = Cmd(18, minimum=0, maximum=255, type=CHAR, secured=True)
+        self.controller.PIDKp = Cmd(21, minimum=0.0, maximum=1e+10, type=FLOAT, secured=True)
+        self.controller.PIDKi = Cmd(22, minimum=0.0, maximum=1e+10, type=FLOAT, secured=True)
+        self.controller.PIDKd = Cmd(23, minimum=0.0, maximum=1e+10, type=FLOAT, secured=True)  ## double check
+        #self.controller.TDS_up = Cmd(param=12, minimum=0.0, maximum=1e+10, type=FLOAT, secured=True)
+        #self.controller.TDS_down = Cmd(param=11, minimum=0.0, maximum=1e+10, type=FLOAT, secured=True)
+        #self.controller.smoothing = Cmd(process=117, param=4, minimum=0.0, maximum=1.0, type=FLOAT, secured=True)
+        #self.controller.smoothing_rate = Cmd(process=117, param=5, minimum=0.0, maximum=1.0, type=FLOAT, secured=True)
 
     def response(self, status, value):
         {"setpoint": self.response_on_setpoint_change,
          "steady state": self.response_when_stable,
          "startup": self.response_on_startup}[status] = value
 
-
-# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-
-class ControllerInstr(drv.Instrument):
-
-    """
-    Instrument for Bronkhorst controllers.
-
-    Parameters
-    ----------
-    socket
-    node : int
-        The instrument node or 128 to broadcast the commands.
-
-    """
-
-    def __init__(self, socket, async=False, node=128):
-        super(ControllerInstr, self).__init__()
-
-        socket.baudrate = 38400
-        socket.timeout = 3
-
-        protocol = AsciiProtocol(socket, async, node)
-
-        self.main = NormalSubsystem(protocol, 1)
-        self.direct_reading = DirectReadingSubsystem(protocol, 33)
-        self.identification = IdentificationSubsystem(protocol, 113)
-        self.alarm = AlarmSubsystem(protocol, 97)
-        self.counter = CounterSubsystem(protocol, 104)
-        self.controller = ControllerSubsystem(protocol, 114)
-
-    #_wink = Param()
-
-    def wink(self):
-        pass
-
-    #_reset = Param()
-
-    def reset(self):
-        pass
-
-    #@node.setter
-    #def node(self, val):
-    #    self._node = self._node if self._node > 3 else 3
-    #    self._node = self._node if self._node < 128 else 128
-    #    # propagate change:
-    #    for obj in self.__dict__.values():
-    #        if isinstance(obj, Subsystem):
-    #            obj.node = self._node
+        # set minimum, maximum values for setpoint
+        self.direct_reading.setpoint.minimum = self.direct_reading.capacity_0pct
+        self.direct_reading.setpoint.maximum = self.capacity_100pct
 
 
-class MFC(ControllerInstr):
+class MFC(Controller):
+
     """Instrument for mass-flow controllers."""
 
-    def __init__(self, socket, async=False, node=128):
-        super(MFC, self).__init__(socket, async, node)
+    def __init__(self, socket):
+        super(MFC, self).__init__(socket)
 
 
-class PC(ControllerInstr):
+class PC(Controller):
+
     """Instrument for pressure controllers."""
 
-    def __init__(self, socket, async=False, node=128):
-        super(PC, self).__init__(socket, async, node)
+    def __init__(self, socket):
+        super(PC, self).__init__(socket)
 
 
-class _FakeSocket(object):
+class BronkhorstTest(unittest.TestCase):
 
-    status = ':\x04\x03\x00\x00\x1c\r\n'
-    ans1 = ''.join((':',
-                    '\x1d\x03\x01\x80\x0a\x40\x81\xc5\x00\x00\x00\x00',
-                    '\xc6\x3f\x80\x00\x00\xc7\x00\x00\x00\x00',
-                    '\x48\x00\x00\x00\x00\x00\x0a\x52\r\n'))
+    def setUp(self):
+        socket = drv.TesterSocket()
+        socket.msg = {
+            # example 3.10.1: set setpoint node 3 to 50%
+            ":06030101213E80\r\n": ":0403000005\r\n",
+            # example 3.10.3: request setpoint node 3 (-> 50%)
+            ":06030401210121\r\n": ":06030201213E80\r\n",
+            # 3.10.5: request measure from node 3 (50%)
+            ":06030401220120\r\n": ":06030201213E80\r\n",
+            # request counter value from node 3, process 104, float
+            ":06030468436841\r\n": ":0803026841459cffae\r\n",
+        }
+        self.i = Controller(socket)
 
-    def __init__(self, port):
-        pass
+    # manual 917027, examples pp. 18-24
+    def test_3_10_1(self):
+        # send SP (node 3, process 1, param 1, int = 16000)
+        self.i.setpoint.write(50, node=3)
+        self.assertDictEqual(status_message.parse(":0403000005\r\n"),
+                             dict(length=4, node=3, command="status",
+                                  status="no_error", byte_index=5))
 
-    def getter(self, cmd):
-        print("getter: %s" % cmd)
-        return _FakeSocket.ans1
+    def test_3_10_3(self):
+        # req SP (node 3, process 1, param 1, int)
+        self.assertEqual(self.i.setpoint.read(node=3), 50.0)
 
-    def setter(self, cmd):
-        print("setter: %s" % cmd)
-        return _FakeSocket.status
+    def test_3_10_5(self):
+        self.assertEqual(self.i.measure.read(node=3), 50.0)
+
+    def test_float(self):
+        self.assertAlmostEqual(self.i.counter.value.read(node=3), 5023.96, 2)
+
+    def test_chained_write_message_parser(self):
+        write_command.parse(''.join((
+            ':',
+            '1d0301',
+            '80',             # process 1
+            '0a40',           # param   1.1
+            '81',             # process 2
+            'c500000000',     # param   2.1
+            'c63f800000',     # param   2.2
+            'c700000000',     # param   2.3
+            '4800000000',     # param   2.4 <- chained in manual
+            '00',             # process 3
+            '0a52',           # param   3.1
+            '\r\n')))
+
+    def test_chained_read_parser(self):
+        read_command.parse(''.join((':',
+                                    '1a0304f1ec7163146d716600',
+                                    '01ae0120cf014df0017f0771',
+                                    '01710a\r\n')))   # <-- original
+
+    def test_chained_read_parser_answer(self):
+        write_command.parse(''.join((
+            ':',
+            '410302',
+            'f1',                    # process 1
+            'ec14'                   # param   1.1
+            '4d363231323334354120',  # value   1.1
+            '20202020202020202020',
+            '6d00',                  # param   1.2
+            '5553455254414700',      # value   1.2
+            '01',                    # process 2
+            'ae',                    # param   2.1
+            '1cd8',                  # value   2.1
+            'cf',                    # param   2.2
+            '3f800000',              # value   2.2
+            'f007',                  # param   2.3
+            '6d6c6e2f6d696e',        # value   2.3
+            '710a',                  # param   2.4
+            '4e322020202020202020',  # value   2.4
+            '\r\n')))
+
+
+if __name__ == "__main__":
+    unittest.main()
 

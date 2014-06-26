@@ -1,3 +1,7 @@
+"""Comedi wrappers to communicate with DAQ hardware on linux.
+
+"""
+import pyhard2.driver as drv
 import comedi as c
 
 
@@ -9,79 +13,56 @@ assert(len(subdevice_type_name) == 13)
 comedi_subdevice_type = dict(zip(subdevice_type_name, range(13)))
 
 
-class ComediError(IOError):
-    pass
+class ComediError(drv.HardwareError): pass
 
 
-class ComediSocket(object):
-
-    subsytem_type = "unused"
-
-    def __init__(self, filename, subdevice, channel):
-        self.filename = filename
-        self.device = c.comedi_open(filename)
-        self.subdevice = subdevice
-        self.channel = channel
-        if not self.device:
-            raise ComediError("Failed to open device %s" % filename)
-        #val = c.comedi_get_subdevice_type(self.device, self.subdevice)
-        #if not val is self.subsytem_type:
-        #    raise ComediError("Subdevice %i on %s is not a digital IO device"
-        #                      % (subdevice, filename))
-        c.comedi_dio_config(self.device, self.subdevice, self.channel,
-                            c.COMEDI_OUTPUT)
-
-    def __repr__(self):
-        return "%s(%r, %r, %r)" % (self.__class__.__name__,
-                                   self.filename, self.subdevice, self.channel)
+def _parse_name(device_name):
+    # write device_name like FILENAME.SUBDEVICE.CHANNEL
+    # e.g.: /dev/comedi0.1.2
+    filename, subdevice, channel = device_name.split(".")
+    device = c.comedi_open(filename)
+    if not device:
+        raise ComediError("Failed to open device %s" % filename)
+    return device, int(subdevice), int(channel)
 
 
-class DioSocket(ComediSocket):
+class DioProtocol(drv.Protocol):
 
-    subsytem_type = "dio"
+    """Protocol for Digital IO lines."""
 
-    def __init__(self, filename, subdevice, channel):
-        super(DioSocket, self).__init__(filename, subdevice, channel)
-        c.comedi_dio_config(self.device, self.subdevice, self.channel,
-                            c.COMEDI_OUTPUT)
+    def read(self, context):
+        device, subdevice, channel = _parse_name(context.reader)
+        c.comedi_dio_config(device, subdevice, channel, c.COMEDI_OUTPUT)
+        chk, value = c.comedi_dio_read()
+        if chk < 0:
+            raise ComediError("Failed to read on %s" % context.reader)
+        return value
 
-    def read(self):
-        chk, val = c.comedi_dio_read(self.device, self.subdevice, self.channel)
-        return val
-
-    def write(self, state):
-        c.comedi_dio_write(self.device, self.subdevice, self.channel, state)
-
-
-class AiSocket(ComediSocket):
-
-    subdevice_type = "ai"
-
-    def __init__(self, filename, subdevice, channel):
-        super(AiSocket, self).__init__(filename, subdevice, channel)
-
-    def read(self):
-        chk, val = c.comedi_read(self.device, self.subdevice, self.channel,
-                                 0, 0)  # range, aref
-        return val
-
-    def write(self, x):
-        raise NotImplementedError
+    def write(self, context):
+        device, subdevice, channel = _parse_name(context.writer)
+        chk = c.comedi_dio_config(device, subdevice, channel, c.COMEDI_OUTPUT)
+        if chk < 0:
+            raise ComediError("Failed to write on %s" % context.writer)
 
 
-class AoSocket(ComediSocket):
+class AioProtocol(drv.Protocol):
 
-    subdevice_type = "ao"
+    """Protocol for Analog Input and Analog Output lines."""
 
-    def __init__(self, filename, subdevice, channel):
-        super(AoSocket, self).__init__(filename, subdevice, channel)
+    def read(self, context):
+        device, subdevice, channel = _parse_name(context.reader)
+        chk, value = c.comedi_data_read(device, subdevice, channel,
+                                        0, 0)  # range, aref
+        if chk < 0:
+            raise ComediError("Failed to read on %s" % context.reader)
+        return value
 
-    def read(self):
-        raise NotImplementedError
-    
-    def write(self, data):
-        chk = c.comedi_write(self.device, self.subdevice, self.channel,
-                             0, 0, data)
+    def write(self, context):
+        device, subdevice, channel = _parse_name(context.writer)
+        chk = c.comedi_data_write(device, subdevice, channel,
+                                  0, 0, context.value)
+        if chk < 0:
+            raise ComediError("Failed to write on %s" % context.writer)
 
 
 def get_dio_channels(path):
@@ -92,6 +73,6 @@ def get_dio_channels(path):
         if (c.comedi_get_subdevice_type(device, n_subdevice)
             == comedi_subdevice_type("dio")):
             n_channel = c.comedi_get_n_channels(device, n_subdevice)
-            dio_list.extend([DioSocket(path, n_subdevice, chan)
-                            for chan in range(n_channel)])
+            #dio_list.extend([DioSocket(path, n_subdevice, chan)
+            #                for chan in range(n_channel)])
     return dio_list

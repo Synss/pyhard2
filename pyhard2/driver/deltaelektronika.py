@@ -1,12 +1,32 @@
-"""
-Delta-Electronica drivers
-=========================
+# vim: tw=120
+"""Delta-Electronica drivers
 
 """
-
-import yaml
+import unittest
 import pyhard2.driver as drv
-import pyhard2.driver.ieee.scpi as scpi
+Cmd, Access = drv.Command, drv.Access
+
+
+class CommunicationProtocol(drv.CommunicationProtocol):
+
+    """Communication using the Delta Programming Language (DPL)
+
+    Warning:
+        the Delta Programming Language (DPL) has been obsoleted by
+        Delta-Electronica.
+
+    """
+    def __init__(self, socket):
+        super(CommunicationProtocol, self).__init__(socket)
+        self._socket.timeout = 5.0
+        self._socket.newline = "\n"
+
+    def read(self, context):
+        self._socket.write("{0}\n".format(context.reader))
+        return self._socket.readline()
+
+    def write(self, context):
+        self._socket.write("{0} {1}\n".format(context.writer, context.value))
 
 
 def _parse_error(err):
@@ -29,110 +49,46 @@ def _parse_error(err):
             19: "Command not supported, wrong configuration"}[int(err)]
 
 
-class DplProtocol(drv.SerialProtocol):
+class DplInstrument(drv.Subsystem):
 
-    """Delta Programming Language protocol.
+    """Driver using the DPL language."""
 
-    .. warning::
-
-        DPL has been obsoleted by Delta-Electronica.
-
-    """
-
-    def __init__(self, socket, async): 
-        super(DplProtocol, self).__init__(
-            socket,
-            async,
-            fmt_read="{param[getcmd]}\n",
-            fmt_write="{param[setcmd]} {val}\n",
-        )
-
-
-class DplSubsystem(drv.Subsystem):
-
-    """DPL subsystem."""
-
-    step_mode_voltage = drv.Parameter("SA",
-                                      doc="Step mode A channel (voltage)")
-    step_mode_current = drv.Parameter("SB",
-                                      doc="Step mode B channel (current)")
-    max_voltage = drv.Parameter("FU", doc="Input maximum voltage")
-    max_current = drv.Parameter("FI", doc="Input maximum current")
-    voltage = drv.Parameter("U", "MA?", doc="Output voltage")
-    current = drv.Parameter("I", "MB?", doc="Output current")
-    error = drv.Parameter("ERR?", getter_func=_parse_error, read_only=True,
-                          doc="Report last error")
-    identification = drv.Parameter("ID?", read_only=True,
-                                   doc="Report identity of the PSC")
-    scpi = drv.Action("SCPI", doc="Switch to the SCPI parser")
-
-
-class DplInstrument(drv.Instrument):
-
-    """DPL instrument."""
-
-    def __init__(self, socket, async=False):
+    def __init__(self, socket):
         super(DplInstrument, self).__init__()
-
-        socket.timeout = 5.0
-        socket.newline = "\n"
-
-        protocol = DplProtocol(socket, async)
-
-        self.main = DplSubsystem(protocol)
-
-
-class Psc232ext(scpi.ScpiInstrument):
-
-    """SCPI instrument."""
-
-    def __init__(self, socket, async=False):
-        super(Psc232ext, self).__init__()
-
-        socket.baudrate = 19200
-        socket.timeout = 3
-
-        self.add_subsystems_from_tree(yaml.load(
-            """
-            CAlculate:
-                VOltage:
-                    &gainoffset
-                    P_GAin:
-                    P_OFfset:
-                    MEasure:
-                        P_GAin:
-                        P_OFset:
-                CUrrent:
-                    *gainoffset
-            SOurce:
-                VOltage:
-                    P_MAx:
-                CUrrent:
-                    P_MAx:
-                P_VOltage:
-                P_CUrrent:
-                #FU:
-                #    A_RSD:
-            MEasure:
-                P_VOltage:
-                P_CUrrent:
-            MAIN:
-                P_CHannel:
-                A_HE:
-                A_PA:
-                A_TY:
-                A_CU:
-            """))
+        self.setProtocol(CommunicationProtocol(socket))
+        self.step_mode_voltage = Cmd("SA", rfunc=float, doc="Step mode A channel (voltage)")
+        self.step_mode_current = Cmd("SB", rfunc=float, doc="Step mode B channel (current)")
+        self.max_voltage = Cmd("FU", rfunc=float, doc="Input maximum voltage")
+        self.max_current = Cmd("FI", rfunc=float, doc="Input maximum current")
+        self.voltage = Cmd("U", "MA?", minimum=0.0, rfunc=float, doc="Output voltage")
+        self.current = Cmd("I", "MB?", minimum=0.0, rfunc=float, doc="Output current")
+        self.error = Cmd("ERR?", rfunc=_parse_error, access=Access.RO, doc="Report last error")
+        self.identification = Cmd("ID?", access=Access.RO, doc="Report identity of the PSC")
+        #self.scpi = Cmd("SCPI", access=Access.WO, doc="Switch to the SCPI parser")
+        self.voltage.maximum = self.max_voltage.read()
+        self.current.maximum = self.max_current.read()
 
 
-def _test():
-    dpl = DplInstrument(drv.Serial())
-    print(dpl)
-    print("\n\n")
-    instr = Psc232ext(drv.Serial())
-    print(instr)
-    print(instr.calculate.voltage.measure)
+class TestDpl(unittest.TestCase):
+
+    def setUp(self):
+        socket = drv.TesterSocket()
+        socket.msg = {"U\n": "13\r\n",
+                    "FU\n": "70\r\n",
+                    "FI\n": "35\r\n", }
+        self.i = DplInstrument(socket)
+
+    def test_read(self):
+        self.assertEqual(self.i.voltage.read(), 13)
+
+    def test_UI_limit(self):
+        self.assertEqual(self.i.voltage.maximum, self.i.max_voltage.read())
+        self.assertEqual(self.i.current.maximum, self.i.max_current.read())
 
 
 if __name__ == "__main__":
-    _test()
+    import logging
+    logging.basicConfig()
+    logger = logging.getLogger("pyhard2")
+    logger.setLevel(logging.DEBUG)
+    unittest.main()

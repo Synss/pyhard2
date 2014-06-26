@@ -1,13 +1,8 @@
 # -*- coding: utf-8 -*-
-"""
-Pfeiffer GUI controllers
-========================
-
-Graphical user interface to Pfeiffer Maxigauge pressure controller.
-
-"""
+"""Graphical user interface to Pfeiffer Maxigauge pressure controller."""
 
 import sys
+from itertools import izip_longest
 
 import sip
 for cls in "QDate QDateTime QString QTextStream QTime QUrl QVariant".split():
@@ -16,43 +11,32 @@ for cls in "QDate QDateTime QString QTextStream QTime QUrl QVariant".split():
 from PyQt4 import QtGui
 
 import pyhard2.ctrlr as ctrlr
+import pyhard2.driver as drv
+from pyhard2.driver.pfeiffer import Maxigauge
 import pyhard2.driver.virtual as virtual
-import pyhard2.driver.pfeiffer as pfeiffer
 
 
-class VirtualMaxigauge(virtual.VirtualInstrument):
-
-    """Virtual instrument with a `node`."""
-
-    def __init__(self, socket, async=False, node=0):
-        super(VirtualMaxigauge, self).__init__(socket, async)
-        self.node = node
-
-
-def createController(opts):
-    """
-    Register `VirtualMaxigauge` and `Maxigauge`.
-
-    """
-    if not opts.config:
-        opts.config = {"virtual": [dict(name="G%i" % idx,
-                                        extra={"node": idx},
-                                        driver="virtual")
-                                   for idx in range(1, 5)]}
-    if opts.virtual:
-        iface = ctrlr.SetpointController()
-        iface.setWindowTitle(iface.windowTitle() + u" [virtual]")
+def createController():
+    """Initialize controller."""
+    args = ctrlr.Config("pfeiffer")
+    if not args.nodes:
+        args.nodes = range(1, 7)
+        args.names = ["G%i" % node for node in args.nodes]
+    if args.virtual:
+        driver = virtual.VirtualInstrument()
+        iface = ctrlr.Controller.virtualInstrumentController(
+            driver, u"Multigauge")
+        iface.programPool.default_factory = ctrlr.SetpointRampProgram
     else:
-        iface = ctrlr.MonitorController()
-
-    for column in (ctrlr.ColumnName.OutputColumn,
-                   ctrlr.ColumnName.SetpointColumn):
-        iface._instrPanel.table.setColumnHidden(column, True)
-    iface.setWindowTitle(u"Pfeiffer Maxigauge controller")
-    iface.addInstrumentClass(pfeiffer.Maxigauge, "maxigauge")
-    iface.addInstrumentClass(VirtualMaxigauge, "virtual",
-                             virtual.virtual_mapper)
-    iface.loadConfig(opts)
+        driver = Maxigauge(drv.Serial(args.port))
+        iface = ctrlr.Controller(driver, u"Multigauge")
+        iface.editorPrototype.default_factory = ctrlr.ScientificSpinBox
+        iface.addCommand(driver.measure, poll=True, log=True)
+    iface.ui.driverView.setItemDelegateForColumn(
+        0, ctrlr.FormatTextDelegate("%.2e"))
+    for node, name in izip_longest(args.nodes, args.names):
+        iface.addNode(node, name if name else "G{0}".format(node))
+    iface.populate()
     return iface
 
 
@@ -60,13 +44,7 @@ def main(argv):
     """Start controller."""
     app = QtGui.QApplication(argv)
     app.lastWindowClosed.connect(app.quit)
-    opts = ctrlr.cmdline()
-    if opts.config:
-        try:
-            opts.config = opts.config["pfeiffer"]
-        except KeyError:
-            pass
-    iface = createController(opts)
+    iface = createController()
     iface.show()
     sys.exit(app.exec_())
 

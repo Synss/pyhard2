@@ -1,13 +1,9 @@
 # -*- coding: utf-8 -*-
-"""
-NI-DAQ and comedi controllers
-=============================
-
-Graphical user interface to NI-DAQ and comedi-compatible data acquisition
-hardware.
+"""Graphical user interface to NI-DAQ and comedi-compatible data
+acquisition hardware.
 
 """
-
+from itertools import izip_longest
 import sip
 for cls in "QDate QDateTime QString QTextStream QTime QUrl QVariant".split():
     sip.setapi(cls, 2)
@@ -18,25 +14,8 @@ import pyhard2.rsc
 
 import pyhard2.ctrlr as ctrlr
 import pyhard2.driver as drv
-Parameter, Action = drv.Parameter, drv.Action
+Cmd = drv.Command
 import pyhard2.driver.daq as daq
-
-
-class VirtualDio(object):
-
-    def __init__(self):
-        self.state = False
-
-
-class VirtualDioInstrument(drv.Instrument):
-
-    """Virtual instrument for DIO signal."""
-
-    def __init__(self, socket, async=False):
-        super(VirtualDioInstrument, self).__init__(socket, async)
-        wrapper = drv.WrapperProtocol(VirtualDio(), async)
-        self.main = drv.Subsystem(wrapper)
-        self.main.add_parameter_by_name("state", "state")
 
 
 class ValveButton(QtGui.QAbstractButton):
@@ -66,93 +45,32 @@ class ValveButton(QtGui.QAbstractButton):
             return self._rendererOff.defaultSize()
 
 
-class DaqModel(ctrlr.PollingInstrumentModel):
-
-    """Model handling non-serial configuration file."""
-
-    def __init__(self, parent=None):
-        super(DaqModel, self).__init__(parent)
-
-    def loadConfig(self, opts):
-        for port in opts.config:
-            thread = QtCore.QThread(self)
-            for nrow, conf in enumerate(opts.config[port]):
-                driverCls, mapper = self._instrumentClass[conf["driver"]]
-                kw = dict(name=conf.get("name", "%i" % nrow),
-                          lines="/".join((port, conf["extra"]["node"])))
-                self.setVerticalHeaderItem(
-                    nrow, QtGui.QStandardItem(kw["name"]))
-                driver = driverCls(daq.DioSocket(**kw)
-                                   if not opts.virtual else None)
-                adapter = drv.DriverAdapter(driver, mapper)
-                adapter.moveToThread(thread)
-                for ncol in range(self.columnCount()):
-                    item = self.itemFromIndex(self.index(nrow, ncol))
-                    item.setInstrument(adapter)
-                    item.connectHardware(role=Qt.CheckStateRole)
-            thread.start()
-            self._threads.append(thread)
-        self.configLoaded.emit()
-
-
-class DioController(ctrlr.MeasureController):
-
-    """Controller with a `DaqModel` as default model."""
-
-    def __init__(self, parent=None):
-        super(DioController, self).__init__(parent)
-        self.__setupUI()
-        model = self._instrPanel.table.model()
-        model.setHorizontalHeaderItem(ctrlr.ColumnName.MeasureColumn,
-                                      QtGui.QStandardItem(u"state"))
-        model.registerParameter(ctrlr.ColumnName.MeasureColumn, "state")
-
-    def __setupUI(self):
-        self._instrPanel.table.setItemDelegateForColumn(
-            0, ctrlr.ButtonDelegate(ValveButton(), self._instrPanel))
-        self._instrPanel.table.setEditTriggers(
-            QtGui.QAbstractItemView.SelectedClicked |
-            QtGui.QAbstractItemView.CurrentChanged)
-
-    def _setModel(self):
-        super(DioController, self)._setModel(DaqModel(self))
-
-    def createEditor(self, row, column=ctrlr.ColumnName.MeasureColumn):
-
-        def onValueChanged(item):
-            if (item.column() == column and
-                item.row() == row):
-                editor.setChecked(item.checkState())
-
-        editor = ValveButton()
-        editor.setContextMenuPolicy(Qt.ActionsContextMenu)
-        model = self._instrPanel.table.model()
-        model.itemChanged.connect(onValueChanged)
-        item = model.item(row, column)
-        onValueChanged(item)  # set initial value
-        editor.toggled.connect(item.setCheckState)
-
-        return editor
-
-
-def createController(opts):
-    """
-    Register `VirtualDioInstrument` and `ValveInstrument`.
-
-    """
-    iface = DioController()
-    iface.setWindowTitle(u"DAQ controller")
-    if not opts.config:
-        opts.config = {"virtual": [dict(name="L%i" % idx,
-                                        driver="virtual",
-                                        extra={"node": "%i"})
-                                   for idx in range(13)]}
-    if opts.virtual:
-        iface.setWindowTitle(iface.windowTitle() + u" [virtual]")
-
-    iface.addInstrumentClass(VirtualDioInstrument, "virtual")
-    iface.addInstrumentClass(daq.DioInstrument, "valve")
-    iface.loadConfig(opts)
+def createController():
+    """Initialize controller."""
+    args = ctrlr.Config("daq")
+    if not args.nodes:
+        args.nodes = range(20)
+        args.names = ["V%i" % node for node in args.nodes]
+    if args.virtual:
+        VirtualDio = type("VirtualDio", (object,), {})
+        virtualDio = VirtualDio()
+        virtualDio.state = False
+        driver = drv.Subsystem()
+        driver.setProtocol(drv.ObjectWrapperProtocol(virtualDio))
+        driver.state = Cmd("state")
+    else:
+        driver = daq.DioInstrument()
+    iface = ctrlr.Controller(driver, u"DAQ")
+    iface.addCommand(driver.state, "state")
+    iface.editorPrototype.default_factory=ValveButton
+    iface.ui.driverView.setItemDelegateForColumn(
+        0, ctrlr.ButtonDelegate(ValveButton(), iface.ui.driverView))
+    iface.ui.driverView.setEditTriggers(
+        QtGui.QAbstractItemView.SelectedClicked |
+        QtGui.QAbstractItemView.CurrentChanged)
+    for node, name in izip_longest(args.nodes, args.names):
+        iface.addNode(node, name if name else "V{0}".format(node))
+    iface.populate()
     return iface
 
 
@@ -160,13 +78,7 @@ def main(argv):
     """Start controller."""
     app = QtGui.QApplication(argv)
     app.lastWindowClosed.connect(app.quit)
-    opts = ctrlr.cmdline()
-    if opts.config:
-        try:
-            opts.config = opts.config["daq"]
-        except KeyError:
-            pass
-    iface = createController(opts)
+    iface = createController()
     iface.show()
     sys.exit(app.exec_())
 

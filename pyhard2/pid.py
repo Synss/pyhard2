@@ -4,72 +4,59 @@
 # instrument drivers
 # Copyright (C) 2012, Mathias Laurin, GPLv3
 
-"""
-pyhard2.pid
-===========
+"""Proportional-integral-derivative controller and ramping functions.
 
-Proportional-integral-derivative control algorithm and PID ramping
-helper functions.
-
-Notes
------
-See `pyfuzzy <http://pyfuzzy.sourceforge.net/>`_ for fuzzy logic in Python.
+Note:
+    See `pyfuzzy <http://pyfuzzy.sourceforge.net/>`_ for fuzzy logic in
+    Python.
 
 """
-
 
 import time
 
 
 class PidController(object):
-    """A software PID controller.
+    r"""A software PID controller.
 
-    Parameters
-    ----------
-    proportional, integral, derivative : float
-        `Kp`, `Kd`, `Ki` in the ideal form.
-    vmin, vmax : float
-        Minimum and maximum values for the output.
+    Parameters:
+        proportional (float): :math:`K_p` (no unit).
+        integral_time (float): :math:`T_i = K_p/K_i`, in seconds (or
+            samples).
+        derivative_time (float): :math:`T_d = K_d/K_p`, in seconds (or
+            sample).
+        vmin (float): minimum value for the output.
+        vmax (float): maximum value for the output.
 
-    Attributes
-    ----------
-    setpoint : float
-    proportional, integral, derivative : float
-        Ideal form, as gains.
-    proportional, integral_time, derivative_time : float
-        Standard form, as times.
-    anti_windup : float
-        Soft integrator, 1.0 to disable, recommended range [0.005-0.25].
-    proportional_on_pv : bool
-        Computes proportional gain based on the process variable.
+    Attributes:
+        setpoint (float): Setpoint value.
+        proportional (float): Proportional gain :math:`K_p` (no unit).
+        integral (float): Integral gain :math:`K_i` (1/second).
+        derivative (float): Derivative gain :math:`K_d` (seconds).
+        anti_windup (float): Soft integrator, 1.0 to disable,
+            recommended range [0.005-0.25].
+        proportional_on_pv (bool): Compute proportional gain based on
+            the process variable.
 
-    Methods
-    -------
-    reset()
-        Reset time now.
-    compute_output(measure[, now])
-        Compute output `now`.
+    Note:
+        The controller follows either the ideal form
 
-    Notes
-    -----
-    Ideal or standard PID form.
+        .. math::
 
-    The controller follows either
+            u(t) = K_p e(t) + K_i \int_0^t e(t)dt + K_d \frac{d}{dt}e(t),
 
-    .. math::
-        \\text{ideal form}& u(t) =& K_p e(t) + K_i \\int_0^t e(t)dt
-            + K_d \\frac{d}{dt}e(t), \\\\
-        \\text{standard form}& u(t) =& K_p \\left(
-            e(t) + \\frac{1}{T_i} \\int_0^t e(t)dt
-            + T_d \\frac{d}{dt} e(t) \\right)
+        or the standard form
 
-    References
-    ----------
-    - http://en.wikipedia.org/wiki/PID_controller
-    - http://www.mstarlabs.com/apeng/techniques/pidsoftw.html
+        .. math::
+
+            u(t) = K_p \left(e(t) + \frac{1}{T_i} \int_0^t e(t)dt +
+                T_d \frac{d}{dt} e(t) \right).
+
+    Reference:
+        - http://en.wikipedia.org/wiki/PID_controller
+        - http://www.mstarlabs.com/apeng/techniques/pidsoftw.html
+
     """
-
-    def __init__(self,
+    def __init__(self, 
                  proportional=2.0, integral_time=0.0, derivative_time=0.0,
                  vmin=0.0, vmax=100.0):
         self.proportional = proportional
@@ -96,7 +83,6 @@ class PidController(object):
 
     @property
     def integral_time(self):
-        """Integral time (s) :math:`T_i = K_p/K_i`."""
         return (0.0 if self.integral == 0.0
                 else self.proportional / self.integral)
 
@@ -107,7 +93,6 @@ class PidController(object):
 
     @property
     def derivative_time(self):
-        """Derivative time (s) :math:`T_d = K_d / K_p`."""
         return self.derivative / self.proportional
 
     @derivative_time.setter
@@ -121,16 +106,14 @@ class PidController(object):
     def compute_output(self, measure, now=None):
         """Compute next output.
 
-        Parameters
-        ----------
-        measure : float
-            Process value.
-        now : float, optional
-            Time in s, time.time() is called if value is omitted.
+        Parameters:
+            measure (float): Process value.
+            now (float, optional): Time in s or time.time() if the value
+                is omitted.
 
-        Returns
-        -------
-        output : float
+        Returns:
+            output (float): Output value.
+
         """
         error = self.setpoint - measure
         if now is None:
@@ -160,19 +143,16 @@ class PidController(object):
 
 
 class Profile(object):
-    """Make profile ramps.
-    
-    Parameters
-    ----------
-    profile : iterable
-        A list of (time, setpoint) tuples, time in s.
+    r"""Make a profile ramp.
 
-    Notes
-    -----
-    A :math:`t_0` point is created by default.  Overwrite by adding a
-    value at :math:`t_0 = 0` in the profile.
+    Parameters:
+        profile (iterable): A list of (time, setpoint) tuples, time in s.
+
+    Note:
+        A :math:`t_0` point is created by default.  Overwrite by adding
+        a value at :math:`t_0 = 0` in the profile.
+
     """
-
     TIME, SP = 0, 1
 
     def __init__(self, profile):
@@ -186,17 +166,14 @@ class Profile(object):
         return "%s(profile=%r)" % (self.__class__.__name__, self.profile)
 
     def setpoint(self, now):
-        """Return setpoint value.
+        """Return the setpoint stored in the profile for time `now`.
 
-        Parameters
-        ----------
-        now : float
-            In seconds.
+        Parameters:
+            now (float): In seconds.
 
-        Returns
-        -------
-        setpoint : float
-            Value at time `now`.
+        Returns:
+            setpoint (float): Profile value at time `now`.
+
         """
         if now >= self.profile[-1][Profile.TIME]:
             return self.profile[-1][Profile.SP]
@@ -210,19 +187,19 @@ class Profile(object):
                 (now - point[Profile.TIME]))
 
     def ramp(self):
-        """Generate setpoint values.
+        """Calculate setpoint values.
 
-        Returns
-        -------
-        setpoint : generator
+        Returns:
+            setpoint (generator): generates calculated setpoints.
 
-        Examples
-        --------
-        >>> from time import sleep
-        >>> profile = Profile([(5, 10.0), (10, -20.0), (15, -20)])
-        >>> for setpoint in profile.ramp():
-                print setpoint
-                sleep(2)
+        Example:
+            >>> from time import sleep
+            >>> profile = Profile([(0, 0.0), (0.2, 10.0), (0.4, 4.0)])
+            >>> for setpoint in profile.ramp():
+            ...     print("%i" % round(setpoint)),
+            ...     sleep(0.1)
+            0 5 10 7
+
         """
         self.start_time = time.time()
         elapsed_time = 0.0
@@ -233,7 +210,7 @@ class Profile(object):
             raise StopIteration
 
 
-def test_ramp():
+def _test_ramp():
     """Test ramping algorithms."""
     profile = Profile([(5, 10.0), (10, -20.0), (15, -20), (20, -7)])
     times = np.arange(0, 21, 0.1)
@@ -242,7 +219,7 @@ def test_ramp():
     l, = ax.plot(times, [profile.setpoint(time) for time in times])
     plt.show()
 
-def test_system():
+def _test_system():
     """Test PID algorithm."""
     import scipy.signal as sig
     # transfer function in s-space describes sys
@@ -272,6 +249,6 @@ def test_system():
 if __name__ == "__main__":
     import matplotlib.pyplot as plt
     import numpy as np
-    test_system()
+    _test_system()
 
 
