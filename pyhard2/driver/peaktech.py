@@ -65,8 +65,11 @@ class CommunicationProtocol(drv.CommunicationProtocol):
 
 class Pt1885(drv.Subsystem):
 
-    """Driver for Peaktech PT1885 power supplies."""
+    """Driver for Peaktech PT1885 power supplies.
 
+    .. graphviz:: gv/Pt1885.txt
+
+    """
     def __init__(self, socket):
         super(Pt1885, self).__init__()
         self.setProtocol(CommunicationProtocol(socket))
@@ -78,8 +81,11 @@ class Pt1885(drv.Subsystem):
         self.voltage = Cmd('GETD', minimum=0.0, rfunc=_parser("voltage"), access=Access.RO)
         self.current = Cmd('GETD', minimum=0.0, rfunc=_parser("current"), access=Access.RO)
         self.disable_output = Cmd("SOUT", access=Access.WO)
-        self.voltage.maximum = self.max_voltage.read()
-        self.current.maximum = self.max_current.read()
+        try:
+            self.voltage.maximum = self.max_voltage.read()
+            self.current.maximum = self.max_current.read()
+        except KeyError:  # Ignore exception raised during auto documentation
+            pass
 
 
 class TestPt1885(unittest.TestCase):

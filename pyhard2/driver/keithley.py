@@ -9,8 +9,11 @@ import pyhard2.driver.ieee.scpi as scpi
 
 class Model6487(scpi.ScpiRequired):
 
-    """Driver for Keithley Model 6487 Picoammeter/Voltage Source."""
+    """Driver for Keithley Model 6487 Picoammeter/Voltage Source.
 
+    .. graphviz:: gv/Model6487.txt
+
+    """
     def __init__(self, socket, parent=None):
         super(Model6487, self).__init__(socket, parent)
         # CALCulate subsystem

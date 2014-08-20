@@ -130,6 +130,11 @@ class ScpiDigitalMeter(ScpiRequired):
 
 class ScpiDCVoltmeter(ScpiDigitalMeter):
 
+    """SCPI Voltmeter.
+
+    .. graphviz:: gv/ScpiDCVoltmeter.txt
+
+    """
     def __init__(self, socket, parent=None):
         super(ScpiDCVoltmeter, self).__init__(socket, "VOLTage", parent)
         # SENSe: see Command Ref 18.20
@@ -167,8 +172,11 @@ class ScpiFourWireOhmmeter(ScpiDigitalMeter):
 
 class ScpiPowerSupply(ScpiRequired):
 
-    """SCPI Instrument Classes - 7 Power Supplies."""
+    """SCPI Instrument Classes - 7 Power Supplies.
 
+    .. graphviz:: gv/ScpiPowerSupply.txt
+
+    """
     def __init__(self, socket, parent=None):
         super(ScpiPowerSupply, self).__init__(socket, parent)
         self.output = ScpiSubsystem("OUTPUT", self._scpi)

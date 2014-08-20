@@ -108,8 +108,11 @@ class PidSubsystem(drv.Subsystem):
 
 class VirtualInstrument(drv.Subsystem):
 
-    """Driver for virtual instruments with a PID."""
+    """Driver for virtual instruments with a PID.
 
+    .. graphviz:: gv/VirtualInstrument.txt
+
+    """
     def __init__(self, socket=None):
         super(VirtualInstrument, self).__init__()
         self.pid = PidSubsystem(self)

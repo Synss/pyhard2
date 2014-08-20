@@ -280,6 +280,8 @@ class Controller(Subsystem):
     Note:
         Node 128 broadcasts to every node.
 
+    .. graphviz:: gv/Controller.txt
+
     """
     def __init__(self, socket):
         socket.baudrate = 38400

@@ -51,8 +51,11 @@ def _parse_error(err):
 
 class DplInstrument(drv.Subsystem):
 
-    """Driver using the DPL language."""
+    """Driver using the DPL language.
 
+    .. graphviz:: gv/DplInstrument.txt
+
+    """
     def __init__(self, socket):
         super(DplInstrument, self).__init__()
         self.setProtocol(CommunicationProtocol(socket))
@@ -65,8 +68,11 @@ class DplInstrument(drv.Subsystem):
         self.error = Cmd("ERR?", rfunc=_parse_error, access=Access.RO, doc="Report last error")
         self.identification = Cmd("ID?", access=Access.RO, doc="Report identity of the PSC")
         #self.scpi = Cmd("SCPI", access=Access.WO, doc="Switch to the SCPI parser")
-        self.voltage.maximum = self.max_voltage.read()
-        self.current.maximum = self.max_current.read()
+        try:
+            self.voltage.maximum = self.max_voltage.read()
+            self.current.maximum = self.max_current.read()
+        except KeyError:  # Ignore exception raised during auto documentation.
+            pass
 
 
 class TestDpl(unittest.TestCase):

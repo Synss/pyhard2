@@ -171,8 +171,11 @@ class _PowerSubsystem(Subsystem):
 
 class CS400(Subsystem):
 
-    """Driver for the Amtron CS400 family of controllers."""
+    """Driver for the Amtron CS400 family of controllers.
 
+    .. graphviz:: gv/CS400.txt
+
+    """
     def __init__(self, socket):
         super(CS400, self).__init__(0x00)
         self.setProtocol(CommunicationProtocol(socket))

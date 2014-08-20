@@ -75,8 +75,11 @@ class CommunicationProtocol(drv.CommunicationProtocol):
 
 class Fluke18x(drv.Subsystem):
 
-    """Driver for the Fluke Series 18x multimeters."""
+    """Driver for the Fluke Series 18x multimeters.
 
+    .. graphviz:: gv/Fluke18x.txt
+
+    """
     def __init__(self, socket):
         super(Fluke18x, self).__init__()
         self.setProtocol(CommunicationProtocol(socket))

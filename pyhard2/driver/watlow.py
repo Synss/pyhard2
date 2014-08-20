@@ -125,8 +125,11 @@ def subsystemFromCsv(subsystem, csvtable, cmd_suffix=""):
 
 class Series988(drv.Subsystem):
 
-    """Driver for the Watlow Series 988 family of controllers."""
+    """Driver for the Watlow Series 988 family of controllers.
 
+    .. graphviz:: gv/Series988.txt
+
+    """
     def __init__(self, socket):
         super(Series988, self).__init__()
         self.setProtocol(XonProtocol(socket))

@@ -82,8 +82,11 @@ class Protocol(drv.CommunicationProtocol):
 
 class Ngc2d(drv.Subsystem):
 
-    """Driver for NGC2D ion gauges."""
+    """Driver for NGC2D ion gauges.
 
+    .. graphviz:: gv/Ngc2d.txt
+
+    """
     def __init__(self, socket):
         super(Ngc2d, self).__init__()
         self.setProtocol(Protocol(socket))

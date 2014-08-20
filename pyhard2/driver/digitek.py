@@ -64,8 +64,11 @@ class CommunicationProtocol(drv.CommunicationProtocol):
 
 class DT80k(drv.Subsystem):
 
-    """Driver for the Digitek DT80000 multimeter."""
+    """Driver for the Digitek DT80000 multimeter.
 
+    .. graphviz:: gv/DT80k.txt
+
+    """
     units = {4: ('Out', 'Hz', 1.0e-5),
              5: ('A DC', 'A', 1e-4),
              6: ('mA', 'mA', 1e-3),

@@ -127,12 +127,9 @@ class Maxigauge(drv.Subsystem):
 
     """Maxigauge subsystem.
 
-    .. warning::
-
-        Only the parameters `errors` and `unit` are implemented.
+    .. graphviz:: gv/Maxigauge.txt
 
     """
-
     def __init__(self, socket):
         super(Maxigauge, self).__init__()
         self.setProtocol(CommunicationProtocol(socket))
