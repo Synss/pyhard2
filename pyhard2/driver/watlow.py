@@ -22,13 +22,13 @@ class XonProtocol(drv.CommunicationProtocol):
     .. uml::
 
         group Set
-        User    ->  Instrument: = {mnemonic} {value}
+        User    ->  Instrument: "= {mnemonic} {value}"
         User    <-- Instrument: XOFF
         User    <-- Instrument: XON
         end
 
         group Query
-        User    ->  Instrument: ? {mnemonic}
+        User    ->  Instrument: "? {mnemonic}"
         User    <-- Instrument: XOFF
         User    <-- Instrument: XON{value}
         end

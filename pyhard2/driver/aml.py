@@ -61,7 +61,7 @@ class Protocol(drv.CommunicationProtocol):
     .. uml::
 
         group Query
-        User    ->  Instrument: *{command}{node}
+        User    ->  Instrument: "*{command}{node}"
         note right: {node} is not used on NGC2D instruments
         User    <-- Instrument: 17-bytes response
         end
