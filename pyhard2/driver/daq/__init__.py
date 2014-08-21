@@ -42,6 +42,7 @@ class Subsystem(drv.Subsystem):
 
     """
     def __init__(self, device, parent=None):
+        super(Subsystem, self).__init__(parent)
         self.device = device
 
 

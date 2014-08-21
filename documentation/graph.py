@@ -5,9 +5,7 @@ import pyhard2.driver as drv
 def traverse_iface(parent_node, parent, graph):
     for child_name, child in parent.__dict__.iteritems():
         child_node = pydot.Node(name=id(child), label=child_name)
-        if child_name is "_parent":
-            continue
-        elif isinstance(child, drv.Protocol):
+        if isinstance(child, drv.Protocol):
             parent_node.set_fontcolor("red")
         elif isinstance(child, drv.Command):
             child_node.set_fontcolor("blue")

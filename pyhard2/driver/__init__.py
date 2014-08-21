@@ -189,7 +189,6 @@ class Command(QtCore.QObject):
         self._rfunc = rfunc if rfunc else _identity
         self._wfunc = wfunc if wfunc else _identity
         self.__doc__ = doc
-        self._parent = None
 
     def __repr__(self):
         return " ".join(
@@ -213,7 +212,7 @@ class Command(QtCore.QObject):
         """
         if self.access is Access.WO:
             raise DriverError("Read access violation in %r" % self)
-        value = self._rfunc(self._parent.read(Context(self, node=node)))
+        value = self._rfunc(self.parent().read(Context(self, node=node)))
         self.signal.emit(value, node)
         return value
 
@@ -230,34 +229,26 @@ class Command(QtCore.QObject):
             raise DriverError("Write access violation in %r" % self)
         if value is None and self.access is not Access.WO:
             raise DriverError("Must write something in %r" % self)
-        self._parent.write(Context(self, self._wfunc(value), node=node))
+        self.parent().write(Context(self, self._wfunc(value), node=node))
 
 
-class Subsystem(object):
+class Subsystem(QtCore.QObject):
 
     """A logical group of one or more commands."""
 
     def __init__(self, parent=None):
-        self._parent = parent
+        super(Subsystem, self).__init__(parent)
         self._protocol = None
 
     def __repr__(self):
         return "%s(parent=%r)" % (self.__class__.__name__, self.parent())
 
     def __setattr__(self, name, value):
-        """Set `Command`'s parent to `self`."""
+        """The `subsystem` takes the ownership of `commands`."""
         if isinstance(value, Command):
-            if not value._parent:
-                value._parent = self
+            if not value.parent():
+                value.setParent(self)
         super(Subsystem, self).__setattr__(name, value)
-
-    def parent(self):
-        """Return the parent."""
-        return self._parent
-
-    def setParent(self, parent):
-        """Set the parent to `parent`."""
-        self._parent = parent
 
     def protocol(self):
         """Return the protocol if one has been set."""
@@ -280,7 +271,7 @@ class Subsystem(object):
         """
         context.append(self)
         try:
-            return (self._protocol if self._protocol else self._parent).read(context)
+            return (self._protocol if self._protocol else self.parent()).read(context)
         except AttributeError:
             if not self._protocol and not self._protocol:
                 raise DriverError(" ".join(
@@ -303,7 +294,7 @@ class Subsystem(object):
         """
         context.append(self)
         try:
-            (self._protocol if self._protocol else self._parent).write(context)
+            (self._protocol if self._protocol else self.parent()).write(context)
         except AttributeError:
             if not self._protocol and not self._protocol:
                 raise DriverError(" ".join(
@@ -314,20 +305,12 @@ class Subsystem(object):
                 raise
 
 
-class Protocol(object):
+class Protocol(QtCore.QObject):
 
     """Protocols should derive this class."""
 
     def __init__(self, parent=None):
-        self._parent = parent
-
-    def parent(self):
-        """Return the parent."""
-        return self._parent
-
-    def setParent(self, parent):
-        """Set the parent to `parent`."""
-        self._parent = parent
+        super(Protocol, self).__init__(parent)
 
     def read(self, context):
         """Handle the read request."""

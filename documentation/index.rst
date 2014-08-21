@@ -15,8 +15,7 @@ free hardware projects on Arduino/Raspberry Pi/BeagleBone hardware.
 - New drivers should take about 0.5 to 1 day to write and do not require a large
   amount of code.
 - Graphical user interfaces are loosely coupled to the driver.
-- The library takes care of threading when the driver is used in a GUI (in
-  progress).
+- The library takes care of threading when the driver is used in a GUI.
 - Easily create a Dashboard presenting a live overview over every running
   controller.
 

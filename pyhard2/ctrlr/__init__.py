@@ -1045,7 +1045,10 @@ class DriverModel(QtGui.QStandardItemModel):
 
     def __init__(self, driver, parent=None):
         super(DriverModel, self).__init__(parent)
-        self._driver = driver  # prevents GC
+        self._thread = QtCore.QThread(self)
+        self._driver = driver
+        self._driver.moveToThread(self._thread)
+        self._thread.start()
         self.setItemPrototype(DriverItem())
 
     def __repr__(self):
@@ -1092,9 +1095,9 @@ class DriverModel(QtGui.QStandardItemModel):
             item.queryData()
 
     def closeEvent(self, event):
-        """Reimplemented from `QtCore.QStandardItemModel`."""
-        self.thread.quit()
-        self.thread.wait()
+        """Let the driver thread exit cleanly."""
+        self._thread.quit()
+        self._thread.wait()
         event.accept()
 
 
