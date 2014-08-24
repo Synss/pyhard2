@@ -280,9 +280,15 @@ class Subsystem(object):
         """
         context.append(self)
         try:
-            return self._protocol.read(context)
+            return (self._protocol if self._protocol else self._parent).read(context)
         except AttributeError:
-            return self._parent.read(context)
+            if not self._protocol and not self._protocol:
+                raise DriverError(" ".join(
+                    ("%s does not know what to fo with %r,",
+                     "it has neither parent nor protocol."
+                     % self.__class__.__name__, context)))
+            else:
+                raise
 
     def write(self, context):
         """Forward the write request.
@@ -297,9 +303,15 @@ class Subsystem(object):
         """
         context.append(self)
         try:
-            self._protocol.write(context)
+            (self._protocol if self._protocol else self._parent).write(context)
         except AttributeError:
-            self._parent.write(context)
+            if not self._protocol and not self._protocol:
+                raise DriverError(" ".join(
+                    ("%s does not know what to do with %r,",
+                     "it has neither parent nor protocol."
+                     % self.__class__.__name__, context)))
+            else:
+                raise
 
 
 class Protocol(object):
