@@ -1330,7 +1330,7 @@ class Controller(QtCore.QObject):
     def on_dataPlot_customContextMenuRequested(self, pos):
         def clear():
             """Clear the `dataPlot`."""
-            for plotItem in self.ui.dataPlot:
+            for plotItem in self.ui.dataPlot.itemList():
                 plotItem.data().clear()
 
         def exportAsCsv(dataPlot):
