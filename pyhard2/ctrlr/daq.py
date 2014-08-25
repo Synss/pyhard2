@@ -45,6 +45,29 @@ class ValveButton(QtGui.QAbstractButton):
             return self._rendererOff.defaultSize()
 
 
+class VirtualDaq(object):
+
+    class Dio(object):
+
+        def __init__(self):
+            self.state = False
+
+    class Aio(object):
+
+        def __init__(self):
+            self.ai = 0
+            self.ao = 0
+
+    def __init__(self, device, parent=None):
+        self.digitalIO = drv.Subsystem()
+        self.digitalIO.setProtocol(drv.ObjectWrapperProtocol(VirtualDaq.Dio()))
+        self.digitalIO.state = Cmd("state")
+        self.voltage = drv.Subsystem()
+        self.voltage.setProtocol(drv.ObjectWrapperProtocol(VirtualDaq.Aio()))
+        self.voltage.ai = Cmd("ai")
+        self.voltage.ao = Cmd("ao")
+
+
 def createController():
     """Initialize controller."""
     args = ctrlr.Config("daq")
@@ -52,16 +75,12 @@ def createController():
         args.nodes = range(20)
         args.names = ["V%i" % node for node in args.nodes]
     if args.virtual:
-        VirtualDio = type("VirtualDio", (object,), {})
-        virtualDio = VirtualDio()
-        virtualDio.state = False
-        driver = drv.Subsystem()
-        driver.setProtocol(drv.ObjectWrapperProtocol(virtualDio))
-        driver.state = Cmd("state")
+        driver = VirtualDaq(args.port)
+        iface = ctrlr.Controller(driver, u"virtual DAQ")
     else:
-        driver = daq.DioInstrument()
-    iface = ctrlr.Controller(driver, u"DAQ")
-    iface.addCommand(driver.state, "state")
+        driver = daq.Daq(args.port)
+        iface = ctrlr.Controller(driver, u"DAQ")
+    iface.addCommand(driver.digitalIO.state, "state")
     iface.editorPrototype.default_factory=ValveButton
     iface.ui.driverView.setItemDelegateForColumn(
         0, ctrlr.ButtonDelegate(ValveButton(), iface.ui.driverView))

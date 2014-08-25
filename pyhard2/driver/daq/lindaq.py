@@ -20,10 +20,25 @@ comedi_subdevice_type = dict(zip(subdevice_type_name, range(13)))
 class ComediError(drv.HardwareError): pass
 
 
-def _parse_name(device_name):
-    # write device_name like FILENAME.SUBDEVICE.CHANNEL
-    # e.g.: /dev/comedi0.1.2
-    filename, subdevice, channel = device_name.split(".")
+def _phys_channel(context):
+    """Comedi uses device names such as /dev/comedi0 SUBDEVICE CHANNEL
+    where SUBDEVICE and CHANNEL are integers.
+
+    In the config file, we must set /dev/comedi0 as the port and
+    SUBDEVICE.CHANNEL as the node.
+
+    .. code-block:: yaml
+
+        daq:
+            /dev/comedi0:
+                - node: 1.1
+                  name: dio1
+                - node: 1.2
+                  name: dio2
+
+    """
+    filename = context.path[0].device
+    subdevice, channel = context.node.split(".")
     device = c.comedi_open(filename)
     if not device:
         raise ComediError("Failed to open device %s" % filename)
@@ -35,18 +50,18 @@ class DioProtocol(drv.Protocol):
     """Protocol for Digital IO lines."""
 
     def read(self, context):
-        device, subdevice, channel = _parse_name(context.reader)
+        device, subdevice, channel = _phys_channel(context)
         c.comedi_dio_config(device, subdevice, channel, c.COMEDI_OUTPUT)
         chk, value = c.comedi_dio_read()
         if chk < 0:
-            raise ComediError("Failed to read on %s" % context.reader)
+            raise ComediError("Failed to read on %s" % context.node)
         return value
 
     def write(self, context):
-        device, subdevice, channel = _parse_name(context.writer)
+        device, subdevice, channel = _phys_channel(context)
         chk = c.comedi_dio_config(device, subdevice, channel, c.COMEDI_OUTPUT)
         if chk < 0:
-            raise ComediError("Failed to write on %s" % context.writer)
+            raise ComediError("Failed to write on %s" % context.node)
 
 
 class AioProtocol(drv.Protocol):
@@ -54,19 +69,19 @@ class AioProtocol(drv.Protocol):
     """Protocol for Analog Input and Analog Output lines."""
 
     def read(self, context):
-        device, subdevice, channel = _parse_name(context.reader)
+        device, subdevice, channel = _phys_channel(context)
         chk, value = c.comedi_data_read(device, subdevice, channel,
                                         0, 0)  # range, aref
         if chk < 0:
-            raise ComediError("Failed to read on %s" % context.reader)
+            raise ComediError("Failed to read on %s" % context.node)
         return value
 
     def write(self, context):
-        device, subdevice, channel = _parse_name(context.writer)
+        device, subdevice, channel = _phys_channel(context)
         chk = c.comedi_data_write(device, subdevice, channel,
                                   0, 0, context.value)
         if chk < 0:
-            raise ComediError("Failed to write on %s" % context.writer)
+            raise ComediError("Failed to write on %s" % context.node)
 
 
 def get_dio_channels(path):

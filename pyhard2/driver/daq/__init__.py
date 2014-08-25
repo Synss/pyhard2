@@ -14,16 +14,16 @@ Reference:
    - `comedi <http://www.comedi.org/>`_
 
 """
-from time import sleep
 import sys
 
 if sys.platform == "linux2":
     from lindaq import DioProtocol, AioProtocol
 else:
-    from windaq import DioProtocol, AioProtocol
+    from windaq import DioProtocol
+    from windaq import VoltageAioProtocol as AioProtocol
 
 import pyhard2.driver as drv
-Access = drv.Access
+Cmd, Access = drv.Command, drv.Access
 
 
 # NI 622x range | precision
@@ -33,73 +33,40 @@ Access = drv.Access
 #  -0.2 to  +0.2 V -> 6.4 muV
 
 
-class DioCommand(drv.Command):
+class Subsystem(drv.Subsystem):
 
-    """Command for digital in-out lines."""
+    """A subsytem with a `device` attribute.
 
-    def __init__(self, read_line, write_line=None, access=Access.RW):
-        super(DioCommand, self).__init__(read_line, write_line, access)
+    Args:
+        device (string): The device name.
 
-    def switch(self):
-        """Change the state."""
-        self.write(not self.read())
-
-    def pulse(self, time_on, time_off=0.0):
-        """Create a pulse."""
-        for delay in (time_on, time_off):
-            self.switch()
-            sleep(delay)
+    """
+    def __init__(self, device, parent=None):
+        self.device = device
 
 
-class AiCommand(drv.Command):
+class Daq(drv.Subsystem):
 
-    """Command for analog in lines."""
+    """Driver for DAQ hardware.
 
-    def __init__(self, phys_channel, minimum=-10, maximum=10):
-        super(AiCommand, self).__init__(phys_channel, None,
-                                        minimum=minimum, maximum=maximum,
-                                        access=Access.RO)
+    The NI 622x cards have the following nodes:
+        - 32 AI channels: ai[0-31]
+        - 4 AO channels: ao[0-3]
+        - 32 DIO channels on port0: port0/line[0-31]
+        - 8 DIO channels on port1: port1/line[0-7]
+        - 8 DIO channels on port2: port2/line[0-7]
 
+    Args:
+        device: The name of the device.
 
-class AoCommand(drv.Command):
-
-    """Command for analog out lines."""
-
-    def __init__(self, phys_channel, minimum=-10, maximum=10):
-        super(AoCommand, self).__init__(None, phys_channel,
-                                        minimum=minimum, maximum=maximum,
-                                        access=Access.WO)
-
-
-class Ni622x(drv.Subsystem):
-
-    """Driver for the NI 622x cards."""
-
-    def __init__(self, address):
-        ## Digital channels
-        self.digitalIO = drv.Subsystem(self)
+    """
+    def __init__(self, device, parent=None):
+        super(Daq, self).__init__(parent)
+        self.digitalIO = Subsystem(device, self)
         self.digitalIO.setProtocol(DioProtocol(self))
-        # port 0, 16 DIO channels
-        for channel in range(32):
-            phys_channel = "%s/port0/line%i" % (address, channel)
-            self.digitalIO.__setattr__(phys_channel, DioCommand(phys_channel))
-        # port 1, 8 DIO channels
-        for channel in range(8):
-            phys_channel = "%s/port0/line%i" % (address, channel)
-            self.digitalIO.__setattr__(phys_channel, DioCommand(phys_channel))
-        # port 2, 8 DIO channels
-        for channel in range(8):
-            phys_channel = "%s/port0/line%i" % (address, channel)
-            self.digitalIO.__setattr__(phys_channel, DioCommand(phys_channel))
-        ## Analog channels
-        self.analogIO = drv.Subsystem(self)
-        self.analogIO.setProtocol(AioProtocol(self))
-        # 4 AO channels
-        for channel in range(4):
-            phys_channel = "%s/ao%i" % (address, channel)
-            self.analogIO.__setattr__(phys_channel, AoCommand(phys_channel))
-        # 4 AI channels
-        for channel in range(4):
-            phys_channel = "%s/ai%i" % (address, channel)
-            self.analogIO.__setattr__(phys_channel, AiCommand(phys_channel))
+        self.digitalIO.state = Cmd(None, rfunc=bool, access=Access.RW)
+        self.voltage = Subsystem(device, self)
+        self.voltage.setProtocol(AioProtocol(self))
+        self.voltage.ai = Cmd(None, minimum=-10, maximum=10, access=Access.RO)
+        self.voltage.ao = Cmd(None, minimum=-10, maximum=10, access=Access.WO)
 

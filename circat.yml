@@ -19,110 +19,110 @@ dashboard:
            pos: [0.92, 0.080]
 
 daq:
-    Circat1/port0:
+    Circat1:
         - name : PC15 valve
           driver: valve
           pos: [0.927, 0.523]
-          node: line0
+          node: port0/line0
           scale: 0.3
 
         - name : PC16 valve
           driver: valve
           pos: [0.927, 0.602]
-          node: line1
+          node: port0/line1
           scale: 0.3
 
         - name : roughing
           driver: valve
           pos: [0.230, 0.949]
-          node: line2
+          node: port0/line2
           scale: 0.3
           angle: 270
 
         - name : bypass out
           driver: valve
           pos: [0.463, 0.578]
-          node: line3
+          node: port0/line3
           scale: 0.3
 
         - name : bypass in
           driver: valve
           pos: [0.267, 0.578]
-          node: line4
+          node: port0/line4
           scale: 0.3
 
         - name : exhaust vacuum
           driver: valve
           pos: [0.267, 0.224]
-          node: line5
+          node: port0/line5
           scale: 0.3
           
         - name: pulse 10
           driver: valve
           pos: [0.178, 0.686]
-          node: line6
+          node: port0/line6
           scale: 0.3
 
         - name: pulse 11
           driver: valve
           pos: [0.178, 0.750]
-          node: line7
+          node: port0/line7
           scale: 0.3
 
         - name : pulse 12
           driver: valve
           pos: [0.178, 0.816]
-          node: line8
+          node: port0/line8
           scale: 0.3
 
         - name: IRAS gas in
           driver: valve
           pos: [0.776, 0.381]
-          node: line9
+          node: port0/line9
           scale: 0.3
 
         - name: IRAS liquid in
           driver: valve
           pos: [0.837, 0.352]
-          node: line10
+          node: port0/line10
           scale: 0.3
           angle: 270
 
         - name : IRAS out
           driver: valve
           pos: [0.918, 0.381]
-          node: line11
+          node: port0/line11
           scale: 0.3
           
         - name : DRIFTS in
           driver: valve
           pos: [0.320, 0.457]
-          node: line12
+          node: port0/line12
           scale: 0.3
 
         - name : bubbler top reactor in
           driver: valve
           pos: [0.428, 0.105]
-          node: line15
+          node: port0/line15
           scale: 0.3
 
         - name : bubbler top bypass
           driver: valve
           pos: [0.510, 0.275]
-          node: line16
+          node: port0/line16
           scale: 0.3
           angle: 90
 
         - name : bubbler bottom reactor in
           driver: valve
           pos: [0.428, 0.208]
-          node: line17
+          node: port0/line17
           scale: 0.3
 
         - name : bubbler bottom bypass
           driver: valve
           pos: [0.554, 0.275]
-          node: line18
+          node: port0/line18
           scale: 0.3
           angle: 90
 

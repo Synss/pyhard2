@@ -29,46 +29,74 @@ except ImportError:
     AnalogInputTask = DigitalInputTask = __InputTask
     AnalogOutputTask = DigitalOutputTask = __OutputTask
 
+
+def _phys_channel(context):
+    return "/".join((context.path[0].device,
+                     context.node))
+
+
+def _task_name(context):
+    return context.node.replace("/", "_")
+
+
+class DioTask(DigitalOutputTask, DigitalInputTask):
+
+    """A class that inherits from both `DigitalInputTask` and
+    `DigitalOutputTask`.
+
+    Without the double inheritance provided here, `DigitalInputTask.read()`
+    switches the state off.
+
+    """
+    def __init__(self, name=""):
+        super(DioTask, self).__init__(name)
+
+
 class DioProtocol(drv.Protocol):
 
     """Protocol for Digital IO lines."""
 
     def read(self, context):
-        task = DigitalInputTask()
-        task.create_channel(context.reader)  # phys_channel
-        return np.average(task.read()).item()  # XXX
+        task = DioTask(_task_name(context))
+        task.create_channel(_phys_channel(context), grouping="per_line")
+        raw = task.read(1)
+        return raw[0].item()
 
     def write(self, context):
-        task = DigitalOutputTask()
-        task.create_channel(context.writer)
+        task = DioTask(_task_name(context))
+        task.create_channel(_phys_channel(context), grouping="per_line")
         task.write(context.value)
 
 
-class AioProtocol(drv.Protocol):
+class VoltageAioProtocol(drv.Protocol):
 
     """Protocol for Analog Input and Analog Output lines."""
 
     def read(self, context):
-        task = AnalogInputTask()
-        minimum, maximum = context.minimum, context.maximum
+        task = AnalogInputTask(_task_name(context))
+        minimum, maximum = context._command.minimum, context._command.maximum
         if not minimum:
             minimum = -10
         if not maximum:
             maximum = 10
-        task.create_voltage_channel(context.reader,  # phys channel
+        task.create_voltage_channel(_phys_channel(context),
                                     min_val=minimum,
                                     max_val=maximum)
-        return np.average(task.read(100)).item()
+        task.start()
+        raw = task.read(100)
+        task.stop()
+        return np.average(raw).item()
 
     def write(self, context):
-        task = AnalogOutputTask()
-        minimum, maximum = context.minimum, context.maximum
+        task = AnalogOutputTask(_task_name(context))
+        minimum, maximum = context._command.minimum, context._command.maximum
         if not minimum:
             minimum = -10
         if not maximum:
             maximum = 10
-        task.create_voltage_channel(context.writer,  # phys channel
+        task.create_voltage_channel(_phys_channel(context),
                                     min_val=minimum,
                                     max_val=maximum)
-        task.write(self, context.value)
+        task.write(self, context.value, auto_start=False)
+        task.start()
 
