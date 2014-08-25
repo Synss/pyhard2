@@ -1,4 +1,3 @@
-# vim: tw=120
 """Drivers for the Pfeiffer TPG 256 A MaxiGauge controller.
 
 """
@@ -97,7 +96,8 @@ class CommunicationProtocol(drv.CommunicationProtocol):
 
     def read(self, context):
         line = "{reader}{node}\r\n".format(reader=context.reader,
-                                           node=context.node if context.node is not None else "")
+                                           node=context.node
+                                           if context.node is not None else "")
         self._socket.write(line)        # master: "MNEMONIC <CR><LF>
         ack = self._socket.readline()   # remote: "ACK<CR><LF>"
         self._check_error(line, ack)
@@ -107,7 +107,9 @@ class CommunicationProtocol(drv.CommunicationProtocol):
 
     def write(self, context):
         line = "{writer}{node} {value}\r\n".format(writer=context.writer,
-                                                   node=context.node if context.node is not None else "",
+                                                   node=context.node
+                                                   if context.node is not None
+                                                   else "",
                                                    value=context.value)
         self._socket.write(line)        # master: "MNEMONIC VAL <CR><LF>"
         ack = self.socket.readline()    # remote: "ACK<CR><LF>"
