@@ -31,7 +31,7 @@ def createController():
         driver = Maxigauge(drv.Serial(args.port))
         iface = ctrlr.Controller(driver, u"Multigauge")
         iface.editorPrototype.default_factory = ctrlr.ScientificSpinBox
-        iface.addCommand(driver.measure, poll=True, log=True)
+        iface.addCommand(driver.gauge.pressure, poll=True, log=True)
     iface.ui.driverView.setItemDelegateForColumn(
         0, ctrlr.FormatTextDelegate("%.2e"))
     for node, name in izip_longest(args.nodes, args.names):
