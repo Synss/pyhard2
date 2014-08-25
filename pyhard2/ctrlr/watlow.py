@@ -82,8 +82,9 @@ class WatlowController(ctrlr.Controller):
         The class inherits :class:`pyhard2.ctrlr.Controller`.
 
     """
-    def __init__(self, parent=None):
-        super(WatlowController, self).__init__(parent)
+    def __init__(self, driver, windowTitle="", uifile="", parent=None):
+        super(WatlowController, self).__init__(driver, windowTitle,
+                                               uifile, parent)
         self.ui.initCombo = QtGui.QComboBox(self.ui)
         self.ui.initCombo.addItems([
             "no ramp",
