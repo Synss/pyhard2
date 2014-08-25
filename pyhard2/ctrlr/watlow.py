@@ -20,6 +20,17 @@ from pyhard2.driver.watlow import Series988
 
 class WatlowProgram(ctrlr.SingleShotProgram):
 
+    """Program that can be used in combination with the ramping facility
+    provided in hardware.
+
+    Attributes:
+        rate: The signal is emitted with the heating rate until the next
+            setpoint.
+
+    See also:
+        The class inherits :class:`~pyhard2.ctrlr.SingleShotProgram`.
+
+    """
     rate = Signal(float)
 
     def __init__(self):
@@ -65,6 +76,12 @@ RampRateColumn = 7
 
 class WatlowController(ctrlr.Controller):
 
+    """GUI controller with controls for hardware ramping.
+
+    See also:
+        The class inherits :class:`pyhard2.ctrlr.Controller`.
+
+    """
     def __init__(self, parent=None):
         super(WatlowController, self).__init__(parent)
         self.ui.initCombo = QtGui.QComboBox(self.ui)
