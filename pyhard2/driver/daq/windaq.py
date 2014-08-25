@@ -2,12 +2,32 @@
 
 """
 import numpy as np
-
-# http://code.google.com/p/pylibnidaqmx
-from nidaqmx import DigitalOutputTask, DigitalInputTask
-from nidaqmx import AnalogInputTask, AnalogOutputTask
-
+import logging
+logging.basicConfig()
+logger = logging.getLogger("pyhard2")
 import pyhard2.driver as drv
+
+try:
+    # http://code.google.com/p/pylibnidaqmx
+    from nidaqmx import DigitalOutputTask, DigitalInputTask
+    from nidaqmx import AnalogInputTask, AnalogOutputTask
+except ImportError:
+    logger.critical(
+        "The pylibnidaqmx library failed to load.  DAQ driver unavailable.")
+
+    class __Dummy(object):
+
+        """We silence the ImportError to generate the documentation."""
+
+        def __init__(self):
+            raise NotImplementedError
+
+    class __InputTask(__Dummy): pass
+
+    class __OutputTask(__Dummy): pass
+
+    AnalogInputTask = DigitalInputTask = __InputTask
+    AnalogOutputTask = DigitalOutputTask = __OutputTask
 
 class DioProtocol(drv.Protocol):
 

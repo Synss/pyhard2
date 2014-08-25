@@ -53,6 +53,12 @@ DAQ
 .. automodule:: pyhard2.driver.daq
    :members:
 
+.. automodule:: pyhard2.driver.daq.windaq
+   :members:
+
+.. automodule:: pyhard2.driver.daq.lindaq
+   :members:
+
 Fluke
 -----
 .. automodule:: pyhard2.driver.fluke

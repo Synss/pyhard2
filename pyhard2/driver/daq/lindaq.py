@@ -1,5 +1,9 @@
 """Comedi wrappers to communicate with DAQ hardware on linux.
 
+Warning:
+
+    The linux driver is not tested.
+
 """
 import pyhard2.driver as drv
 import comedi as c
