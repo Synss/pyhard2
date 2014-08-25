@@ -34,6 +34,7 @@ setup(name=u"pyhard2",
                                 "rsc/ui/*.ui",
                                 "rsc/img/*.svg",
                                 "rsc/icons/Tango/*.svg",
+                                "../circat.yml",
                                ]},
       data_files=[("", ["LICENSE.TXT", "README.TXT"]),
                   ("", documentation)
