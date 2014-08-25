@@ -15,7 +15,7 @@ import pyhard2.driver.fluke as fluke
 
 
 def createController():
-    """Initialize controller"""
+    """Initialize controller."""
     args = ctrlr.Config("fluke")
     if args.virtual:
         driver = virtual.VirtualInstrument()

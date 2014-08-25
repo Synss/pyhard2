@@ -372,11 +372,11 @@ class ObjectWrapperProtocol(Protocol):
 
     """Get and set attributes on python objects.
 
-    Note:
-        The protocol makes one copy of `wrapped_obj` per node.
-
     Args:
         wrapped_obj: The nodes are copies of `wrapped_obj`.
+
+    Note:
+        The protocol makes one copy of `wrapped_obj` per node.
 
     Example:
 

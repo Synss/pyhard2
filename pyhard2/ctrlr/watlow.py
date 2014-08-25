@@ -170,7 +170,7 @@ class _VirtualRamping(object):
 
 
 def createController():
-    """Initialize controller"""
+    """Initialize controller."""
     args = ctrlr.Config("watlow")
     if args.virtual:
         driver = virtual.VirtualInstrument()
