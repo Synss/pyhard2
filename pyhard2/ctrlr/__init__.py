@@ -1015,7 +1015,7 @@ class DriverItem(QtGui.QStandardItem):
 
         """
         def displayData(data, node):
-            if node is self.node():
+            if node == self.node():
                 self.setData(data, role=Qt.DisplayRole)
 
         def writeData(data):
