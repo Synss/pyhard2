@@ -37,7 +37,46 @@ logger = logging.getLogger("pyhard2")
 
 
 def Config(section, description="pyhard2 GUI configuration"):
-    """`ArgumentParser` for the controllers."""
+    """Handle command line arguments and configuration files to
+    initialize `Controllers`.
+
+    Command line arguments:
+        - ``-p``, ``--port``: The port where the hardware is connected.
+        - ``-n``, ``--nodes``: A space-separated list of nodes at `port`.
+        - ``-m``, ``--names``: A corresponding list of names for the `nodes`.
+        - ``-v``, ``--virtual``: Load the virtual offline driver.
+        - `file`: The path to a configuration file.
+
+    Launching a controller from the command line with::
+
+        python pyhard2/ctrlr/MODULE -p COM1 -n 1 2 3 -m first second third
+
+    or by pointing to a file containing
+
+    .. code-block:: yaml
+
+        MODULE:
+            COM1:
+                - node: 1
+                  name: first
+
+                - node: 2
+                  name: second
+
+                - node: 3
+                  name: third
+
+    leads to the same result.
+
+    Example:
+
+        From the root directory of a working installation of `pyhard2`,
+        the following line starts a virtual controller with three
+        nodes::
+
+            python pyhard2/ctrlr/pfeiffer -v -n 1 2 3 -m gauge1 gauge2
+
+    """
     parser = argparse.ArgumentParser(description)
     parser.add_argument('-p', '--port')
     parser.add_argument('-n', '--nodes', nargs="*", default=[])
@@ -60,8 +99,67 @@ def Config(section, description="pyhard2 GUI configuration"):
 
 class DashboardConfig(object):
 
-    """Helper for parsing config files."""
+    """Extend the config file format described in :func:`Config` to
+    launch the `Dashboard` interface.
 
+    The config files are extended with a `dashboard` section such as
+
+    .. code-block:: yaml
+
+        dashboard:
+            name: Dashboard
+            image: :/img/gaslines.svg
+            labels:
+                - name: LABEL1
+                  pos: [0.25, 0.25]
+                - name: LABEL2
+                  pos: [0.5, 0.25]
+                - name: LABEL3
+                  pos: [0.75, 0.25]
+
+    Where `Dashboard` is the name of the window. ``image:`` points to an
+    svg file that will be displayed in the background of the window.
+    ``labels:`` is a list of text labels containing the text `LABEL1`,
+    `LABEL2`, and `LABEL3` displayed at the position given by ``pos:``
+    as `(x,y)` pairs of relative coordinates.  `x` and `y` can be any
+    value between 0 and 1.
+
+    The other nodes also require the `pos` data in the format specified
+    above, and optional ``scale`` and ``angle`` data may be passed as
+    well.  Such as the previous file may become
+
+    .. code-block:: yaml
+
+        MODULE:
+            COM1:
+                - node: 1
+                  name: first
+                  pos: [0.25, 0.5]
+
+                - node: 2
+                  name: second
+                  pos: [0.5, 0.5]
+                  scale: 0.5
+                  angle: 180
+
+                - node: 3
+                  name: third
+                  pos: [0.75, 0.5]
+
+    - `pos` gives the position as ``[x, y]`` pairs of relative
+      coordinates (`x` and `y` are values between 0 and 1)  for the
+      widget of the corresponding node.
+    - `scale` scales the widget by the given amount.
+    - `angle` rotates the widget by the given amount, in degree.
+
+    Example:
+        From the root directory of a working installation of `pyhard2`,
+        the following line starts a dashboard containing virtual
+        instruments::
+
+            python pyhard2.ctrlr.__init__.py circat.yml -v
+
+    """
     def __init__(self, filename):
         with open(filename, "rb") as file:
             self.yaml = yaml.load(file)
