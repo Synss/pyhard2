@@ -1074,10 +1074,10 @@ class DriverModel(QtGui.QStandardItemModel):
         headerItem.setNode(node)
         self.setVerticalHeaderItem(row, headerItem)
 
-    def addCommand(self, command, label=None, poll=False, log=False):
+    def addCommand(self, command, label="", poll=False, log=False):
         """Add `command` as a new column with `label`."""
         column = self.columnCount()
-        item = HorizontalHeaderItem(command if label is None else label)
+        item = HorizontalHeaderItem(label if label else "C%i" % column)
         item.setCommand(command)
         item.setDefaultPollingState(poll)
         item.setDefaultLoggingState(log)
@@ -1574,8 +1574,7 @@ class Controller(QtCore.QObject):
 
         """
         column = self._driverModel.columnCount()
-        self._driverModel.addCommand(command, label if label else command,
-                                     poll=poll, log=log)
+        self._driverModel.addCommand(command, label, poll, log)
         self.setColumnHidden(column, hide)
         if specialColumn:
             self._specialColumnMapper[specialColumn.lower()](column)
