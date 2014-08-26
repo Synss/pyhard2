@@ -1924,20 +1924,3 @@ class Dashboard(QtCore.QObject):
                 self._connectButtonToItem(widget, modelItem)
             else:
                 raise NotImplementedError
-
-
-def main(argv):
-    app = QtGui.QApplication(argv)
-    app.lastWindowClosed.connect(app.quit)
-    w = Dashboard()
-    w.show()
-    config = DashboardConfig(argv[1])
-    config.parse()
-    config.setupUi(w)
-    sys.exit(app.exec_())
-
-
-if __name__ == "__main__":
-    import sys
-    main(sys.argv)
-
