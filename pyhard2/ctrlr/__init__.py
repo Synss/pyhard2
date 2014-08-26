@@ -1600,7 +1600,7 @@ class Controller(QtCore.QObject):
         self._driverModel.addNode(node, label)
 
     def programmableColumn(self):
-        """Return the index of  the programmable column."""
+        """Return the index of the programmable column."""
         return self._programmableColumn
 
     def setProgrammableColumn(self, column):

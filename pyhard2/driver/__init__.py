@@ -176,7 +176,11 @@ class Command(QtCore.QObject):
     """
     signal = Signal(object, object)
     Context = Context
+    """`Context` nested in `Command` to make derivable.
 
+    See :class:`Context`.
+
+    """
     def __init__(self, reader, writer=None,
                  minimum=None, maximum=None, 
                  access=Access.RW,

@@ -75,7 +75,7 @@ GNU GENERAL LICENSE v3.0
 
 pyhard2 - An object-oriented framework for the development of instrument
 drivers.
-Copyright (C) 2012-2013, Mathias Laurin
+Copyright (C) 2012-2014, Mathias Laurin
 
 This program is free software: you can redistribute it and/or modify it under
 the terms of the GNU General Public License as published by the Free Software
