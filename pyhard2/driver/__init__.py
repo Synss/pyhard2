@@ -498,8 +498,3 @@ class Serial(serial.Serial):
             else:
                 line += c
         return line
-
-
-if __name__ == "__main__":
-    import doctest
-    doctest.testmod()
