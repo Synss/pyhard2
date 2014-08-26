@@ -45,7 +45,7 @@ class ValveButton(QtGui.QAbstractButton):
             return self._rendererOff.defaultSize()
 
 
-class VirtualDaq(object):
+class VirtualDaq(QtCore.QObject):
 
     class Dio(object):
 
@@ -59,6 +59,7 @@ class VirtualDaq(object):
             self.ao = 0
 
     def __init__(self, device, parent=None):
+        super(VirtualDaq, self).__init__(parent)
         self.digitalIO = drv.Subsystem()
         self.digitalIO.setProtocol(drv.ObjectWrapperProtocol(VirtualDaq.Dio()))
         self.digitalIO.state = Cmd("state")
