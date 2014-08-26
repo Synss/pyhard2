@@ -3,7 +3,7 @@ import pyhard2.driver as drv
 from pyhard2.driver.aml import Ngc2d
 from pyhard2.driver.amtron import CS400
 from pyhard2.driver.bronkhorst import Controller
-#from pyhard2.driver.daq import Ni622x
+from pyhard2.driver.daq import Daq
 from pyhard2.driver.deltaelektronika import DplInstrument
 from pyhard2.driver.digitek import DT80k
 from pyhard2.driver.fluke import Fluke18x
@@ -19,7 +19,7 @@ from graph import generate_graph
 for driver_type in (Ngc2d,
                     CS400,
                     Controller,
-                    #Ni622x,
+                    Daq,
                     DplInstrument,
                     DT80k,
                     Fluke18x,

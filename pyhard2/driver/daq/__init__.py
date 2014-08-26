@@ -50,15 +50,40 @@ class Daq(drv.Subsystem):
 
     """Driver for DAQ hardware.
 
-    The NI 622x cards have the following nodes:
+    On windows, the node names are ``portN/lineM`` for the digital
+    in/out channels and ``aiN`` or ``aoN`` for the analog input and
+    output.
+
+    On linux, the node names are ``SUBDEVICE.CHANNEL``, that is the
+    number of the `subdevice` and of the `channel` separated with a dot
+    ``.``.
+
+    Args:
+        device (str): The name of the device on windows or its address
+            (example ``/dev/comedi0``) on linux.
+
+    .. graphviz:: gv/Daq.txt
+
+    Example:
+        NI 622x cards have following nodes:
+
         - 32 AI channels: ai[0-31]
         - 4 AO channels: ao[0-3]
         - 32 DIO channels on port0: port0/line[0-31]
         - 8 DIO channels on port1: port1/line[0-7]
         - 8 DIO channels on port2: port2/line[0-7]
 
-    Args:
-        device: The name of the device.
+        Use as follows
+
+        >>> driver = Daq("NAME")  # The actual device name
+        >>> driver.state.read("port0/line3")  # windows names
+        ... False
+        >>> driver.state.write(True, "port0/line3")
+        >>> driver.state.read("port0/line3")
+        ... True
+        >>> driver.voltage.ai.read("ai0")
+        ... 0.5
+        >>> driver.voltage.ao.write(1.0, "ao0")
 
     """
     def __init__(self, device, parent=None):
