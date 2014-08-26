@@ -59,13 +59,21 @@ class Subsystem(drv.Subsystem):
 
 class Cmd(drv.Command):
 
-    """`Command` with parameter `type`.
+    """`Command` with a `type` attributes.
 
     Parameters:
         type (str): {CHAR, UINT, FLOAT, ULONG, STRING}
             Parameter type.
 
     """
+    class Context(drv.Context):
+
+        """`Context` with a `type` attribute."""
+
+        def __init__(self, command, value=None, node=None):
+            super(Cmd.Context, self).__init__(command, value, node)
+            self.type = command.type
+
     def __init__(self, reader, type=None, **kwargs):
         super(Cmd, self).__init__(reader, **kwargs)
         self.type = type
@@ -124,7 +132,7 @@ class AsciiProtocol(drv.CommunicationProtocol):
         self._socket.write(self.toAscii(construct.build()))
         ans = self._socket.readline()
         try:
-            return Writer.parse(self.toBytes(ans), context._command.type).value
+            return Writer.parse(self.toBytes(ans), context.type).value
         except ValidationError:
             # format is not WRITE, check STATUS
             self._check_error(construct, ans)

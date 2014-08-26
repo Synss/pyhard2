@@ -74,11 +74,8 @@ class VoltageAioProtocol(drv.Protocol):
 
     def read(self, context):
         task = AnalogInputTask(_task_name(context))
-        minimum, maximum = context._command.minimum, context._command.maximum
-        if not minimum:
-            minimum = -10
-        if not maximum:
-            maximum = 10
+        minimum = context.minimum if context.minimum is not None else -10
+        maximum = context.maximum if context.maximum is not None else 10
         task.create_voltage_channel(_phys_channel(context),
                                     min_val=minimum,
                                     max_val=maximum)
@@ -89,11 +86,8 @@ class VoltageAioProtocol(drv.Protocol):
 
     def write(self, context):
         task = AnalogOutputTask(_task_name(context))
-        minimum, maximum = context._command.minimum, context._command.maximum
-        if not minimum:
-            minimum = -10
-        if not maximum:
-            maximum = 10
+        minimum = context.minimum if context.minimum is not None else -10
+        maximum = context.maximum if context.maximum is not None else 10
         task.create_voltage_channel(_phys_channel(context),
                                     min_val=minimum,
                                     max_val=maximum)

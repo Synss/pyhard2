@@ -23,7 +23,7 @@ else:
     from windaq import VoltageAioProtocol as AioProtocol
 
 import pyhard2.driver as drv
-Cmd, Access = drv.Command, drv.Access
+Access = drv.Access
 
 
 # NI 622x range | precision
@@ -31,6 +31,23 @@ Cmd, Access = drv.Command, drv.Access
 #  -5.0 to  +5.0 V -> 160 muV
 #  -1.0 to  +1.0 V ->  32 muV
 #  -0.2 to  +0.2 V -> 6.4 muV
+
+
+class Cmd(drv.Command):
+
+    """`Command` without `reader`."""
+
+    class Context(drv.Context):
+
+        """`Context` with `minimum` and `maximum` attributes."""
+
+        def __init__(self, command, value=None, node=None):
+            super(Cmd.Context, self).__init__(command, value, node)
+            self.minimum = command.minimum
+            self.maximum = command.maximum
+
+    def __init__(self, **kwargs):
+        super(Cmd, self).__init__(reader=None, **kwargs)
 
 
 class Subsystem(drv.Subsystem):
@@ -90,9 +107,9 @@ class Daq(drv.Subsystem):
         super(Daq, self).__init__(parent)
         self.digitalIO = Subsystem(device, self)
         self.digitalIO.setProtocol(DioProtocol(self))
-        self.digitalIO.state = Cmd(None, rfunc=bool, access=Access.RW)
+        self.digitalIO.state = Cmd(rfunc=bool, access=Access.RW)
         self.voltage = Subsystem(device, self)
         self.voltage.setProtocol(AioProtocol(self))
-        self.voltage.ai = Cmd(None, minimum=-10, maximum=10, access=Access.RO)
-        self.voltage.ao = Cmd(None, minimum=-10, maximum=10, access=Access.WO)
+        self.voltage.ai = Cmd(minimum=-10, maximum=10, access=Access.RO)
+        self.voltage.ao = Cmd(minimum=-10, maximum=10, access=Access.WO)
 

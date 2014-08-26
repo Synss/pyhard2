@@ -171,9 +171,11 @@ class Command(QtCore.QObject):
     Attributes:
         signal (value, node):
             Emit the value returned by `read()` and the node.
+        Context (class Context): Nested `Context` class.
 
     """
     signal = Signal(object, object)
+    Context = Context
 
     def __init__(self, reader, writer=None,
                  minimum=None, maximum=None, 
@@ -212,7 +214,7 @@ class Command(QtCore.QObject):
         """
         if self.access is Access.WO:
             raise DriverError("Read access violation in %r" % self)
-        value = self._rfunc(self.parent().read(Context(self, node=node)))
+        value = self._rfunc(self.parent().read(self.Context(self, node=node)))
         self.signal.emit(value, node)
         return value
 
@@ -229,7 +231,7 @@ class Command(QtCore.QObject):
             raise DriverError("Write access violation in %r" % self)
         if value is None and self.access is not Access.WO:
             raise DriverError("Must write something in %r" % self)
-        self.parent().write(Context(self, self._wfunc(value), node=node))
+        self.parent().write(self.Context(self, self._wfunc(value), node=node))
 
 
 class Subsystem(QtCore.QObject):
@@ -271,7 +273,8 @@ class Subsystem(QtCore.QObject):
         """
         context.append(self)
         try:
-            return (self._protocol if self._protocol else self.parent()).read(context)
+            return (self._protocol if self._protocol
+                    else self.parent()).read(context)
         except AttributeError:
             if not self._protocol and not self._protocol:
                 raise DriverError(" ".join(
