@@ -24,6 +24,7 @@ is done with
 
 >>> driver = Driver(socket)
 >>> driver.temperature.read()
+... 25
 >>> driver.power_supply.voltage.write(10)
 
 

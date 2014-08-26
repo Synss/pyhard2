@@ -12,9 +12,11 @@ free hardware projects on Arduino/Raspberry Pi/BeagleBone hardware.
 - Written entirely in Python, pyhard2 is completely free and open source.
 - Runs on any platform Python supports (including, but not limited to, MS
   Windows, Mac OS X, Linux and the BSDs).
+- SCPI drivers are supported.
 - New drivers should take about 0.5 to 1 day to write and do not require a large
   amount of code.
 - Graphical user interfaces are loosely coupled to the driver.
+- Creating the GUI from Qt Designer (ui-files) is supported.
 - The library takes care of threading when the driver is used in a GUI.
 - Easily create a Dashboard presenting a live overview over every running
   controller.
