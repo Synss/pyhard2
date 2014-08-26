@@ -56,8 +56,8 @@ class _ComboBoxDelegate(QtGui.QAbstractItemDelegate):
         super(_ComboBoxDelegate, self).__init__(parent)
 
     def setEditorData(self, editor, index):
-        if not index.isValid(): return
-        editor.setCurrentIndex(index.model().itemFromIndex(index).data())
+        if not index.isValid() or index.data() is None: return
+        editor.setCurrentIndex(index.data())
 
     def setModelData(self, combobox, model, index):
         if not index.isValid(): return
@@ -97,15 +97,12 @@ class WatlowController(ctrlr.Controller):
 
         self.ui.initCombo.currentIndexChanged[str].connect(
             self._disableRateEditOnNoRamp)
-        self.ui.initCombo.setCurrentIndex(1)
-
-        self.ui._layout = QtGui.QHBoxLayout(self.ui)
-        self.ui._layout.addWidget(self.ui.initCombo)
-        self.ui._layout.addWidget(self.ui.rateEdit)
 
         self.ui.rampSettings = QtGui.QWidget(self.ui)
-        self.ui.rampSettings.setLayout(self.ui._layout)
         self.ui.instrumentPanel.layout().addWidget(self.ui.rampSettings)
+        self.ui._layout = QtGui.QHBoxLayout(self.ui.rampSettings)
+        self.ui._layout.addWidget(self.ui.initCombo)
+        self.ui._layout.addWidget(self.ui.rateEdit)
 
         self.programPool.default_factory = WatlowProgram
         self._rampInitValuePool = {}
@@ -217,6 +214,8 @@ def createController():
                        specialColumn="rate")
     iface.editorPrototype.default_factory=QtGui.QSpinBox
     iface.addNode(None, u"Watlow")
+    # Make sure we can read the rate
+    driver.setup.global_.ramp_init.write(1)
     iface.populate()
     return iface
 
