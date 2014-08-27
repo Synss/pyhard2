@@ -27,6 +27,7 @@ Qt = QtCore.Qt
 Slot, Signal = QtCore.pyqtSlot, QtCore.pyqtSignal
 import PyQt4.Qwt5 as Qwt
 
+import pyhard2
 from pyhard2 import pid
 import pyhard2.driver as drv
 import pyhard2.rsc
@@ -1120,6 +1121,9 @@ class ControllerUi(QtGui.QMainWindow):
             self.ui = uic.loadUi(uifile, self)
             uifile.close()
 
+        self.actionAbout_pyhard2.triggered.connect(
+            _partial(ControllerUi.aboutBox, self))
+
         horizontalHeader = self.driverView.horizontalHeader()
         horizontalHeader.setResizeMode(QtGui.QHeaderView.Stretch)
         horizontalHeader.setResizeMode(QtGui.QHeaderView.ResizeToContents)
@@ -1149,6 +1153,15 @@ class ControllerUi(QtGui.QMainWindow):
         else:
             scale = Qwt.QwtLinearScaleEngine()
         self.dataPlot.setAxisScaleEngine(0, scale)
+
+    @staticmethod
+    def aboutBox(parent, checked):
+        QtGui.QMessageBox.about(parent, u"About pyhard2", u"\n".join((
+            u"pyhard2 %s" % pyhard2.__version__,
+            u"The free DDK written in Python."
+            u"",
+            u"Copyright (c) 2012-2014 Mathias Laurin.",
+            u"Distributed under the GPLv3 License.")))
 
 
 class Controller(QtCore.QObject):
@@ -1633,6 +1646,10 @@ class DashboardUi(QtGui.QMainWindow):
             uifile.open(QtCore.QFile.ReadOnly)
             self.ui = uic.loadUi(uifile, self)
             uifile.close()
+
+        self.actionAbout_pyhard2.triggered.connect(
+            _partial(ControllerUi.aboutBox, self))
+
         self.graphicsScene = QtGui.QGraphicsScene(self.ui)
         self.graphicsView.setScene(self.graphicsScene)
         self.setAttribute(Qt.WA_DeleteOnClose)

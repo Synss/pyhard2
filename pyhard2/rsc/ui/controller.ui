@@ -197,8 +197,15 @@
      <string>Program</string>
     </property>
    </widget>
+   <widget class="QMenu" name="menuHelp">
+    <property name="title">
+     <string>Help</string>
+    </property>
+    <addaction name="actionAbout_pyhard2"/>
+   </widget>
    <addaction name="menuView"/>
    <addaction name="menuProgram"/>
+   <addaction name="menuHelp"/>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
   <action name="actionShow_PID_settings">
@@ -243,6 +250,11 @@
    </property>
    <property name="text">
     <string>Show program panel</string>
+   </property>
+  </action>
+  <action name="actionAbout_pyhard2">
+   <property name="text">
+    <string>About pyhard2</string>
    </property>
   </action>
  </widget>
