@@ -11,6 +11,7 @@ import logging
 from collections import defaultdict
 import StringIO as _StringIO
 import csv as _csv
+import zipfile as _zipfile
 from functools import partial as _partial
 import time as _time
 
@@ -1352,12 +1353,20 @@ class Controller(QtCore.QObject):
         def exportAsCsv(dataPlot):
             """Export the content of a `dataPlot` to csv files."""
             try:
-                with open(QtGui.QFileDialog.getSaveFileName(dataPlot), "w")\
-                        as csvfile:
-                    csvwriter = _csv.writer(csvfile, delimiter="\t")
+                zipfilename = QtGui.QFileDialog.getSaveFileName(
+                    dataPlot, "Export zipped in file",
+                    filter="Zip files (*.zip)",
+                    options=QtGui.QFileDialog.DontConfirmOverwrite)  # append
+                if not zipfilename.endswith(".zip"):
+                    zipfilename += ".zip"
+                with _zipfile.ZipFile(zipfilename, "a") as zipfile:
                     for curve in dataPlot.itemList():
-                        csvwriter.writerow([curve.title().text()])
+                        csvfile = _StringIO.StringIO()
+                        csvwriter = _csv.writer(csvfile, delimiter="\t")
                         csvwriter.writerows(curve.data())
+                        filename = " ".join((curve.title().text(),
+                                             _time.strftime("%Y%m%dT%H%M%S")))
+                        zipfile.writestr(filename, csvfile.getvalue())
             except IOError:
                 pass  # User canceled QFileDialog
 
@@ -1456,7 +1465,7 @@ class Controller(QtCore.QObject):
     def _setupDataPlotCurves(self):
         """Initialize GUI elements with the model. """
         for item in self._driverModel:
-            text = "%s%%%s" % (
+            text = "%s %s" % (
                 self._driverModel.verticalHeaderItem(item.row()).text(),
                 self._driverModel.horizontalHeaderItem(item.column()).text())
             dataPlotCurve = Qwt.QwtPlotCurve(text)
