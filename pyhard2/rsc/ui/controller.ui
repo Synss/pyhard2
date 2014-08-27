@@ -110,6 +110,27 @@
      <widget class="QWidget" name="monitorPanel" native="true">
       <layout class="QVBoxLayout" name="verticalLayout_2">
        <item>
+        <layout class="QHBoxLayout" name="horizontalLayout_2">
+         <item>
+          <widget class="QLabel" name="autoSaveLabel">
+           <property name="text">
+            <string>AutoSave:</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QLineEdit" name="autoSaveEdit">
+           <property name="frame">
+            <bool>false</bool>
+           </property>
+           <property name="readOnly">
+            <bool>true</bool>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </item>
+       <item>
         <widget class="QwtPlot" name="dataPlot">
          <property name="contextMenuPolicy">
           <enum>Qt::CustomContextMenu</enum>
