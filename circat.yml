@@ -21,145 +21,121 @@ dashboard:
 daq:
     Circat1:
         - name : PC15 valve
-          driver: valve
           pos: [0.927, 0.523]
           node: port0/line0
           scale: 0.3
 
         - name : PC16 valve
-          driver: valve
           pos: [0.927, 0.602]
           node: port0/line1
           scale: 0.3
 
         - name : roughing
-          driver: valve
           pos: [0.230, 0.949]
           node: port0/line2
           scale: 0.3
           angle: 270
 
         - name : bypass out
-          driver: valve
           pos: [0.463, 0.578]
           node: port0/line3
           scale: 0.3
 
         - name : bypass in
-          driver: valve
           pos: [0.267, 0.578]
           node: port0/line4
           scale: 0.3
 
         - name : exhaust vacuum
-          driver: valve
           pos: [0.267, 0.224]
           node: port0/line5
           scale: 0.3
           
         - name: pulse 10
-          driver: valve
           pos: [0.178, 0.686]
           node: port0/line6
           scale: 0.3
 
         - name: pulse 11
-          driver: valve
           pos: [0.178, 0.750]
           node: port0/line7
           scale: 0.3
 
         - name : pulse 12
-          driver: valve
           pos: [0.178, 0.816]
           node: port0/line8
           scale: 0.3
 
         - name: IRAS gas in
-          driver: valve
           pos: [0.776, 0.381]
           node: port0/line9
           scale: 0.3
 
         - name: IRAS liquid in
-          driver: valve
           pos: [0.837, 0.352]
           node: port0/line10
           scale: 0.3
           angle: 270
 
         - name : IRAS out
-          driver: valve
           pos: [0.918, 0.381]
           node: port0/line11
           scale: 0.3
           
         - name : DRIFTS in
-          driver: valve
           pos: [0.320, 0.457]
           node: port0/line12
           scale: 0.3
 
         - name : bubbler top reactor in
-          driver: valve
           pos: [0.428, 0.105]
           node: port0/line15
           scale: 0.3
 
         - name : bubbler top bypass
-          driver: valve
           pos: [0.510, 0.275]
           node: port0/line16
           scale: 0.3
           angle: 90
 
         - name : bubbler bottom reactor in
-          driver: valve
           pos: [0.428, 0.208]
           node: port0/line17
           scale: 0.3
 
         - name : bubbler bottom bypass
-          driver: valve
           pos: [0.554, 0.275]
           node: port0/line18
           scale: 0.3
           angle: 90
 
 #        - name : QMS valve
-#          driver: valve
 #          pos: [0.537, 0.888]
 #          extra: {node: line38}
 
 #        - name : exhaust valve
-#          driver: valve
 #          pos: [0.783, 0.915]
 #          extra: {node: line39}
  
 pfeiffer:
     COM5:
         - name: roughing pressure
-          driver: maxigauge
           pos: [0.400, 0.960]
           node: 1
 
         - name: exhaust chamber
-          driver: maxigauge
           pos: [0.850, 0.744]
           node: 2
 
         - name: QMS rouging
-          driver: maxigauge
           pos: [0.470, 0.780]
           node: 3
 
         - name: QMS chamber
-          driver: maxigauge
           pos: [0.470, 0.720]
           node: 4
 
         - name: inlet pressure
-          driver: maxigauge
           pos: [0.325, 0.030]
           node: 5
 
@@ -167,53 +143,43 @@ bronkhorst:
     COM4:
         - name: MFC 10
           pos: [0.04, 0.130]
-          driver: MFC
           node: 10
 
         - name: MFC 11
           pos: [0.04, 0.253]
-          driver: MFC
           node: 11
 
         - name: MFC 12
           pos: [0.04, 0.370]
-          driver: MFC
           node: 12
 
         - name: MFC 13
           pos: [0.04, 0.490]
-          driver: MFC
           node: 13
 
         - name: MFC 14
           pos: [0.04, 0.607]
-          driver: MFC
           node: 14
 
         - name: PC 15
           pos: [0.745, 0.525]
-          driver: PC
           node: 15
 
         - name: PC 16
           pos: [0.745, 0.610]
-          driver: PC
           node: 16
 
         - name: MFC 17
           pos: [0.840, 0.120]
-          driver: MFC
           node: 17
           
         - name: MFC 18
           pos: [0.840, 0.220]
-          driver: MFC
           node: 18
 
 watlow:
     COM7:
         - name: Watlow heater
-          driver: "Series988"
           pos: [0.5, 0.01]
  
 
