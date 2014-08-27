@@ -9,6 +9,7 @@
 """
 import logging
 from collections import defaultdict
+import os as _os
 import StringIO as _StringIO
 import csv as _csv
 import zipfile as _zipfile
@@ -241,7 +242,7 @@ class ListData(Qwt.QwtData):
 
     def __init__(self):
         super(ListData, self).__init__()
-        self._historySize = 500
+        self._historySize = 10000
         self._history = []
         self._data = []
 
@@ -1218,6 +1219,17 @@ class Controller(QtCore.QObject):
         self.setWindowTitle(windowTitle)
         self.editorPrototype = defaultdict(QtGui.QDoubleSpinBox)
 
+        self._autoSaveFileName = _os.path.join(
+            QtGui.QDesktopServices.storageLocation(
+                QtGui.QDesktopServices.DocumentsLocation),
+            "pyhard2",
+            "%s %s.zip" % (windowTitle, _time.strftime("%Y%m%dT%H%M%S")))
+        self.ui.autoSaveEdit.setText(self._autoSaveFileName)
+        self._autoSaveTimer = QtCore.QTimer(self, singleShot=False,
+                                            interval=600000)  # 10 min
+        self.populated.connect(self._autoSaveTimer.start)
+        self._autoSaveTimer.timeout.connect(self.autoSave)
+
         self._specialColumnMapper = dict(
             programmable=self.setProgrammableColumn,
             pidp=self.setPidPColumn,
@@ -1366,37 +1378,10 @@ class Controller(QtCore.QObject):
                              .mapToGlobal(pos))
 
     def on_dataPlot_customContextMenuRequested(self, pos):
-        def clear():
-            """Clear the `dataPlot`."""
-            for plotItem in self.ui.dataPlot.itemList():
-                plotItem.data().clear()
-
-        def exportAsCsv(dataPlot):
-            """Export the content of a `dataPlot` to csv files."""
-            try:
-                zipfilename = QtGui.QFileDialog.getSaveFileName(
-                    dataPlot, "Export zipped in file",
-                    filter="Zip files (*.zip)",
-                    options=QtGui.QFileDialog.DontConfirmOverwrite)  # append
-                if not zipfilename.endswith(".zip"):
-                    zipfilename += ".zip"
-                with _zipfile.ZipFile(zipfilename, "a") as zipfile:
-                    for curve in dataPlot.itemList():
-                        csvfile = _StringIO.StringIO()
-                        curve.data().exportAndTrim(csvfile)
-                        filename = " ".join((curve.title().text(),
-                                             _time.strftime("%Y%m%dT%H%M%S")))
-                        zipfile.writestr(filename, csvfile.getvalue())
-            except IOError:
-                pass  # User canceled QFileDialog
-
         rightClickMenu = QtGui.QMenu(self.ui.dataPlot)
-        rightClickMenu.addActions([
+        rightClickMenu.addAction(
             QtGui.QAction("Zoom out", self.ui.dataPlot,
-                          triggered=self.ui.dataPlotZoomer.clearZoomStack),
-            QtGui.QAction("Export as csv", self.ui.dataPlot,
-                          triggered=_partial(exportAsCsv, self.ui.dataPlot)),
-            QtGui.QAction("Clear", self.ui.dataPlot, triggered=clear)])
+                          triggered=self.ui.dataPlotZoomer.clearZoomStack))
         pos = self.ui.dataPlot.mapToGlobal(pos)
         rightClickMenu.exec_(pos)
 
@@ -1463,6 +1448,12 @@ class Controller(QtCore.QObject):
                 rootItem.appendRow(
                     [QtGui.QStandardItem(), QtGui.QStandardItem()])
 
+    def autoSaveFileName(self):
+        path = _os.path
+        if not path.exists(path.dirname(self._autoSaveFileName)):
+            _os.makedirs(path.dirname(self._autoSaveFileName))
+        return self._autoSaveFileName
+
     def updateProgramTable(self, index):
         if self._programmableColumn is None: return
         self.ui.programView.setRootIndex(
@@ -1485,7 +1476,7 @@ class Controller(QtCore.QObject):
     def _setupDataPlotCurves(self):
         """Initialize GUI elements with the model. """
         for item in self._driverModel:
-            text = "%s %s" % (
+            text = _os.path.join(  # used in autoSave
                 self._driverModel.verticalHeaderItem(item.row()).text(),
                 self._driverModel.horizontalHeaderItem(item.column()).text())
             dataPlotCurve = Qwt.QwtPlotCurve(text)
@@ -1570,6 +1561,21 @@ class Controller(QtCore.QObject):
             if item.isLogging():
                 self._dataLog[item].append(item.data())
 
+    @Slot()
+    def autoSave(self):
+        """Export the data in the `dataPlot` to an archive."""
+        path = _os.path
+        with _zipfile.ZipFile(self.autoSaveFileName(), "a") as zipfile:
+            for curve in self.ui.dataPlot.itemList():
+                csvfile = _StringIO.StringIO()
+                curve.data().exportAndTrim(csvfile)
+                filename = path.join(
+                    path.splitext(path.basename(self.autoSaveFileName()))[0],
+                    curve.title().text(),
+                    _time.strftime("%Y%m%d"),
+                    _time.strftime("T%H%M%S")) + ".txt"
+                zipfile.writestr(filename, csvfile.getvalue())
+
     def startProgram(self, row):
         """Start the program at `row`."""
         if self._programmableColumn is None: return
@@ -1590,8 +1596,7 @@ class Controller(QtCore.QObject):
     @classmethod  # alt. ctor
     def virtualInstrumentController(cls, driver, windowTitle=""):
         """Initialize controller for the virtual instrument driver."""
-        self = cls(driver)
-        self.setWindowTitle(windowTitle)
+        self = cls(driver, windowTitle)
         self.setWindowTitle(self.windowTitle() + u" [virtual]")
         self.addCommand(driver.input.measure, u"measure", poll=True, log=True)
         self.addCommand(driver.pid.setpoint, u"setpoint", log=True,
@@ -1655,6 +1660,8 @@ class Controller(QtCore.QObject):
 
     def closeEvent(self, event):
         self.timer.stop()
+        self._autoSaveTimer.stop()
+        self.autoSave()
         super(Controller, self).closeEvent(event)
 
 
