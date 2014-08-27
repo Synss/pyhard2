@@ -236,33 +236,41 @@ class ScientificSpinBox(QtGui.QDoubleSpinBox):
 
 class ListData(Qwt.QwtData):
     
-    """Custom `QwtData` mapping a list onto `x,y` values.
-    
-    Note:
-        The list is stored in the class.
-    
-    """
+    """Custom `QwtData` mapping a list onto `x,y` values."""
     X, Y = range(2)
 
     def __init__(self):
         super(ListData, self).__init__()
-        self.__data = []
+        self._historySize = 500
+        self._history = []
+        self._data = []
 
     def __iter__(self):
-        """Iterate on the list."""
-        return self.__data.__iter__()
+        """Iterate on the data."""
+        return iter(self._history + self._data)
+
+    def historySize(self):
+        """How many points of history to display after exportAndTrim."""
+        return self._historySize
+
+    def setHistorySize(self, historySize):
+        """Set how many points of history to display after exportAndTrim."""
+        self._historySize = historySize
 
     def copy(self):
         """Return self."""
         return self
 
     def size(self):
-        """Return length of list."""
-        return len(self.__data)
+        """Return length of data."""
+        return len(self._history) + len(self._data)
 
     def sample(self, i):
         """Return `x,y` values at `i`."""
-        return self.__data[i]
+        try:
+            return self._history[i]
+        except IndexError:
+            return self._data[i - len(self._history)]
 
     def x(self, i):
         """Return `x` value."""
@@ -273,16 +281,29 @@ class ListData(Qwt.QwtData):
         return self.sample(i)[ListData.Y]
 
     def append(self, xy):
-        """Add `x,y` values to the list.
+        """Add `x,y` values to the data.
 
         Does nothing if None is in `xy`.
         """
         if None in xy: return
-        self.__data.append(xy)
+        self._data.append(xy)
 
     def clear(self):
-        """Clear the list in place."""
-        self.__data = []
+        """Clear the data in place."""
+        self._history = []
+        self._data = []
+
+    def exportAndTrim(self, csvfile):
+        """Export the data to `csvfile` and trim it.
+
+        The data acquired since the previous call is saved to `csvfile`
+        and `historySize` points are kept.  The rest of the data is
+        deleted.
+        """
+        currentData, self._data = self._data, []
+        self._history.extend(currentData)
+        self._history = self._history[-self._historySize:]
+        _csv.writer(csvfile, delimiter="\t").writerows(currentData)
 
 
 class TimeSeriesData(ListData):
@@ -1362,8 +1383,7 @@ class Controller(QtCore.QObject):
                 with _zipfile.ZipFile(zipfilename, "a") as zipfile:
                     for curve in dataPlot.itemList():
                         csvfile = _StringIO.StringIO()
-                        csvwriter = _csv.writer(csvfile, delimiter="\t")
-                        csvwriter.writerows(curve.data())
+                        curve.data().exportAndTrim(csvfile)
                         filename = " ".join((curve.title().text(),
                                              _time.strftime("%Y%m%dT%H%M%S")))
                         zipfile.writestr(filename, csvfile.getvalue())
