@@ -52,8 +52,8 @@ class CommunicationProtocol(drv.CommunicationProtocol):
 
     def read(self, context):
         assert(not self._socket.inWaiting())
-        line = ":r {0:01X}{1:02X}\r".format(context.path[0].index,
-                                            context.reader)
+        line = ":r {index:01X}{reader:02X}\r".format(index=context.subsystem.index,
+                                                     reader=context.reader)
         self._socket.write(line)
         self._check_echo(line, self._socket.readline())
         ans = self._socket.readline()
@@ -62,9 +62,9 @@ class CommunicationProtocol(drv.CommunicationProtocol):
 
     def write(self, context):
         assert(not self._socket.inWaiting())
-        line = ":w {0:01X}{1:02X} {2:.0f}\r".format(context.path[0].index,
-                                                    context.writer,
-                                                    context.value)
+        line = ":w {index:01X}{writer:02X} {value:.0f}\r".format(index=context.subsystem.index,
+                                                                 writer=context.writer,
+                                                                 value=context.value)
         self._socket.write(line)
         self._check_echo(line, self._socket.readline())
         self._check_status(line, self._socket.readline())

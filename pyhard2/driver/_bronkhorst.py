@@ -165,7 +165,7 @@ class Reader(object):
 
     @classmethod
     def fromContext(cls, context):
-        process = context.path[0].process
+        process = context.subsystem.process
         return cls(context.node, process, context.reader,
                    context._command.type)
 
@@ -194,7 +194,7 @@ class Writer(object):
 
     @classmethod
     def fromContext(cls, context):
-        process = context.path[0].process
+        process = context.subsystem.process
         return cls(context.node, process, context.writer,
                    context._command.type, context._command.access ==
                    "Access.SEC", context.value)

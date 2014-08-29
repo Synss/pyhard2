@@ -49,11 +49,12 @@ class DplProtocol(drv.CommunicationProtocol):
                    }[int(msg[2:])]
 
     def read(self, context):
-        self._socket.write("{0}\n".format(context.reader))
+        self._socket.write("{reader}\n".format(reader=context.reader))
         return _stripEot(self._socket.readline())
 
     def write(self, context):
-        self._socket.write("{0} {1}\n".format(context.writer, context.value))
+        self._socket.write("{writer} {value}\n".format(writer=context.writer,
+                                                       value=context.value))
 
 
 class ScpiCommunicationProtocol(scpi.ScpiCommunicationProtocol):

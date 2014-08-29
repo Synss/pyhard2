@@ -64,12 +64,12 @@ class CommunicationProtocol(drv.CommunicationProtocol):
         self._socket.newline = "\r"
 
     def read(self, context):
-        self._socket.write("{0}\r".format(context.reader))
+        self._socket.write("{reader}\r".format(reader=context.reader))
         assert(self._socket.readline() == "0\r")
         return self._socket.readline().strip()
 
     def write(self, context):
-        self._socket.write("{0}\r".format(context.writer))
+        self._socket.write("{writer}\r".format(writer=context.writer))
         assert(self._socket.readline() == "0\r")
 
 

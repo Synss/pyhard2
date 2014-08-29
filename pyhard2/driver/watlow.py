@@ -65,7 +65,7 @@ class XonProtocol(drv.CommunicationProtocol):
                                     % ("\x13\x11", xonxoff))
 
     def read(self, context):
-        line = "? {0}\r".format(context.reader)
+        line = "? {reader}\r".format(reader=context.reader)
         self._socket.write(line)
         self._xon()
         ans = self._socket.readline()
@@ -79,7 +79,8 @@ class XonProtocol(drv.CommunicationProtocol):
                 raise
 
     def write(self, context):
-        line = "= {0} {1}\r".format(context.writer, context.value)
+        line = "= {writer} {value}\r".format(writer=context.writer,
+                                             value=context.value)
         self._socket.write(line)
         self._xon()
         self._check_error(line)     # check for error

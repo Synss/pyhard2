@@ -113,6 +113,7 @@ class Context(object):
         writer: The value stored in `command.writer`.
         value: The value to write, or None.
         node: The node on which to read or write, or None.
+        subsystem: The `Subsystem` on which the `command` is defined.
         path ([Subsystem]): The list of subsystem traversed until the
             `Protocol`.
 
@@ -134,6 +135,10 @@ class Context(object):
     def __repr__(self):
         return "%s(command=%r, value=%r, node=%r)" % (
             self.__class__.__name__, self._command, self.value, self.node)
+
+    @property
+    def subsystem(self):
+        return self.path[0]
 
 
 class Access(object):

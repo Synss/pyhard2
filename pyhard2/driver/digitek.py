@@ -58,7 +58,7 @@ class CommunicationProtocol(drv.CommunicationProtocol):
         self._socket.newline = "\r"
 
     def read(self, context):
-        self._socket.write("{0:c}".format(context.reader))
+        self._socket.write("{reader:c}".format(reader=context.reader))
         return self._socket.readline()
 
 
