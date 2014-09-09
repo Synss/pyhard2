@@ -50,17 +50,17 @@ class AmtronController(ctrlr.Controller):
         self.programPool.default_factory = ctrlr.SetpointRampProgram
 
         self.powerBtnMapper = QtGui.QDataWidgetMapper(self.ui.powerBtn)
-        self.powerBtnMapper.setModel(self._instrumentsModel)
+        self.powerBtnMapper.setModel(self._driverModel)
         self.powerBtnMapper.setItemDelegate(_ButtonDelegate(self.powerBtnMapper))
-        self.ui.instrumentsTable.selectionModel().currentRowChanged.connect(
+        self.ui.driverView.selectionModel().currentRowChanged.connect(
             self.powerBtnMapper.setCurrentModelIndex)
         self.populated.connect(self.powerBtnMapper.toFirst)
         self.ui.powerBtn.toggled.connect(self.powerBtnMapper.submit)
 
         self.gateBtnMapper = QtGui.QDataWidgetMapper(self.ui.gateBtn)
-        self.gateBtnMapper.setModel(self._instrumentsModel)
+        self.gateBtnMapper.setModel(self._driverModel)
         self.gateBtnMapper.setItemDelegate(_ButtonDelegate(self.gateBtnMapper))
-        self.ui.instrumentsTable.selectionModel().currentRowChanged.connect(
+        self.ui.driverView.selectionModel().currentRowChanged.connect(
             self.gateBtnMapper.setCurrentModelIndex)
         self.populated.connect(self.gateBtnMapper.toFirst)
         self.ui.gateBtn.toggled.connect(self.gateBtnMapper.submit)
