@@ -9,6 +9,7 @@
 """
 import logging
 from collections import defaultdict
+from itertools import chain
 import os as _os
 import StringIO as _StringIO
 import csv as _csv
@@ -245,10 +246,31 @@ class ListData(Qwt.QwtData):
         self._historySize = 10000
         self._history = []
         self._data = []
+        # methods
+        self.size = self.__len__
+
+    def __len__(self):
+        """Return length of data."""
+        return len(self._history) + len(self._data)
 
     def __iter__(self):
         """Iterate on the data."""
-        return iter(self._history + self._data)
+        return iter(chain(self._history, self._data))
+
+    def __getitem__(self, i):
+        """Return `x,y` values at `i`."""
+        try:
+            return self._history[i]
+        except IndexError:
+            return self._data[i - len(self._history)]
+
+    def sample(self, i):
+        """Return `x,y` values at `i`."""
+        return self[i]
+
+    def copy(self):
+        """Return self."""
+        return self
 
     def historySize(self):
         """How many points of history to display after exportAndTrim."""
@@ -258,28 +280,13 @@ class ListData(Qwt.QwtData):
         """Set how many points of history to display after exportAndTrim."""
         self._historySize = historySize
 
-    def copy(self):
-        """Return self."""
-        return self
-
-    def size(self):
-        """Return length of data."""
-        return len(self._history) + len(self._data)
-
-    def sample(self, i):
-        """Return `x,y` values at `i`."""
-        try:
-            return self._history[i]
-        except IndexError:
-            return self._data[i - len(self._history)]
-
     def x(self, i):
         """Return `x` value."""
-        return self.sample(i)[ListData.X]
+        return self[i][ListData.X]
 
     def y(self, i):
         """Return `y` value."""
-        return self.sample(i)[ListData.Y]
+        return self[i][ListData.Y]
 
     def append(self, xy):
         """Add `x,y` values to the data.
