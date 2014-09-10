@@ -4,7 +4,7 @@ from pyhard2.driver.aml import Ngc2d
 from pyhard2.driver.amtron import CS400
 from pyhard2.driver.bronkhorst import Controller
 from pyhard2.driver.daq import Daq
-from pyhard2.driver.deltaelektronika import DplInstrument
+from pyhard2.driver.deltaelektronika import Sm700Series
 from pyhard2.driver.digitek import DT80k
 from pyhard2.driver.fluke import Fluke18x
 from pyhard2.driver.ieee.scpi import ScpiPowerSupply, ScpiDCVoltmeter
@@ -20,7 +20,7 @@ for driver_type in (Ngc2d,
                     CS400,
                     Controller,
                     Daq,
-                    DplInstrument,
+                    Sm700Series,
                     DT80k,
                     Fluke18x,
                     ScpiPowerSupply,
