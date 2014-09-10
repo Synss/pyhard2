@@ -17,7 +17,6 @@ class ScpiCommunicationProtocol(drv.CommunicationProtocol):
     """SCPI protocol."""
 
     def __init__(self, socket, parent=None):
-        socket.newline = "\n"
         super(ScpiCommunicationProtocol, self).__init__(socket, parent)
 
     @staticmethod
@@ -31,23 +30,21 @@ class ScpiCommunicationProtocol(drv.CommunicationProtocol):
         return "".join((c for c in path if c.isupper() or not c.isalpha()))
 
     def read(self, context):
-        msg = "{path}?{nl}".format(
+        msg = "{path}?\n".format(
             path=self._scpiStrip(":".join((self._scpiPath(context),
-                                           context.reader))),
-            nl=self._socket.newline)
+                                           context.reader))))
         self._socket.write(msg)
-        return self._socket.readline().strip()
+        return self._socket.readline()
 
     def write(self, context):
         if context.value is True:
             context.value = "ON"
         elif context.value is False:
             context.value = "OFF"
-        msg = "{path} {value}{nl}".format(
+        msg = "{path} {value}\n".format(
             path=self._scpiStrip(":".join((self._scpiPath(context),
                                            context.writer))),
-            value=context.value,
-            nl=self._socket.newline)
+            value=context.value)
         self._socket.write(msg)
 
 
@@ -72,7 +69,7 @@ class ScpiRequired(ieee488_2.Ieee488_2Subsystem):
         self.system = ScpiSubsystem("SYSTem", self._scpi)
         self.system.error = ScpiSubsystem("ERRor", self.system)
         self.system.error.next = Cmd("NEXT", access=Access.RO)
-        self.system.version = Cmd("VERSion", access=Access.RO)
+        self.system.version = Cmd("VERSion", rfunc=float, access=Access.RO)
         # STATus
         self.status = ScpiSubsystem("STATus", self._scpi)
         self.status.operation = ScpiSubsystem("OPERation", self.status)
@@ -210,7 +207,7 @@ class TestScpi(unittest.TestCase):
         self.assertEqual(self.i.source.current.read(), 0.5)
 
     def test_required_subsystem(self):
-        self.assertEqual(self.i.system.version.read(), "1.2345")
+        self.assertEqual(self.i.system.version.read(), 1.2345)
 
     def test_4882(self):
         self.i.reset.write()
