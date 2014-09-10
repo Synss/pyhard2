@@ -46,7 +46,7 @@ class CommunicationProtocol(drv.CommunicationProtocol):
     def __init__(self, socket):
         super(CommunicationProtocol, self).__init__(socket)
         self._socket.timeout = 3.0
-        self._socket.newline = "\r\n"
+        self._socket.newline = "\r"
 
     def read(self, context):
         node = context.node if context.node is not None else 0
