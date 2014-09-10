@@ -430,6 +430,17 @@ class CommunicationProtocol(Protocol):
         self._socket = socket
 
 
+def splitlines(txt, sep="\n"):
+    """Return a list of the lines in `txt`, breaking at `sep`."""
+    def _iterator(_txt):
+        if not _txt: raise StopIteration()
+        partition = _txt.partition(sep)
+        yield "".join(partition[0:2])
+        # next line: `yield from` with python 3.4
+        for __ in _iterator(partition[2]): yield __
+    return [__ for __ in _iterator(txt)]
+
+
 class TesterSocket(object):
 
     """A fake socket with canned responses, used for testing.
@@ -449,7 +460,7 @@ class TesterSocket(object):
         """Buffer the canned answer for `message`."""
         logger.debug("WRITE %r" % message)
         # should split on self.newline
-        self._buffer.extend(self.msg[message].splitlines(True))
+        self._buffer.extend(splitlines(self.msg[message], self.newline))
 
     def read(self, n):
         """Return `n` characters from the buffer."""
@@ -462,7 +473,11 @@ class TesterSocket(object):
 
     def readline(self):
         """Return one line in the buffer."""
-        line = self._buffer.pop(0)
+        try:
+            line = self._buffer.pop(0)
+        except IndexError:
+            logger.debug("Timeout")
+            line = ""
         logger.debug("LINE %r" % line)
         return line
 
