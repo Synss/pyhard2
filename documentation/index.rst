@@ -46,6 +46,14 @@ And an interactive session using a pyhard2 driver may look like the following:
 >>> multimeter.unit.read()
 "Deg F"
 
+Tutorials
+=========
+
+.. toctree::
+   :maxdepth: 1
+
+   tut1
+
 
 API documentation
 =================
