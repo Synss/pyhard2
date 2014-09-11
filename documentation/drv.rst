@@ -60,6 +60,10 @@ DAQ
 .. automodule:: pyhard2.driver.daq.lindaq
    :members:
 
+Delta-Elektronika
+-----------------
+.. automodule:: pyhard2.driver.deltaelektronika
+
 Fluke
 -----
 .. automodule:: pyhard2.driver.fluke
