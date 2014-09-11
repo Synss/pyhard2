@@ -287,9 +287,9 @@ class Subsystem(QtCore.QObject):
         except AttributeError:
             if not self._protocol and not self._protocol:
                 raise DriverError(" ".join(
-                    ("%s does not know what to fo with %r,",
-                     "it has neither parent nor protocol."
-                     % self.__class__.__name__, context)))
+                    ("%s does not know what to do with %r,"
+                     % (self.__class__.__name__, context),
+                     "it has neither parent nor protocol.")))
             else:
                 raise
 
