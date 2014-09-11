@@ -5,6 +5,7 @@ import unittest
 import pyhard2.driver as drv
 Cmd, Access = drv.Command, drv.Access
 import pyhard2.driver.ieee as ieee
+from pyhard2.driver.ieee.ieee488_2 import Ieee4882
 
 
 def _str2bool(s):
@@ -53,8 +54,8 @@ class DplProtocol(drv.CommunicationProtocol):
         return _stripEot(self._socket.readline())
 
     def write(self, context):
-        self._socket.write("{writer} {value}\n".format(writer=context.writer,
-                                                       value=context.value))
+        self._socket.write("{writer}{value:.2f}\n".format(writer=context.writer,
+                                                          value=context.value))
 
 
 class ScpiCommunicationProtocol(ieee.ScpiCommunicationProtocol):
@@ -93,6 +94,8 @@ class Sm700Series(drv.Subsystem):
         self.dpl.identification = Cmd("ID?", access=Access.RO, doc="Report identity of the PSC")
         self.dpl.scpi = Cmd("SCPI", access=Access.WO, doc="Switch to the SCPI parser")
         self.dpl.dpl = Cmd("DPL", access=Access.WO, doc="Switch to the DPL parser")
+        # Common commands (488.2)
+        self.common = Ieee4882(socket)
         # SCPI
         self.setProtocol(ScpiCommunicationProtocol(socket))
         self.channel = Cmd("CH", rfunc=int)
@@ -108,8 +111,8 @@ class Sm700Series(drv.Subsystem):
         self.source.function.output = Cmd("OUTPut", rfunc=_str2bool)
         self.source.function.lock_frontpanel = Cmd("FRontpanel:Lock", rfunc=_str2bool)
         self.measure = ieee.ScpiSubsystem("MEasure", self)
-        self.measure.voltage = Cmd("VOltage", access=Access.RO)
-        self.measure.current = Cmd("CUrrent", access=Access.RO)
+        self.measure.voltage = Cmd("VOltage", access=Access.RO, rfunc=float)
+        self.measure.current = Cmd("CUrrent", access=Access.RO, rfunc=float)
         self.sense = ieee.ScpiSubsystem("SEnse", self)
         self.sense.digital = ieee.ScpiSubsystem("DIgital", self.sense)
         self.sense.digital.data = Cmd("DAta", access=Access.RO)
@@ -152,6 +155,8 @@ class TestSm700(unittest.TestCase):
                       "U\n": "13\r\n\x04",
                       "FU\n": "70\r\n\x04",
                       "FI\n": "35\r\n\x04",
+                      # 488.2
+                      "*IDN?\n": "TEST, UNIT, 488, 2\n",
                       # SCPI
                       "SO:VO?\n": "0.25\r\n\x04",
                       "SO:VO 0.25\n": "",
@@ -165,6 +170,9 @@ class TestSm700(unittest.TestCase):
 
     def test_dpl_read(self):
         self.assertEqual(self.i.dpl.voltage.read(), 13)
+
+    def test_common_read(self):
+        self.assertEqual(self.i.common.identification.read()[0], "TEST")
 
     def test_scpi_read(self):
         self.assertEqual(self.i.source.voltage.read(), 0.25)
