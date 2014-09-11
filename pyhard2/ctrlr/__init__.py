@@ -1226,16 +1226,11 @@ class Controller(QtCore.QObject):
         self.setWindowTitle(windowTitle)
         self.editorPrototype = defaultdict(QtGui.QDoubleSpinBox)
 
-        self._autoSaveFileName = _os.path.join(
-            QtGui.QDesktopServices.storageLocation(
-                QtGui.QDesktopServices.DocumentsLocation),
-            "pyhard2",
-            "%s %s.zip" % (windowTitle, _time.strftime("%Y%m%dT%H%M%S")))
-        self.ui.autoSaveEdit.setText(self._autoSaveFileName)
         self._autoSaveTimer = QtCore.QTimer(self, singleShot=False,
                                             interval=600000)  # 10 min
         self.populated.connect(self._autoSaveTimer.start)
         self._autoSaveTimer.timeout.connect(self.autoSave)
+        QtCore.QTimer.singleShot(0, self.autoSave)
 
         self._specialColumnMapper = dict(
             programmable=self.setProgrammableColumn,
@@ -1457,9 +1452,14 @@ class Controller(QtCore.QObject):
 
     def autoSaveFileName(self):
         path = _os.path
-        if not path.exists(path.dirname(self._autoSaveFileName)):
-            _os.makedirs(path.dirname(self._autoSaveFileName))
-        return self._autoSaveFileName
+        autoSaveFileName = _os.path.join(QtGui.QDesktopServices.storageLocation(
+            QtGui.QDesktopServices.DocumentsLocation),
+            "pyhard2", _time.strftime("%Y"), _time.strftime("%m"),
+            _time.strftime("%Y%m%d.zip"))
+        self.ui.autoSaveEdit.setText(autoSaveFileName)
+        if not path.exists(path.dirname(autoSaveFileName)):
+            _os.makedirs(path.dirname(autoSaveFileName))
+        return autoSaveFileName
 
     def updateProgramTable(self, index):
         if self._programmableColumn is None: return
@@ -1577,9 +1577,8 @@ class Controller(QtCore.QObject):
                 csvfile = _StringIO.StringIO()
                 curve.data().exportAndTrim(csvfile)
                 filename = path.join(
-                    path.splitext(path.basename(self.autoSaveFileName()))[0],
+                    self.windowTitle(),
                     curve.title().text(),
-                    _time.strftime("%Y%m%d"),
                     _time.strftime("T%H%M%S")) + ".txt"
                 zipfile.writestr(filename, csvfile.getvalue())
 
