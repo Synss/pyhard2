@@ -3,38 +3,23 @@
 """
 import unittest
 import pyhard2.driver as drv
+import pyhard2.driver.ieee as ieee
 Cmd, Access = drv.Command, drv.Access
 
-
-class IeeeCommunicationProtocol(drv.CommunicationProtocol):
-
-    """Communication protocol for the IEEE 488.1 standard."""
-
-    def read(self, context):
-        self._socket.write("*{cmd}?\n".format(cmd=context.reader))
-        return self._socket.readline().strip()
-
-    def write(self, context):
-        if context.value is not None:
-            msg = "*{cmd} {val}\n".format(cmd=context.writer,
-                                          val=context.value)
-        else:
-            msg = "*{cmd}\n".format(cmd=context.writer)
-        self._socket.write(msg)
 
 
 def _bool(x): return bool(int(x))
 
 
-class Ieee488_1Subsystem(drv.Subsystem):
+class Ieee4881(drv.Subsystem):
     """IEEE 488.1 Requirements in IEEE 488.2 standard.
 
     Section 4.1
 
     """
     def __init__(self, socket, parent=None):
-        super(Ieee488_1Subsystem, self).__init__()
-        self.setProtocol(IeeeCommunicationProtocol(socket, parent))
+        super(Ieee4881, self).__init__(parent)
+        self.setProtocol(ieee.Ieee488CommunicationProtocol(socket, parent))
 
         self.source_handshake = Cmd("SH1")
         self.acceptor_handshake = Cmd("AH1")
@@ -64,7 +49,7 @@ class TestIeee488_1(unittest.TestCase):
         socket.msg = {"*PP0?\n": "0",
                       "*PP0 1\n": "",
                       "*DC1\n": "",}
-        self.i = Ieee488_1Subsystem(socket)
+        self.i = Ieee4881(socket)
 
     def test_read(self):
         self.assertFalse(self.i.parallel_poll.read())

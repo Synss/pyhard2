@@ -7,8 +7,9 @@ unittestdoc:
 	python -m unittest discover --start-directory documentation --pattern '*.py'
 
 doctest:
-	python -m doctest pyhard2/driver/__init__.py
 	python -m doctest pyhard2/pid.py
+	python -m doctest pyhard2/driver/__init__.py
+	python -m doctest pyhard2/driver/ieee/scpi.py
 
 test: unittest doctest
 

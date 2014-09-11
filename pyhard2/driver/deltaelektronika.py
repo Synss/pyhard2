@@ -4,7 +4,7 @@
 import unittest
 import pyhard2.driver as drv
 Cmd, Access = drv.Command, drv.Access
-import pyhard2.driver.ieee.scpi as scpi
+import pyhard2.driver.ieee as ieee
 
 
 def _str2bool(s):
@@ -57,7 +57,7 @@ class DplProtocol(drv.CommunicationProtocol):
                                                        value=context.value))
 
 
-class ScpiCommunicationProtocol(scpi.ScpiCommunicationProtocol):
+class ScpiCommunicationProtocol(ieee.ScpiCommunicationProtocol):
 
     def read(self, context):
         return _stripEot(super(ScpiCommunicationProtocol, self).read(context))
@@ -96,36 +96,36 @@ class Sm700Series(drv.Subsystem):
         # SCPI
         self.setProtocol(ScpiCommunicationProtocol(socket))
         self.channel = Cmd("CH", rfunc=int)
-        self.source = scpi.ScpiSubsystem("SOurce", self)
+        self.source = ieee.ScpiSubsystem("SOurce", self)
         self.source.voltage = Cmd("VOltage", rfunc=float, minimum=0.0)
         self.source.current = Cmd("CUrrent", rfunc=float, minimum=0.0)
         self.source.max_voltage = Cmd("VOltage:MAx", rfunc=float)
         self.source.max_current = Cmd("CUrrent:MAx", rfunc=float)
-        self.source.function = scpi.ScpiSubsystem("FUnction", self.source)
+        self.source.function = ieee.ScpiSubsystem("FUnction", self.source)
         self.source.function.enable_remote_shutdown = Cmd("RSD", rfunc=_str2bool)
         self.source.function.output_a = Cmd("OUtA", rfunc=_str2bool)
         self.source.function.output_b = Cmd("OUtB", rfunc=_str2bool)
         self.source.function.output = Cmd("OUTPut", rfunc=_str2bool)
         self.source.function.lock_frontpanel = Cmd("FRontpanel:Lock", rfunc=_str2bool)
-        self.measure = scpi.ScpiSubsystem("MEasure", self)
+        self.measure = ieee.ScpiSubsystem("MEasure", self)
         self.measure.voltage = Cmd("VOltage", access=Access.RO)
         self.measure.current = Cmd("CUrrent", access=Access.RO)
-        self.sense = scpi.ScpiSubsystem("SEnse", self)
-        self.sense.digital = scpi.ScpiSubsystem("DIgital", self.sense)
+        self.sense = ieee.ScpiSubsystem("SEnse", self)
+        self.sense.digital = ieee.ScpiSubsystem("DIgital", self.sense)
         self.sense.digital.data = Cmd("DAta", access=Access.RO)
         self.sense.digital.extended_data = Cmd("EXtendeddata", access=Access.RO)
         self.sense.digital.switch = Cmd("SWitch", access=Access.RO)
-        self.remote = scpi.ScpiSubsystem("REMote", self)
+        self.remote = ieee.ScpiSubsystem("REMote", self)
         self.remote.cv = Cmd("CV", rfunc=_str2bool)
         self.remote.cc = Cmd("CC", rfunc=_str2bool)
-        self.local = scpi.ScpiSubsystem("LOCal", self)
+        self.local = ieee.ScpiSubsystem("LOCal", self)
         self.local.cv = Cmd("CV", rfunc=_str2bool, access=Access.WO)
         self.local.cc = Cmd("CC", rfunc=_str2bool, access=Access.WO)
-        self.calibration = scpi.ScpiSubsystem("CAlibration", self)
-        self.calibration.voltage = scpi.ScpiSubsystem("VOltage", self.calibration)
-        self.calibration.current = scpi.ScpiSubsystem("CUrrent", self.calibration)
-        self.calibration.voltage.measure = scpi.ScpiSubsystem("MEasure", self.calibration.voltage)
-        self.calibration.current.measure = scpi.ScpiSubsystem("MEasure", self.calibration.current)
+        self.calibration = ieee.ScpiSubsystem("CAlibration", self)
+        self.calibration.voltage = ieee.ScpiSubsystem("VOltage", self.calibration)
+        self.calibration.current = ieee.ScpiSubsystem("CUrrent", self.calibration)
+        self.calibration.voltage.measure = ieee.ScpiSubsystem("MEasure", self.calibration.voltage)
+        self.calibration.current.measure = ieee.ScpiSubsystem("MEasure", self.calibration.current)
         for subsystem in (self.calibration.voltage, self.calibration.voltage.measure,
                           self.calibration.current, self.calibration.current.measure):
             subsystem.gain = Cmd("GAin", rfunc=int, minimum=1, maximum=16383)

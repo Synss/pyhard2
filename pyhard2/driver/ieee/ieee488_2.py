@@ -4,11 +4,7 @@
 import unittest
 import pyhard2.driver as drv
 Cmd, Access = drv.Command, drv.Access
-
-import ieee488_1
-
-
-class IeeeHardwareError(drv.HardwareError): pass
+import pyhard2.driver.ieee as ieee
 
 
 def _parse_idn(msg):
@@ -17,10 +13,10 @@ def _parse_idn(msg):
 
 def _self_test(msg):
     if msg is not "0":
-        raise IeeeHardwareError("Self test failed.")
+        raise ieee.HardwareError("Self test failed.")
 
 
-class Ieee488_2Subsystem(ieee488_1.Ieee488_1Subsystem):
+class Ieee4882(drv.Subsystem):
     """IEEE 488.2 Requirements.
 
     - Table 4-4 -- Required Status Reporting Common Commands
@@ -29,7 +25,8 @@ class Ieee488_2Subsystem(ieee488_1.Ieee488_1Subsystem):
 
     """
     def __init__(self, socket, parent=None):
-        super(Ieee488_2Subsystem, self).__init__(socket, parent)
+        super(Ieee4882, self).__init__(parent)
+        self.setProtocol(ieee.Ieee488CommunicationProtocol(socket, parent))
         # Table 10-2
         # System data
         self.identification = Cmd('IDN', access=Access.RO,
@@ -135,6 +132,9 @@ class ControlPassing(drv.Subsystem):
 class TestIeee488_2(unittest.TestCase):
 
     def setUp(self):
+        from .ieee488_1 import Ieee4881
+        class Driver(Ieee4881, Ieee4882): pass
+
         socket = drv.TesterSocket()
         socket.msg = {"*TST?\n": "1\n",
                       "*IDN?\n": "TEST, UNIT, 488, 2\n",
@@ -142,10 +142,10 @@ class TestIeee488_2(unittest.TestCase):
                       "*RST\n": "",
                       "*DC1\n": ""
                      }
-        self.i = Ieee488_2Subsystem(socket)
+        self.i = Driver(socket)
 
     def test_selfTestFailure(self):
-        self.assertRaises(IeeeHardwareError, self.i.self_test.read)
+        self.assertRaises(ieee.HardwareError, self.i.self_test.read)
 
     def test_read(self):
         self.assertEqual(self.i.identification.read()[1], "UNIT")

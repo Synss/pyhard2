@@ -4,67 +4,35 @@
 import unittest
 import pyhard2.driver as drv
 Cmd, Access = drv.Command, drv.Access
-import ieee488_2
-
-# SCPI std. mandates IEEE488.2, excluding IEEE488.1
-
-
-class ScpiError(drv.DriverError): pass
+import pyhard2.driver.ieee as ieee
+ScpiSubsystem = ieee.ScpiSubsystem
 
 
-class ScpiCommunicationProtocol(drv.CommunicationProtocol):
+class ScpiRequired(ieee.ScpiSubsystem):
 
-    """SCPI protocol."""
+    """Required commands from the SCPI standard.
 
-    def __init__(self, socket, parent=None):
-        super(ScpiCommunicationProtocol, self).__init__(socket, parent)
+    Note:
+        SCPI std. mandates IEEE488.2, excluding IEEE488.1.  However,
+        hardware vendors do not always follow the standard.  Drivers
+        actually following the standard should nest either the Scpi or
+        the 488.2 commands such as::
 
-    @staticmethod
-    def _scpiPath(context):
-        return ":".join(subsystem.mnemonic
-                        for subsystem in reversed(context.path)
-                        if isinstance(subsystem, ScpiSubsystem))
+            import pyhard2.driver.ieee.ieee488_2.Ieee4882 as Ieee4882 
+            import pyhard2.driver.ieee.scpi.ScpiRequired as Scpi
 
-    @staticmethod
-    def _scpiStrip(path):
-        return "".join((c for c in path if c.isupper() or not c.isalpha()))
+            ScpiDriver(Scpi):
 
-    def read(self, context):
-        msg = "{path}?\n".format(
-            path=self._scpiStrip(":".join((self._scpiPath(context),
-                                           context.reader))))
-        self._socket.write(msg)
-        return self._socket.readline()
+                def __init__(self, socket):
+                    super(ScpiDriver, self).__init__(socket)
+                    self.common = Ieee4882(socket, self)
+                    # Continue definition.
 
-    def write(self, context):
-        if context.value is True:
-            context.value = "ON"
-        elif context.value is False:
-            context.value = "OFF"
-        msg = "{path} {value}\n".format(
-            path=self._scpiStrip(":".join((self._scpiPath(context),
-                                           context.writer))),
-            value=context.value)
-        self._socket.write(msg)
-
-
-class ScpiSubsystem(drv.Subsystem):
-
-    """`Subsystem` with a mnemonic."""
-
-    def __init__(self, mnemonic, parent=None):
-        super(ScpiSubsystem, self).__init__(parent)
-        self.mnemonic = mnemonic
-
-
-class ScpiRequired(ieee488_2.Ieee488_2Subsystem):
-
-    """Required commands from the IEEE 488.2 standard."""
-
+    """
     def __init__(self, socket, parent=None):
         super(ScpiRequired, self).__init__(socket, parent)
         self._scpi = drv.Subsystem(self)
-        self._scpi.setProtocol(ScpiCommunicationProtocol(socket, self))
+        self._scpi.setProtocol(ieee.ScpiCommunicationProtocol(socket, self))
         # SYSTem
         self.system = ScpiSubsystem("SYSTem", self._scpi)
         self.system.error = ScpiSubsystem("ERRor", self.system)
@@ -92,7 +60,7 @@ class ScpiDigitalMeter(ScpiRequired):
         if meter_fn not in ("VOLTage VOLTage:DC VOLTage:AC".split() +
                             "CURRent CURRent:DC CURRent:AC".split() +
                             "RESistance FRESistance".split()):
-            raise ScpiError("Unknown digital meter")
+            raise ieee.DriverError("Unknown digital meter")
         self.configure = ScpiSubsystem("CONFigure", self._scpi)
         # SCALar:meter_fn
         self.fetch = ScpiSubsystem("FETCh", self._scpi)
@@ -208,9 +176,6 @@ class TestScpi(unittest.TestCase):
 
     def test_required_subsystem(self):
         self.assertEqual(self.i.system.version.read(), 1.2345)
-
-    def test_4882(self):
-        self.i.reset.write()
 
 
 if __name__ == "__main__":
