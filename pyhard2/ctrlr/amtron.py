@@ -92,7 +92,7 @@ class AmtronDaq(drv.Subsystem):
         # Connections
         self.temperature.signal.connect(self.pid.measure.write)
         self.temperature.signal.connect(self.pid.output.read)
-        self.pid.output.signal.connect(self.laser.set_total_power)
+        self.pid.output.signal.connect(self.laser.set_total_power.write)
 
 
 class _VirtualCommand(object):
