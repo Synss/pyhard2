@@ -30,23 +30,16 @@ class Pid(pid.PidController):
     of `output` and `measure`.
 
     """
-    def __init__(self):
-        super(Pid, self).__init__()
-        self._output = 0.0
-        self.__measure = 0.0
-
-    @property
-    def measure(self):
-        return self.__measure
-
-    @measure.setter
-    def measure(self, value):
-        self.__measure = value
-        self._output = self.compute_output(value)
+    def __init__(self,
+                 proportional=2.0, integral_time=0.0, derivative_time=0.0,
+                 vmin=0.0, vmax=100.0):
+        super(Pid, self).__init__(proportional, integral_time, derivative_time,
+                                  vmin, vmax)
+        self.measure = 0.0
 
     @property
     def output(self):
-        return self._output
+        return self.compute_output(self.measure)
 
 
 class Input(object):
@@ -92,12 +85,15 @@ class PidSubsystem(drv.Subsystem):
 
     """The subsystem for the PID."""
 
-    def __init__(self, parent=None):
+    def __init__(self, parent,
+                 proportional=2.0, integral_time=0.0, derivative_time=0.0,
+                 vmin=0.0, vmax=100.0, spmin=0.0, spmax=100.0):
         super(PidSubsystem, self).__init__(parent)
-        self.setProtocol(drv.ObjectWrapperProtocol(Pid()))
+        self.setProtocol(drv.ObjectWrapperProtocol(Pid(
+            proportional, integral_time, derivative_time, vmin, vmax)))
         self.measure = Cmd("measure", access=Access.WO)
         self.output = Cmd("output", access=Access.RO)
-        self.setpoint = Cmd("setpoint")
+        self.setpoint = Cmd("setpoint", minimum=spmin, maximum=spmax)
         self.proportional = Cmd("proportional")
         self.integral_time = Cmd("integral_time")
         self.derivative_time = Cmd("derivative_time")
