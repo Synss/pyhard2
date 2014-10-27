@@ -136,8 +136,10 @@ class Series988(drv.Subsystem):
         self.setProtocol(XonProtocol(socket))
         self.setpoint = Cmd("SP1", minimum=-250, maximum=9999)
         self.power = Cmd("PWR", access=Access.RO, doc="power output %")
-        self.temperature1 = Cmd("C1", access=Access.RO, doc="input value 1")
-        self.temperature2 = Cmd("C2", access=Access.RO, doc="input value 2")
+        self.temperature1 = Cmd("C1", minimum=-250, maximum=9999,
+                                access=Access.RO, doc="input value 1")
+        self.temperature2 = Cmd("C2", minimum=-250, maximum=9999,
+                                access=Access.RO, doc="input value 2")
         # Subsystems
         self.setup = drv.Subsystem(self)
         setup_output_table = (
