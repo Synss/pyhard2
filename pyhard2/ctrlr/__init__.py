@@ -352,6 +352,21 @@ class ProfileData(Qwt.QwtData):
         """Iterate on the model."""
         return (self.sample(i) for i in range(self.size()))
 
+    def _sample(self, i):
+        """Return `x,y` values at `i`.
+
+        Raises:
+            ValueError: if the the data does not convert to float.
+
+        """
+        try:
+            x, y = (float(self._rootItem.child(i, ProfileData.X).text()),
+                    float(self._rootItem.child(i, ProfileData.Y).text()))
+        except (ValueError, AttributeError):
+            raise ValueError
+        else:
+            return x, y
+
     def copy(self):
         """Return self."""
         return self
@@ -366,37 +381,44 @@ class ProfileData(Qwt.QwtData):
         """
         size = 0
         for row in range(self._model.rowCount(self._rootItem.index())):
-            x = self._rootItem.child(row, ProfileData.X)
-            y = self._rootItem.child(row, ProfileData.Y)
             try:
-                # check validity
-                x, y = float(x.text()), float(y.text())
+                self._sample(row)
             except ValueError:
-                pass
+                # Up to invalid data
+                return size
             else:
                 size += 1
+        # Model full of valid data
         return size
 
     def sample(self, i):
         """Return `x,y` values at `i`.
 
         Raises:
-            IndexError: if `i` is larger than the model.
+            IndexError: if `i` is invalid.
+            ValueError: if the data at `i` do not convert to float.
 
         """
         if i < 0:
             i += self.size()
-        if i >= self.size():
+        if not 0 <= i < self.size():
             raise IndexError("%s index out of range" % self.__class__.__name__)
-        return (float(self._rootItem.child(i, ProfileData.X).text()),
-                float(self._rootItem.child(i, ProfileData.Y).text()))
+        return self._sample(i)
 
     def x(self, i):
-        """Return `x` value at `i`."""
+        """Return `x` value at `i`.
+
+        See also:
+            `sample()` for the exceptions.
+        """
         return self.sample(i)[ProfileData.X]
 
     def y(self, i):
-        """Return `y` value at `i`."""
+        """Return `y` value at `i`.
+
+        See also:
+            `sample()` for the exceptions.
+        """
         return self.sample(i)[ProfileData.Y]
 
 
@@ -461,8 +483,6 @@ class SingleShotProgram(QtCore.QObject):
         self._timer = QtCore.QTimer(self)
         self._timer.setSingleShot(True)
         self._timer.timeout.connect(self._shoot)
-        self.finished.connect(self._timer.stop)
-        self.started.connect(self._shoot)
         self._running = False
         self._profile = None
         self._index = -1
@@ -498,27 +518,32 @@ class SingleShotProgram(QtCore.QObject):
         if self._running: self.stop()  # restart
         self._running = True
         self.started.emit()
+        self._shoot()
 
     @Slot()
     def stop(self):
         """Stop the program."""
         if not self._running: return  # ignore
         self._running = False
-        self.finished.emit()
+        self._timer.stop()
         self._index = -1
+        self.finished.emit()
 
     @Slot()
     def _shoot(self):
-        """Emit a new value if it exists or terminate the program."""
+        """Emit a value if it exists or terminate the program."""
         self._index += 1
-        self.value.emit(self._profile.y(self._index))
+        try:
+            self.value.emit(self._profile.y(self._index))
+        except IndexError:
+            # Current value does not exist.
+            self.stop()
         try:
             # relative time
             dt = self._dt
         except IndexError:
-            # we give a chance to derived classes to do something before
-            # finishing
-            QtCore.QTimer.singleShot(100, self.stop)
+            # Next value does not exist.
+            self.stop()
         else:
             self._timer.start(1000 *  dt)  # msec
 
@@ -532,6 +557,7 @@ class SetpointRampProgram(SingleShotProgram):
         self._ramp = None
         self._timer.setSingleShot(False)
         self.started.connect(self._timer.start)
+        self.finished.connect(self._timer.stop)
 
     def setProfile(self, profile):
         """Set the profile to `profile`."""
@@ -544,7 +570,11 @@ class SetpointRampProgram(SingleShotProgram):
         try:
             self.value.emit(self._ramp.next())
         except StopIteration:
-            self.value.emit(self._profile.y(-1))
+            try:
+                self.value.emit(self._profile.y(-1))
+            except IndexError:
+                # Ignore error: we are stopping anyway.
+                pass
             self.stop()
 
 

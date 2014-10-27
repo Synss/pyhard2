@@ -41,10 +41,10 @@ class WatlowProgram(ctrlr.SingleShotProgram):
         self._index += 1
         try:
             rate = round(abs(60.0 * self._dv/self._dt))  # degree / min
-            self.rate.emit(rate)
         except IndexError:
-            QtCore.QTimer.singleShot(100, self.stop)
+            self.stop()
         else:
+            self.rate.emit(rate)
             # value at index + 1
             self.value.emit(self._profile.y(self._index + 1))
             self._timer.start(1000 * self._dt)
@@ -62,16 +62,6 @@ class _ComboBoxDelegate(QtGui.QAbstractItemDelegate):
     def setModelData(self, combobox, model, index):
         if not index.isValid(): return
         model.setData(index, combobox.currentIndex())
-
-
-MeasureColumn = 0
-SetpointColumn = 1
-OutputColumn = 2
-PidPColumn = 3
-PidIColumn = 4
-PidDColumn = 5
-RampInitColumn = 6
-RampRateColumn = 7
 
 
 class WatlowController(ctrlr.Controller):
@@ -108,6 +98,12 @@ class WatlowController(ctrlr.Controller):
         self._rampInitValuePool = {}
         self._rateValuePool = {}
 
+        self._specialColumnMapper.update(dict(
+            rampinit=self.setRampInitColumn,
+            ramprate=self.setRampRateColumn))
+        self._rampInitColumn = None
+        self._rampRateColumn = None
+
         self.rampInitMapper = QtGui.QDataWidgetMapper(self)
         self.rampInitMapper.setModel(self._driverModel)
         self.rampInitMapper.setItemDelegate(_ComboBoxDelegate(self))
@@ -124,12 +120,6 @@ class WatlowController(ctrlr.Controller):
         self.populated.connect(self.rampInitMapper.toFirst)
         self.ui.rateEdit.valueChanged.connect(self.rateEditMapper.submit)
 
-        self._specialColumnMapper.update(dict(
-            rampinit=lambda column:
-                     self.rampInitMapper.addMapping(self.ui.initCombo, column),
-            rate=lambda column:
-                 self.rateEditMapper.addMapping(self.ui.rateEdit, column)))
-
     def _disableRateEditOnNoRamp(self, currentIndex):
         self.ui.rateEdit.setDisabled(
             {"no ramp": True}.get(currentIndex, False))
@@ -140,10 +130,10 @@ class WatlowController(ctrlr.Controller):
         for row, program in self.programPool.iteritems():
             program.started.connect(
                 lambda:
-                self._driverModel.item(row, RampInitColumn).setData(2))
+                self._driverModel.item(row, self._rampInitColumn).setData(2))
             program.rate.connect(
                 lambda value:
-                self._driverModel.item(row, RampRateColumn).setData(value))
+                self._driverModel.item(row, self._rampRateColumn).setData(value))
 
             program.started.connect(partial(
                 self.ui.rampSettings.setDisabled, True))
@@ -154,17 +144,27 @@ class WatlowController(ctrlr.Controller):
     def startProgram(self, row):
         # save values
         self._rampInitValuePool[row] = self._driverModel.item(
-            row, RampInitColumn).data()
+            row, self._rampInitColumn).data()
         self._rateValuePool[row] = self._driverModel.item(
-            row, RampRateColumn).data()
+            row, self._rampRateColumn).data()
         super(WatlowController, self).startProgram(row)
 
     def stopProgram(self, row):
         # restore values
-        self._driverModel.item(row, RampInitColumn).setData(
+        self._driverModel.item(row, self._rampInitColumn).setData(
             self._rampInitValuePool.pop(row))
-        self._driverModel.item(row, RampRateColumn).setData(
+        self._driverModel.item(row, self._rampRateColumn).setData(
             self._rateValuePool.pop(row))
+
+    def setRampRateColumn(self, column):
+        """Set ramp rate column to `column`."""
+        self._rampRateColumn = column
+        self.rateEditMapper.addMapping(self.ui.rateEdit, column)
+
+    def setRampInitColumn(self, column):
+        """Set ramp init column to `column`."""
+        self._rampInitColumn = column
+        self.rampInitMapper.addMapping(self.ui.initCombo, column)
 
 
 class _VirtualRamping(object):
@@ -210,9 +210,9 @@ def createController():
         iface.addCommand(driver.operation.pid.a1.derivative, "PID D", hide=True,
                          specialColumn="pidd")
     iface.addCommand(driver.setup.global_.ramp_init, "ramp_init", hide=True,
-                       specialColumn="rampinit")
+                     specialColumn="rampinit")
     iface.addCommand(driver.setup.global_.ramp_rate, "ramp_rate", hide=True,
-                       specialColumn="rate")
+                     specialColumn="ramprate")
     iface.editorPrototype.default_factory=QtGui.QSpinBox
     iface.addNode(None, u"Watlow")
     # Make sure we can read the rate
