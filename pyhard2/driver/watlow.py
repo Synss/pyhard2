@@ -15,7 +15,7 @@ class WatlowHardwareError(drv.HardwareError): pass
 class WatlowDriverError(drv.DriverError): pass
 
 
-class XonProtocol(drv.CommunicationProtocol):
+class XonXoffProtocol(drv.CommunicationProtocol):
 
     """Communication using the XON/XOFF protocol follows:
 
@@ -54,11 +54,11 @@ class XonProtocol(drv.CommunicationProtocol):
             28: "Prompt not active"}
 
     def __init__(self, socket):
-        super(XonProtocol, self).__init__(socket)
+        super(XonXoffProtocol, self).__init__(socket)
         self._socket.timeout = 5.0
         self._socket.newline = "\r"
 
-    def _xon(self):
+    def _xonxoff(self):
         xonxoff = self._socket.read(2)
         if not xonxoff == "\x13\x11":
             raise WatlowDriverError("Expected XON/XOFF (%r) got %r instead."
@@ -67,7 +67,7 @@ class XonProtocol(drv.CommunicationProtocol):
     def read(self, context):
         line = "? {reader}\r".format(reader=context.reader)
         self._socket.write(line)
-        self._xon()
+        self._xonxoff()
         ans = self._socket.readline()
         self._check_error(line)     # check for error
         try:
@@ -82,16 +82,16 @@ class XonProtocol(drv.CommunicationProtocol):
         line = "= {writer} {value}\r".format(writer=context.writer,
                                              value=context.value)
         self._socket.write(line)
-        self._xon()
+        self._xonxoff()
         self._check_error(line)     # check for error
 
     def _check_error(self, line):
         self._socket.write("? ER2\r")
-        self._xon()
+        self._xonxoff()
         err_code = self._socket.readline()
         if not err_code.startswith("0"):
             try:
-                err = XonProtocol._err[int(err_code)]
+                err = XonXoffProtocol._err[int(err_code)]
                 raise drv.HardwareError(
                     "Command %r returned error: %s" %
                     (line, err))
@@ -133,7 +133,7 @@ class Series988(drv.Subsystem):
     """
     def __init__(self, socket):
         super(Series988, self).__init__()
-        self.setProtocol(XonProtocol(socket))
+        self.setProtocol(XonXoffProtocol(socket))
         self.setpoint = Cmd("SP1", minimum=-250, maximum=9999)
         self.power = Cmd("PWR", access=Access.RO, doc="power output %")
         self.temperature1 = Cmd("C1", minimum=-250, maximum=9999,
