@@ -51,7 +51,12 @@ class DplProtocol(drv.CommunicationProtocol):
 
     def read(self, context):
         self._socket.write("{reader}\n".format(reader=context.reader))
-        return _stripEot(self._socket.readline())
+        msg = _stripEot(self._socket.readline())
+        err = self._check_error(msg)
+        if err:
+            self._socket.flush()
+            raise drv.HardwareError(msg)
+        return msg
 
     def write(self, context):
         self._socket.write("{writer}{value:.2f}\n".format(writer=context.writer,
@@ -61,7 +66,12 @@ class DplProtocol(drv.CommunicationProtocol):
 class ScpiCommunicationProtocol(ieee.ScpiCommunicationProtocol):
 
     def read(self, context):
-        return _stripEot(super(ScpiCommunicationProtocol, self).read(context))
+        msg = _stripEot(super(ScpiCommunicationProtocol, self).read(context))
+        err = DplProtocol._check_error(msg)
+        if err:
+            self._socket.flush()
+            raise drv.HardwareError(msg)
+        return msg
 
 
 class Sm700Series(drv.Subsystem):
