@@ -74,9 +74,8 @@ class AmtronController(ctrlr.Controller):
 
 class AmtronDaq(drv.Subsystem):
 
-    """
-    Instrument using the DAQ for input (temperature) and the CS400 for
-    output (laser power).  Output is controller by a PID.
+    """Instrument using the DAQ for input (temperature) and the CS400
+    for output (laser power).  Output is controller by a software PID.
 
     """
     # connections:
