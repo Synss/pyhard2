@@ -16,7 +16,7 @@ test: unittest doctest
 distribute:
 	python setup.py sdist --formats=gztar,zip
 
-doc: unittestdoc
+doc: unittestdoc doc-img
 	-mkdir -p documentation/gv
 	PYTHONPATH="." python documentation/gen_tree_graphs.py
 	PYTHONPATH="." sphinx-build -w tmp/sphinx.out -b html documentation html
