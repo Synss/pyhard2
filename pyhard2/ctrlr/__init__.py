@@ -363,13 +363,12 @@ class ProfileData(Qwt.QwtData):
             ValueError: if the the data does not convert to float.
 
         """
+        def _convert(row, column):
+            return float(self._rootItem.child(row, column).text())
         try:
-            x, y = (float(self._rootItem.child(i, ProfileData.X).text()),
-                    float(self._rootItem.child(i, ProfileData.Y).text()))
-        except (ValueError, AttributeError):
+            return [_convert(i, j) for j in range(self._model.columnCount())]
+        except AttributeError:
             raise ValueError
-        else:
-            return x, y
 
     def copy(self):
         """Return self."""
