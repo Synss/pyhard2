@@ -5,7 +5,7 @@
 import unittest
 import time
 from functools import partial
-from operator import mul, div
+from operator import mul
 import pyhard2.driver as drv
 Cmd, Access = drv.Command, drv.Access
 
@@ -159,7 +159,7 @@ class _PowerSubsystem(Subsystem):
         self.current = Cmd(0x0a, rfunc=partial(mul, 0.1), access=Access.RO)
         self.voltage = Cmd(0x0b, rfunc=partial(mul, 0.1), access=Access.RO)
         self.power = Cmd(0x0c, rfunc=partial(mul, 0.1), access=Access.RO)
-        self.power_factor = Cmd(0x0d, rfunc=partial(mul, 0.1), wfunc=partial(div, 0.1))  # %
+        self.power_factor = Cmd(0x0d, rfunc=partial(mul, 0.1), wfunc=partial(mul, 10.0))  # %
         self.max_current = Cmd(0x0e, rfunc=partial(mul, 0.1), access=Access.RO)
         self.min_voltage = Cmd(0x0f, rfunc=partial(mul, 0.1), access=Access.RO)  # V
         self.max_voltage = Cmd(0x10, rfunc=partial(mul, 0.1), access=Access.RO)  # V
@@ -198,7 +198,7 @@ class CS400(Subsystem):
         self.errors_total = Cmd(0x12, access=Access.RO)
         self.warnings_total = Cmd(0x13, access=Access.RO)
         self.timeout_laser_on = Cmd(0x14, minimum=0, maximum=3000, rfunc=partial(mul, 0.1),
-                                    wfunc=partial(div, 0.1))  # s
+                                    wfunc=partial(mul, 10.0))  # s
         self.operation_time = Cmd(0x1A, access=Access.RO)  # h
         # Profile subsystem
         self.profile = Subsystem(0x01, self)
@@ -206,10 +206,10 @@ class CS400(Subsystem):
         self.control = Subsystem(0x02, self)
         self.control.control_mode = Cmd(0x04, minimum=1, maximum=4)
         self.control.total_current = Cmd(0x05, minimum=0, maximum=3200,
-                                         rfunc=partial(mul, 0.1), wfunc=partial(div, 0.1))  # A
+                                         rfunc=partial(mul, 0.1), wfunc=partial(mul, 10.0))  # A
         self.control.total_current_meas = Cmd(0x06, rfunc=partial(mul, 0.1), access=Access.RO)  # A
         self.control.total_power = Cmd(0x07, minimum=0, maximum=40000,
-                                       rfunc=partial(mul, 0.1), wfunc=partial(div, 0.1))  # W
+                                       rfunc=partial(mul, 0.1), wfunc=partial(mul, 10.0))  # W
         self.control.total_power_meas = Cmd(0x08, rfunc=partial(mul, 0.1), access=Access.RO)  # W
         self.control.total_power_calc = Cmd(0x0A, rfunc=partial(mul, 0.1), access=Access.RO)  # W
         self.control.pulse_duration = Cmd(0x1A, minimum=10, maximum=65000)
@@ -293,9 +293,9 @@ class CS400(Subsystem):
 
     def __set_laser_state(self, enable):
         if enable:
-            self.clear_errors()
+            self.command.clear_errors.write()
             self._command.write(3)  # power on/laser disabled
-            time.sleep(1.0)                    # delay required
+            time.sleep(1.0)         # delay required
             self._command.write(4)  # laser enabled
         else:
             self._command.write(3)  # power on/laser disabled

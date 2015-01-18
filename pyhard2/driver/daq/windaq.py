@@ -77,6 +77,7 @@ class VoltageAioProtocol(drv.Protocol):
         minimum = context.minimum if context.minimum is not None else -10
         maximum = context.maximum if context.maximum is not None else 10
         task.create_voltage_channel(_phys_channel(context),
+                                    terminal="rse",
                                     min_val=minimum,
                                     max_val=maximum)
         task.start()
@@ -89,6 +90,7 @@ class VoltageAioProtocol(drv.Protocol):
         minimum = context.minimum if context.minimum is not None else -10
         maximum = context.maximum if context.maximum is not None else 10
         task.create_voltage_channel(_phys_channel(context),
+                                    terminal="rse",
                                     min_val=minimum,
                                     max_val=maximum)
         task.write(self, context.value, auto_start=False)

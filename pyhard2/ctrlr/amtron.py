@@ -83,15 +83,17 @@ class AmtronDaq(drv.Subsystem):
     #    measure      ->  compute   ->  output
     def __init__(self, serial, daqline):
         super(AmtronDaq, self).__init__()
-        self.pid = virtual.PidSubsystem(spmin=-100.0, spmax=1000.0)
-        self.temperature = daq.AiCommand(daqline, rfunc=partial(mul, 100))
+        self.pid = virtual.PidSubsystem(self, spmin=-100.0, spmax=1000.0)
+        self.temperature = daq.Daq(daqline)
+        self.temperature.voltage.ai._rfunc = partial(mul, 100)
         self.laser = amtron.CS400(serial)
         self.laser.control.control_mode.write(amtron.ControlMode.POWER)
         self.laser.command.laser_state.write(False)
         # Connections
-        self.temperature.signal.connect(self.pid.measure.write)
-        self.temperature.signal.connect(self.pid.output.read)
-        self.pid.output.signal.connect(self.laser.set_total_power.write)
+        self.temperature.voltage.ai.signal.connect(self.pid.measure.write)
+        self.temperature.voltage.ai.signal.connect(
+            lambda value, node: self.pid.output.read(node))
+        self.pid.output.signal.connect(self.laser.control.total_power.write)
 
 
 class _VirtualCommand(object):
@@ -105,10 +107,11 @@ class VirtualAmtronInstrument(virtual.VirtualInstrument):
 
     def __init__(self):
         super(VirtualAmtronInstrument, self).__init__()
-        self.command = drv.Subsystem(self)
-        self.command.setProtocol(drv.ObjectWrapperProtocol(_VirtualCommand()))
-        self.command.laser_state = Cmd("laser_state")
-        self.command.gate_state = Cmd("gate_state")
+        self.laser = drv.Subsystem(self)
+        self.laser.setProtocol(drv.ObjectWrapperProtocol(_VirtualCommand()))
+        self.laser.command = drv.Subsystem(self.laser)
+        self.laser.command.laser_state = Cmd("laser_state")
+        self.laser.command.gate_state = Cmd("gate_state")
 
 
 def createController():
@@ -119,12 +122,12 @@ def createController():
         iface = AmtronController.virtualInstrumentController(
             driver, u"Amtron CS400")
     else:
-        driver = AmtronDaq(drv.Serial(args.port))
+        driver = AmtronDaq(drv.Serial(args.port), "Circat1")
         iface = AmtronController(driver, u"Amtron CS400")
-        iface.addCommand(driver.input.measure, "measure", poll=True, log=True)
-        iface.addCommand(driver.pid.setpoint, "setpoint",
+        iface.addCommand(driver.temperature.voltage.ai, "temperature / C", poll=True, log=True)
+        iface.addCommand(driver.pid.setpoint, "setpoint / C",
                          log=True, specialColumn="programmable")
-        iface.addCommand(driver.output.total_power, "power",
+        iface.addCommand(driver.laser.control.total_power, "power / W",
                          poll=True, log=True)
         iface.addCommand(driver.pid.proportional, "PID P", hide=True,
                          specialColumn="pidp")
@@ -132,11 +135,11 @@ def createController():
                          specialColumn="pidi")
         iface.addCommand(driver.pid.derivative_time, "PID D", hide=True,
                          specialColumn="pidd")
-    iface.addCommand(driver.command.laser_state, "power", hide=True,
+    iface.addCommand(driver.laser.command.laser_state, "power", hide=True,
                      poll=True, specialColumn="laserpower")
-    iface.addCommand(driver.command.gate_state, "gate", hide=True,
+    iface.addCommand(driver.laser.command.gate_state, "gate", hide=True,
                      poll=True, specialColumn="lasergate")
-    iface.addNode(0, "CS400")
+    iface.addNode("ai0", "CS400")
     iface.populate()
     return iface
 
