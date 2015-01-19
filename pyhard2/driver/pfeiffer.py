@@ -118,10 +118,10 @@ class CommunicationProtocol(drv.CommunicationProtocol):
     @staticmethod
     def _check_error(line, ack):
         if ack.startswith(chr(ascii.NAK)):
-            raise drv.PfeifferHardwareError(
+            raise PfeifferHardwareError(
                 "Command %s not acknowledged." % line.strip())
         elif not ack.startswith(chr(ascii.ACK)):
-            raise drv.PfeifferDriverError(
+            raise PfeifferDriverError(
                 "Command %s raised unknown error." % line.strip())
 
 
