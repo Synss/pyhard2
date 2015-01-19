@@ -195,8 +195,12 @@ class DashboardConfig(object):
             self.labels[name] = pos
 
         for module, section in self.yaml.iteritems():
-            controller = import_module("pyhard2.ctrlr.%s" % module)\
+            try:
+                controller = import_module("pyhard2.ctrlr.%s" % module)\
                     .createController()
+            except:
+                logger.error("%s controller failed to load." % module)
+                continue
             self.controllers[controller] = []  # empty proxyWidget list
             for subsection in section.itervalues():
                 for row, config in enumerate(subsection):
