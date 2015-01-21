@@ -13,6 +13,7 @@ Note:
 """
 
 import time
+from collections import deque
 
 
 class PidController(object):
@@ -32,6 +33,13 @@ class PidController(object):
         proportional (float): Proportional gain :math:`K_p` (no unit).
         integral (float): Integral gain :math:`K_i` (1/second).
         derivative (float): Derivative gain :math:`K_d` (seconds).
+        integral_limit (float): Limit integral value to
+            :math:`\pm \mathrm{integral_limit} / {\Delta}t` to prevent
+            windup.
+        derivative_limit (float): Limit derivative value to
+            :math:`\pm \mathrm{derivative_limit} / {/Delta}t` to prevent
+            spikes.  Set derivative to 0.0 if derivative is not in the
+            range.
         anti_windup (float): Soft integrator, 1.0 to disable,
             recommended range [0.005-0.25].
         proportional_on_pv (bool): Compute proportional gain based on
@@ -51,6 +59,14 @@ class PidController(object):
             u(t) = K_p \left(e(t) + \frac{1}{T_i} \int_0^t e(t)dt +
                 T_d \frac{d}{dt} e(t) \right).
 
+        Two anti-windup strategies are implemented:
+        - a soft integrator `anti_windup` and
+        - an integral limitor `integral_limit`.
+
+        The derivative value is computed from the average value of the previous
+        five :math:`\Delta E / \Delta t` values to avoid spikes upon large
+        setpoint changes.
+
     Reference:
         - http://en.wikipedia.org/wiki/PID_controller
         - http://www.mstarlabs.com/apeng/techniques/pidsoftw.html
@@ -65,10 +81,14 @@ class PidController(object):
         self.vmin = vmin
         self.vmax = vmax
         self.setpoint = 0.0
+        self.integral_limit = None
+        self.derivative_limit = None
         self.anti_windup = 0.25
         self.proportional_on_pv = False
 
+        self._old_derivative = deque(5 * [0.0], 5)
         self._old_input = 0.0
+        self._old_error = 0.0
         self._integral = 0.0
         self._prev_time = time.time()
 
@@ -116,19 +136,27 @@ class PidController(object):
 
         """
         error = self.setpoint - measure
+
         if now is None:
             now = time.time()
         dt = now - self._prev_time
-
         p = self.proportional * (measure if self.proportional_on_pv else error)
         if dt > 0.0:
             i = self.integral * self._integral * dt
-            d = self.derivative * (measure - self._old_input) / dt
+            derivative = (error - self._old_error) / dt
+            if self.derivative_limit:
+                derivative_limit = self.derivative_limit / dt
+                if not (-derivative_limit < derivative < derivative_limit):
+                    derivative = 0.0
+            self._old_derivative.append(derivative)
+            slope = sum(self._old_derivative) / len(self._old_derivative)
+            d = self.derivative * slope
         else:
             i = d = 0.0
 
         self._prev_time = now
         self._old_input = measure
+        self._old_error = error
 
         u = p + i + d
         if u > self.vmax:
@@ -139,6 +167,14 @@ class PidController(object):
             self._integral += self.anti_windup * error
         else:
             self._integral += error
+
+        if self.integral_limit:
+            integral_limit = self.integral_limit / dt
+            if self._integral > integral_limit:
+                self._integral = integral_limit
+            elif self._integral < -integral_limit:
+                self._integral = -integral_limit
+
         return u
 
 
