@@ -40,10 +40,12 @@ class AmtronController(ctrlr.Controller):
 
         self.ui.powerBtn = QtGui.QPushButton(u"Power", checkable=True)
         self.ui.gateBtn = QtGui.QPushButton(u"Gate", checkable=True)
+        self.ui.pilotBtn = QtGui.QPushButton(u"Pilot laser", checkable=True)
 
         self.ui._layout = QtGui.QHBoxLayout()
         self.ui._layout.addWidget(self.ui.powerBtn)
         self.ui._layout.addWidget(self.ui.gateBtn)
+        self.ui._layout.addWidget(self.ui.pilotBtn)
         self.ui.instrumentPanel.layout().addLayout(self.ui._layout)
 
         self.programPool.default_factory = ctrlr.SetpointRampProgram
@@ -64,11 +66,22 @@ class AmtronController(ctrlr.Controller):
         self.populated.connect(self.gateBtnMapper.toFirst)
         self.ui.gateBtn.toggled.connect(self.gateBtnMapper.submit)
 
+        self.pilotBtnMapper = QtGui.QDataWidgetMapper(self.ui.pilotBtn)
+        self.pilotBtnMapper.setModel(self._driverModel)
+        self.pilotBtnMapper.setItemDelegate(_ButtonDelegate(self.pilotBtnMapper))
+        self.ui.driverView.selectionModel().currentRowChanged.connect(
+            self.pilotBtnMapper.setCurrentModelIndex)
+        self.populated.connect(self.pilotBtnMapper.toFirst)
+        self.ui.pilotBtn.toggled.connect(self.pilotBtnMapper.submit)
+
         self._specialColumnMapper.update(dict(
             laserpower=lambda column:
-                       self.powerBtnMapper.addMapping(self.ui.powerBtn, column),
+            self.powerBtnMapper.addMapping(self.ui.powerBtn, column),
             lasergate=lambda column:
-                      self.gateBtnMapper.addMapping(self.ui.gateBtn, column)))
+            self.gateBtnMapper.addMapping(self.ui.gateBtn, column),
+            pilotlaser=lambda column:
+            self.pilotBtnMapper.addMapping(self.ui.pilotBtn, column),
+        ))
 
 
 class AmtronDaq(drv.Subsystem):
@@ -102,15 +115,26 @@ class _VirtualCommand(object):
         self.gate_state = False
 
 
+class _VirtualInterface(object):
+
+    def __init__(self):
+        self.pilot_laser_state = False
+
+
 class VirtualAmtronInstrument(virtual.VirtualInstrument):
 
     def __init__(self):
         super(VirtualAmtronInstrument, self).__init__()
         self.laser = drv.Subsystem(self)
-        self.laser.setProtocol(drv.ObjectWrapperProtocol(_VirtualCommand()))
         self.laser.command = drv.Subsystem(self.laser)
+        self.laser.command.setProtocol(
+            drv.ObjectWrapperProtocol(_VirtualCommand()))
         self.laser.command.laser_state = Cmd("laser_state")
         self.laser.command.gate_state = Cmd("gate_state")
+        self.laser.interface = drv.Subsystem(self.laser)
+        self.laser.interface.setProtocol(
+            drv.ObjectWrapperProtocol(_VirtualInterface()))
+        self.laser.interface.pilot_laser_state = Cmd("pilot_laser_state")
 
 
 def createController():
@@ -139,6 +163,8 @@ def createController():
                      poll=True, specialColumn="laserpower")
     iface.addCommand(driver.laser.command.gate_state, "gate", hide=True,
                      poll=True, specialColumn="lasergate")
+    iface.addCommand(driver.laser.interface.pilot_laser_state, "pilot",
+                     hide=True, poll=False, specialColumn="pilotlaser")
     iface.populate()
     return iface
 

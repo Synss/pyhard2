@@ -248,28 +248,32 @@ class CS400(Subsystem):
         self.interface = Subsystem(0x06, self)
         self.interface.errors = Cmd(0x01, rfunc=_parse_bits(
             {0x0001: "emergency stop",
-            0x0002: "emergency stop wire",
-            0x0004: "emergency stop remote terminal",
-            0x0008: "emergency wire remote terminal",
-            0x0010: "emergency stop external",
-            0x0020: "emergency stop external wire",
-            0x0040: "interlock external",
-            0x0080: "interlock external wire",
-            0x0100: "link error",
-            0x0200: "emergency stop SPI",
-            0x0400: "warn light(s) error",
-            0x1000: "cooler temp",
-            0x2000: "cooler flow"}), access=Access.RO)
+             0x0002: "emergency stop wire",
+             0x0004: "emergency stop remote terminal",
+             0x0008: "emergency wire remote terminal",
+             0x0010: "emergency stop external",
+             0x0020: "emergency stop external wire",
+             0x0040: "interlock external",
+             0x0080: "interlock external wire",
+             0x0100: "link error",
+             0x0200: "emergency stop SPI",
+             0x0400: "warn light(s) error",
+             0x1000: "cooler temp",
+             0x2000: "cooler flow"}), access=Access.RO)
         self.interface.warnings = Cmd(0x03, rfunc=_parse_bits(
             {0x0040: "interlock external",
-            0x0400: "warn light(s) warning",
-            0x1000: "cooler temp",
-            0x2000: "cooler flow"}), access=Access.RO)
+             0x0400: "warn light(s) warning",
+             0x1000: "cooler temp",
+             0x2000: "cooler flow"}), access=Access.RO)
         self.interface.io_config = Cmd(0x05, minimum=0x0, maximum=0xffff)
         self.interface.io_config_OEM = Cmd(0x06, access=Access.RO)
         self.interface.io_state = Cmd(0x07, access=Access.RO)
         self.interface.io_digital_in = Cmd(0x09)
-        self.interface.io_digital_out = Cmd(0x0a, minimum=0x0, maximum=0xffff)
+        self.interface._io_digital_out = Cmd(0x0a, minimum=0x0, maximum=0xffff)
+        self.interface.io_digital_out = drv.Subsystem(self.interface)
+        self.interface.io_digital_out.setProtocol(drv.CommandCallerProtocol())
+        self.interface.io_digital_out.pilot_laser_state = Cmd(
+            self.__set_pilot_laser_state, self.__get_pilot_laser_state)
         self.interface.pilot_beam_intensity = Cmd(0x0b, minimum=1, maximum=10)
         self.interface.PWM_input_offset = Cmd(0x0c, access=Access.RO)
         self.interface.PWM_input_slope = Cmd(0x0d, access=Access.RO)
@@ -290,6 +294,14 @@ class CS400(Subsystem):
         self.command.is_laser_enabled = Cmd(self.__is_laser_enabled, access=Access.RO)
         self.command.is_warning_present = Cmd(self.__is_warning_present, access=Access.RO)
         self.command.is_error_present = Cmd(self.__is_error_present, access=Access.RO)
+
+    def __set_pilot_laser_state(self, enable):
+        mask = 0x10
+        do = self.interface._io_digital_out
+        do.write(do.read() | mask if enable else do.read() & (0xffff - mask))
+
+    def __get_pilot_laser_state(self):
+        return bool(self.interface._io_digital_out & 0x10)
 
     def __set_laser_state(self, enable):
         if enable:
