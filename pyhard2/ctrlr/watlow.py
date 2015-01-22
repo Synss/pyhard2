@@ -72,9 +72,8 @@ class WatlowController(ctrlr.Controller):
         The class inherits :class:`pyhard2.ctrlr.Controller`.
 
     """
-    def __init__(self, driver, windowTitle="", uifile="", parent=None):
-        super(WatlowController, self).__init__(driver, windowTitle,
-                                               uifile, parent)
+    def __init__(self, config, driver, uifile="", parent=None):
+        super(WatlowController, self).__init__(config, driver, uifile, parent)
         self.ui.initCombo = QtGui.QComboBox(self.ui)
         self.ui.initCombo.addItems([
             "no ramp",
@@ -186,18 +185,20 @@ class _VirtualRamping(object):
 
 def createController():
     """Initialize controller."""
-    args = ctrlr.Config("watlow")
-    if args.virtual:
+    config = ctrlr.Config("watlow")
+    if not config.nodes:
+        config.nodes = [None]
+    if config.virtual:
         driver = virtual.VirtualInstrument()
         driver.setup = drv.Subsystem(driver)
         driver.setup.setProtocol(drv.ObjectWrapperProtocol(_VirtualRamping()))
         driver.setup.global_ = drv.Subsystem(driver.setup)
         driver.setup.global_.ramp_init = Cmd("ramp_init")
         driver.setup.global_.ramp_rate = Cmd("ramp_rate")
-        iface = WatlowController.virtualInstrumentController(driver, u"Watlow")
+        iface = WatlowController.virtualInstrumentController(config, driver)
     else:
-        driver = Series988(drv.Serial(args.port))
-        iface = WatlowController(driver, u"Watlow")
+        driver = Series988(drv.Serial(config.port))
+        iface = WatlowController(config, driver)
         iface.addCommand(driver.temperature1, "TC sample", poll=True, log=True)
         iface.addCommand(driver.temperature2, "TC heater", poll=True, log=True)
         iface.addCommand(driver.setpoint, "setpoint", log=True,
@@ -214,7 +215,6 @@ def createController():
     iface.addCommand(driver.setup.global_.ramp_rate, "ramp_rate", hide=True,
                      specialColumn="ramprate")
     iface.editorPrototype.default_factory=QtGui.QSpinBox
-    iface.addNode(None, u"Watlow")
     # Make sure we can read the rate
     driver.setup.global_.ramp_init.write(1)
     iface.populate()

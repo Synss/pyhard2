@@ -16,18 +16,18 @@ import pyhard2.driver.fluke as fluke
 
 def createController():
     """Initialize controller."""
-    args = ctrlr.Config("fluke")
-    if args.virtual:
+    config = ctrlr.Config("fluke", "18x")
+    if not config.nodes:
+        config.nodes, config.names = ([0], ["Fluke 18x"])
+    if config.virtual:
         driver = virtual.VirtualInstrument()
-        iface = ctrlr.Controller.virtualInstrumentController(
-            driver, u"Fluke 18x")
+        iface = ctrlr.Controller.virtualInstrumentController(config, driver)
         iface.programPool.default_factory = ctrlr.SetpointRampProgram
     else:
-        driver = fluke.Fluke18x(drv.Serial(args.port))
-        iface = ctrlr.Controller(driver, u"Fluke 18x")
+        driver = fluke.Fluke18x(drv.Serial(config.port))
+        iface = ctrlr.Controller(config, driver)
         iface.addCommand(driver.measure, "Measure", poll=True, log=True)
         iface.addCommand(driver.unit, "Unit", poll=True)
-    iface.addNode(None, "Fluke 18x")
     iface.populate()
     return iface
 

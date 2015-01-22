@@ -40,11 +40,13 @@ class DeltaFluke(drv.Subsystem):
 
 def createController():
     """Initialize controller."""
-    args = ctrlr.Config("deltaelektronika")
-    fluke_serial = drv.Serial(args.port)
+    config = ctrlr.Config("deltaelektronika", "Delta-Fluke")
+    if not config.nodes:
+        config.nodes, config.names = ([1], ["DeltaFluke"])
+    fluke_serial = drv.Serial(config.port)
     delta_serial = drv.Serial("COM1")
     driver = DeltaFluke(fluke_serial, delta_serial)
-    iface = ctrlr.Controller(driver, u"Fluke-Delta")
+    iface = ctrlr.Controller(config, driver)
     iface.addCommand(driver.fluke.measure, "Temperature", poll=True, log=True)
     iface.addCommand(driver.pid.setpoint, "Setpoint", log=True,
                      specialColumn="programmable")
@@ -58,7 +60,6 @@ def createController():
                      specialColumn="pidi")
     iface.addCommand(driver.pid.derivative_time, u"PID D", hide=True,
                      specialColumn="pidd")
-    iface.addNode(1, "DeltaFluke")
     iface.populate()
     return iface
 

@@ -2,7 +2,6 @@
 """Graphical user interface to Bronkhorst flow and pressure controllers."""
 
 import sys
-from itertools import izip_longest
 import sip
 for cls in "QDate QDateTime QString QTextStream QTime QUrl QVariant".split():
     sip.setapi(cls, 2)
@@ -18,17 +17,16 @@ from pyhard2.driver.bronkhorst import MFC
 
 def createController():
     """Initialize controller."""
-    args = ctrlr.Config("bronkhorst")
-    if not args.nodes:
-        args.nodes = range(10, 16)
-        args.names = ["MFC%i" % node for node in args.nodes]
-    if args.virtual:
+    config = ctrlr.Config("bronkhorst")
+    if not config.nodes:
+        config.nodes = range(10, 16)
+        config.names = ["MFC%i" % node for node in config.nodes]
+    if config.virtual:
         driver = virtual.VirtualInstrument()
-        iface = ctrlr.Controller.virtualInstrumentController(
-            driver, u"Bronkhorst")
+        iface = ctrlr.Controller.virtualInstrumentController(config, driver)
     else:
-        driver = MFC(drv.Serial(args.port))
-        iface = ctrlr.Controller(driver, u"Bronkhorst")
+        driver = MFC(drv.Serial(config.port))
+        iface = ctrlr.Controller(config, driver)
         iface.addCommand(driver.direct_reading.measure, "measure",
                          poll=True, log=True)
         iface.addCommand(driver.direct_reading.setpoint, "setpoint",
@@ -42,8 +40,6 @@ def createController():
         iface.addCommand(driver.controller.PIDKd, "PID D", hide=True,
                          specialColumn="pidd")
     iface.programPool.default_factory = ctrlr.SetpointRampProgram
-    for node, name in izip_longest(args.nodes, args.names):
-        iface.addNode(node, name if name else "G{0}".format(node))
     iface.populate()
     return iface
 

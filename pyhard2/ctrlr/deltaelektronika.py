@@ -11,16 +11,17 @@ import pyhard2.ctrlr as ctrlr
 
 def createController():
     """Initialize controller."""
-    args = ctrlr.Config("deltaelektronika")
-    if args.virtual:
+    config = ctrlr.Config("deltaelektronika", "SM-700")
+    if not config.nodes:
+        config.nodes, config.names = ([1], ["SM700"])
+    if config.virtual:
         driver = virtual.VirtualInstrument()
-        iface = ctrlr.virtualInstrumentController(driver, u"Delta SM-700")
+        iface = ctrlr.virtualInstrumentController(config, driver)
     else:
-        driver = delta.Sm700Series(drv.Serial(args.port))
-        iface = ctrlr.Controller(driver, u"Delta SM-700")
+        driver = delta.Sm700Series(drv.Serial(config.port))
+        iface = ctrlr.Controller(config, driver)
         iface.addCommand(driver.source.voltage, "Voltage", poll=True, log=True)
         iface.addCommand(driver.source.current, "Current", poll=True, log=True)
-    iface.addNode(1, "SM700")
     iface.populate()
     return iface
 

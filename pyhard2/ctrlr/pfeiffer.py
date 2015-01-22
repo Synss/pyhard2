@@ -18,24 +18,23 @@ import pyhard2.driver.virtual as virtual
 
 def createController():
     """Initialize controller."""
-    args = ctrlr.Config("pfeiffer")
-    if not args.nodes:
-        args.nodes = range(1, 7)
-        args.names = ["G%i" % node for node in args.nodes]
-    if args.virtual:
+    config = ctrlr.Config("pfeiffer", "Multigauge")
+    if not config.nodes:
+        config.nodes = range(6)
+    if not config.nodes:
+        config.nodes = range(1, 7)
+        config.names = ["G%i" % node for node in config.nodes]
+    if config.virtual:
         driver = virtual.VirtualInstrument()
-        iface = ctrlr.Controller.virtualInstrumentController(
-            driver, u"Multigauge")
+        iface = ctrlr.Controller.virtualInstrumentController(config, driver)
         iface.programPool.default_factory = ctrlr.SetpointRampProgram
     else:
-        driver = Maxigauge(drv.Serial(args.port))
-        iface = ctrlr.Controller(driver, u"Multigauge")
+        driver = Maxigauge(drv.Serial(config.port))
+        iface = ctrlr.Controller(config, driver)
         iface.editorPrototype.default_factory = ctrlr.ScientificSpinBox
         iface.addCommand(driver.gauge.pressure, u"pressure", poll=True, log=True)
     iface.ui.driverView.setItemDelegateForColumn(
         0, ctrlr.FormatTextDelegate("%.2e"))
-    for node, name in izip_longest(args.nodes, args.names):
-        iface.addNode(node, name if name else "G{0}".format(node))
     iface.populate()
     return iface
 

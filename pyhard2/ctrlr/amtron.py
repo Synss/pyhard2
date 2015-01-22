@@ -35,9 +35,8 @@ class _ButtonDelegate(QtGui.QAbstractItemDelegate):
 
 class AmtronController(ctrlr.Controller):
 
-    def __init__(self, driver, windowTitle="", uifile="", parent=None):
-        super(AmtronController, self).__init__(driver, windowTitle,
-                                               uifile, parent)
+    def __init__(self, config, driver, uifile="", parent=None):
+        super(AmtronController, self).__init__(config, driver, uifile, parent)
 
         self.ui.powerBtn = QtGui.QPushButton(u"Power", checkable=True)
         self.ui.gateBtn = QtGui.QPushButton(u"Gate", checkable=True)
@@ -116,14 +115,15 @@ class VirtualAmtronInstrument(virtual.VirtualInstrument):
 
 def createController():
     """Initialize controller."""
-    args = ctrlr.Config("amtron")
-    if args.virtual:
+    config = ctrlr.Config("amtron", "CS400")
+    if not config.nodes:
+        config.nodes, config.names = (["ai0"], ["CS400"])
+    if config.virtual:
         driver = VirtualAmtronInstrument()
-        iface = AmtronController.virtualInstrumentController(
-            driver, u"Amtron CS400")
+        iface = AmtronController.virtualInstrumentController(config, driver)
     else:
-        driver = AmtronDaq(drv.Serial(args.port), "Circat1")
-        iface = AmtronController(driver, u"Amtron CS400")
+        driver = AmtronDaq(drv.Serial(config.port), "Circat1")
+        iface = AmtronController(config, driver)
         iface.addCommand(driver.temperature.voltage.ai, "temperature / C", poll=True, log=True)
         iface.addCommand(driver.pid.setpoint, "setpoint / C",
                          log=True, specialColumn="programmable")
@@ -139,7 +139,6 @@ def createController():
                      poll=True, specialColumn="laserpower")
     iface.addCommand(driver.laser.command.gate_state, "gate", hide=True,
                      poll=True, specialColumn="lasergate")
-    iface.addNode("ai0", "CS400")
     iface.populate()
     return iface
 

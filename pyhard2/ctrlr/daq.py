@@ -71,16 +71,15 @@ class VirtualDaq(QtCore.QObject):
 
 def createController():
     """Initialize controller."""
-    args = ctrlr.Config("daq")
-    if not args.nodes:
-        args.nodes = range(20)
-        args.names = ["V%i" % node for node in args.nodes]
-    if args.virtual:
-        driver = VirtualDaq(args.port)
-        iface = ctrlr.Controller(driver, u"virtual DAQ")
+    config = ctrlr.Config("daq")
+    if not config.nodes:
+        config.nodes = range(20)
+        config.names = ["V%i" % node for node in config.nodes]
+    if config.virtual:
+        driver = VirtualDaq(config.port)
     else:
-        driver = daq.Daq(args.port)
-        iface = ctrlr.Controller(driver, u"DAQ")
+        driver = daq.Daq(config.port)
+    iface = ctrlr.Controller(config, driver)
     iface.addCommand(driver.digitalIO.state, "state")
     iface.editorPrototype.default_factory=ValveButton
     iface.ui.driverView.setItemDelegateForColumn(
@@ -88,8 +87,6 @@ def createController():
     iface.ui.driverView.setEditTriggers(
         QtGui.QAbstractItemView.SelectedClicked |
         QtGui.QAbstractItemView.CurrentChanged)
-    for node, name in izip_longest(args.nodes, args.names):
-        iface.addNode(node, name if name else "V{0}".format(node))
     iface.populate()
     return iface
 

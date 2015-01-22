@@ -40,11 +40,13 @@ logging.basicConfig()
 logger = logging.getLogger("pyhard2")
 
 
-def Config(section, description="pyhard2 GUI configuration"):
+def Config(section, title="Controller",
+           description="pyhard2 GUI configuration"):
     """Handle command line arguments and configuration files to
     initialize `Controllers`.
 
     Command line arguments:
+        - ``-t``, ``--title``: The name of the controller.
         - ``-p``, ``--port``: The port where the hardware is connected.
         - ``-n``, ``--nodes``: A space-separated list of nodes at `port`.
         - ``-m``, ``--names``: A corresponding list of names for the `nodes`.
@@ -82,23 +84,26 @@ def Config(section, description="pyhard2 GUI configuration"):
 
     """
     parser = argparse.ArgumentParser(description)
+    parser.add_argument('-t', '--title', nargs="*",
+                        default="%s %s" % (section.capitalize(), title))
     parser.add_argument('-p', '--port')
     parser.add_argument('-n', '--nodes', nargs="*", default=[])
     parser.add_argument('-m', '--names', nargs="*", default=[])
     parser.add_argument('-v', '--virtual', action="store_true")
     parser.add_argument('file', type=argparse.FileType("r"), nargs="?")
     parser.add_argument('config', nargs="*")
-    args = parser.parse_args()
-    if args.file:
-        config = yaml.load(args.file).get(section)
-        args.port = config.iterkeys().next()
-        for __ in config.itervalues():
-            for index, node_config in enumerate(__):
-                args.nodes.append(node_config.get("node", index))
-                args.names.append(node_config.get("name", u"%s" % index))
-    if not args.port:
-        args.virtual = True
-    return args
+    config = parser.parse_args()
+    if config.file:
+        section_ = yaml.load(config.file).get(section)
+        if section_:
+            config.port = section_.iterkeys().next()
+            for __ in section_.itervalues():
+                for index, node_config in enumerate(__):
+                    config.nodes.append(node_config.get("node", index))
+                    config.names.append(node_config.get("name", u"%s" % index))
+    if not config.port:
+        config.virtual = True
+    return config
 
 
 class DashboardConfig(object):
@@ -1245,9 +1250,10 @@ class Controller(QtCore.QObject):
     """
     populated = Signal()
 
-    def __init__(self, driver, windowTitle="", uifile="", parent=None):
+    def __init__(self, config, driver, uifile="", parent=None):
         super(Controller, self).__init__(parent)
         self.ui = ControllerUi(uifile)
+        self._config = config
         # UI methods
         self.windowTitle = self.ui.windowTitle
         self.setWindowTitle = self.ui.setWindowTitle
@@ -1256,7 +1262,8 @@ class Controller(QtCore.QObject):
         self.setColumnHidden = self.ui.driverView.setColumnHidden
         self.isColumnHidden = self.ui.driverView.isColumnHidden
 
-        self.setWindowTitle(windowTitle)
+        title = config.title + (" [virtual]" if config.virtual else "")
+        self.setWindowTitle(title)
         self.editorPrototype = defaultdict(QtGui.QDoubleSpinBox)
 
         self._autoSaveTimer = QtCore.QTimer(self, singleShot=False,
@@ -1334,6 +1341,13 @@ class Controller(QtCore.QObject):
             self.on_dataPlot_customContextMenuRequested)
         self.ui.programView.customContextMenuRequested.connect(
             self.on_programTable_customContextMenuRequested)
+
+        for row, node in enumerate(self._config.nodes):
+            try:
+                name = self._config.names[row]
+            except IndexError:
+                name = "%s" % node
+            self.addNode(node, name)
 
     def __initProgramTableActions(self):
         def startStopProgram(checked):
@@ -1633,10 +1647,9 @@ class Controller(QtCore.QObject):
             program.stop()
 
     @classmethod  # alt. ctor
-    def virtualInstrumentController(cls, driver, windowTitle=""):
+    def virtualInstrumentController(cls, config, driver):
         """Initialize controller for the virtual instrument driver."""
-        self = cls(driver, windowTitle)
-        self.setWindowTitle(self.windowTitle() + u" [virtual]")
+        self = cls(config, driver)
         self.addCommand(driver.input.measure, u"measure", poll=True, log=True)
         self.addCommand(driver.pid.setpoint, u"setpoint", log=True,
                         specialColumn="programmable")
