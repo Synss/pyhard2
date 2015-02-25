@@ -12,6 +12,7 @@ from PyQt4 import QtCore, QtGui
 Qt = QtCore.Qt
 
 import pyhard2.ctrlr as ctrlr
+from pyhard2.gui.programs import SetpointRampProgram
 import pyhard2.driver as drv
 Cmd = drv.Command
 import pyhard2.driver.virtual as virtual
@@ -48,7 +49,7 @@ class AmtronController(ctrlr.Controller):
         self.ui._layout.addWidget(self.ui.pilotBtn)
         self.ui.instrumentPanel.layout().addLayout(self.ui._layout)
 
-        self.programPool.default_factory = ctrlr.SetpointRampProgram
+        self.programs.default_factory = SetpointRampProgram
 
         self.powerBtnMapper = QtGui.QDataWidgetMapper(self.ui.powerBtn)
         self.powerBtnMapper.setModel(self._driverModel)

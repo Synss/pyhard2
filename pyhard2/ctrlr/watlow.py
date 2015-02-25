@@ -12,13 +12,15 @@ Signal, Slot = QtCore.pyqtSignal, QtCore.pyqtSlot
 Qt = QtCore.Qt
 
 import pyhard2.ctrlr as ctrlr
+from pyhard2.gui.programs import SingleShotProgram
+from pyhard2.gui.delegates import ComboBoxDelegate
 import pyhard2.driver as drv
 Cmd = drv.Command
 import pyhard2.driver.virtual as virtual
 from pyhard2.driver.watlow import Series988
 
 
-class WatlowProgram(ctrlr.SingleShotProgram):
+class WatlowProgram(SingleShotProgram):
 
     """Program that can be used in combination with the ramping facility
     provided in hardware.
@@ -28,7 +30,7 @@ class WatlowProgram(ctrlr.SingleShotProgram):
             setpoint.
 
     See also:
-        The class inherits :class:`~pyhard2.ctrlr.SingleShotProgram`.
+        The class inherits :class:`~pyhard2.gui.programs.SingleShotProgram`.
 
     """
     rate = Signal(float)
@@ -50,30 +52,16 @@ class WatlowProgram(ctrlr.SingleShotProgram):
             self._timer.start(1000 * self._dt)
 
 
-class _ComboBoxDelegate(QtGui.QAbstractItemDelegate):
-
-    def __ini__(self, parent=None):
-        super(_ComboBoxDelegate, self).__init__(parent)
-
-    def setEditorData(self, editor, index):
-        if not index.isValid() or index.data() is None: return
-        editor.setCurrentIndex(index.data())
-
-    def setModelData(self, combobox, model, index):
-        if not index.isValid(): return
-        model.setData(index, combobox.currentIndex())
-
-
 class WatlowController(ctrlr.Controller):
 
-    """GUI controller with controls for hardware ramping.
-
-    See also:
-        The class inherits :class:`pyhard2.ctrlr.Controller`.
-
-    """
     def __init__(self, config, driver, uifile="", parent=None):
         super(WatlowController, self).__init__(config, driver, uifile, parent)
+        self.programs.default_factory = WatlowProgram
+        self.rampInitColumn = None
+        self.rampRateColumn = None
+        self._rampInitValuePool = {}
+        self._rateValuePool = {}
+
         self.ui.initCombo = QtGui.QComboBox(self.ui)
         self.ui.initCombo.addItems([
             "no ramp",
@@ -93,19 +81,13 @@ class WatlowController(ctrlr.Controller):
         self.ui._layout.addWidget(self.ui.initCombo)
         self.ui._layout.addWidget(self.ui.rateEdit)
 
-        self.programPool.default_factory = WatlowProgram
-        self._rampInitValuePool = {}
-        self._rateValuePool = {}
-
         self._specialColumnMapper.update(dict(
             rampinit=self.setRampInitColumn,
             ramprate=self.setRampRateColumn))
-        self._rampInitColumn = None
-        self._rampRateColumn = None
 
         self.rampInitMapper = QtGui.QDataWidgetMapper(self)
         self.rampInitMapper.setModel(self._driverModel)
-        self.rampInitMapper.setItemDelegate(_ComboBoxDelegate(self))
+        self.rampInitMapper.setItemDelegate(ComboBoxDelegate(self))
         self.ui.driverView.selectionModel().currentRowChanged.connect(
             self.rampInitMapper.setCurrentModelIndex)
         self.populated.connect(self.rampInitMapper.toFirst)
@@ -123,47 +105,45 @@ class WatlowController(ctrlr.Controller):
         self.ui.rateEdit.setDisabled(
             {"no ramp": True}.get(currentIndex, False))
 
-    def _setupPrograms(self):
-        super(WatlowController, self)._setupPrograms()
-        if self._programmableColumn is None: return
-        for row, program in self.programPool.iteritems():
-            program.started.connect(
-                lambda:
-                self._driverModel.item(row, self._rampInitColumn).setData(2))
-            program.rate.connect(
-                lambda value:
-                self._driverModel.item(row, self._rampRateColumn).setData(value))
-
-            program.started.connect(partial(
-                self.ui.rampSettings.setDisabled, True))
-            program.finished.connect(partial(
-                self.ui.rampSettings.setDisabled, False))
-            program.finished.connect(partial(self.stopProgram, row))
-
-    def startProgram(self, row):
-        # save values
-        self._rampInitValuePool[row] = self._driverModel.item(
-            row, self._rampInitColumn).data()
-        self._rateValuePool[row] = self._driverModel.item(
-            row, self._rampRateColumn).data()
-        super(WatlowController, self).startProgram(row)
-
-    def stopProgram(self, row):
-        # restore values
-        self._driverModel.item(row, self._rampInitColumn).setData(
-            self._rampInitValuePool.pop(row))
-        self._driverModel.item(row, self._rampRateColumn).setData(
-            self._rateValuePool.pop(row))
-
     def setRampRateColumn(self, column):
         """Set ramp rate column to `column`."""
-        self._rampRateColumn = column
+        self.rampRateColumn = column
         self.rateEditMapper.addMapping(self.ui.rateEdit, column)
 
     def setRampInitColumn(self, column):
         """Set ramp init column to `column`."""
-        self._rampInitColumn = column
+        self.rampInitColumn = column
         self.rampInitMapper.addMapping(self.ui.initCombo, column)
+
+    def startProgram(self, row):
+        if self.programmableColumn() is None:
+            return
+        program = self.programs[row]
+        # Connect program to GUI
+        program.started.connect(
+            lambda:
+            self._driverModel.item(row, self.rampInitColumn).setData(2))
+        program.rate.connect(
+            lambda value:
+            self._driverModel.item(row, self.rampRateColumn).setData(value))
+        program.started.connect(partial(
+            self.ui.rampSettings.setDisabled, True))
+        program.finished.connect(partial(
+            self.ui.rampSettings.setDisabled, False))
+        # Save values
+        self._rampInitValuePool[row] = self._driverModel.item(
+            row, self.rampInitColumn).data()
+        self._rateValuePool[row] = self._driverModel.item(
+            row, self.rampRateColumn).data()
+        super(WatlowController, self).startProgram(row)
+
+    def stopProgram(self, row):
+        # restore values
+        self._driverModel.item(row, self.rampInitColumn).setData(
+            self._rampInitValuePool.pop(row))
+        self._driverModel.item(row, self.rampRateColumn).setData(
+            self._rateValuePool.pop(row))
+        super(WatlowController, self).stopProgram(row)
 
 
 class _VirtualRamping(object):

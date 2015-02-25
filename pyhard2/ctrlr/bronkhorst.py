@@ -10,6 +10,7 @@ from PyQt4 import QtCore, QtGui
 Qt = QtCore.Qt
 
 import pyhard2.ctrlr as ctrlr
+from pyhard2.gui.programs import SetpointRampProgram
 import pyhard2.driver.virtual as virtual
 import pyhard2.driver as drv
 from pyhard2.driver.bronkhorst import MFC
@@ -39,7 +40,7 @@ def createController():
                          specialColumn="pidi")
         iface.addCommand(driver.controller.PIDKd, "PID D", hide=True,
                          specialColumn="pidd")
-    iface.programPool.default_factory = ctrlr.SetpointRampProgram
+    iface.programs.default_factory = SetpointRampProgram
     iface.populate()
     return iface
 

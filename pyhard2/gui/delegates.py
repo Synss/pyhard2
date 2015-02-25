@@ -14,6 +14,22 @@ class FormatTextDelegate(QtGui.QStyledItemDelegate):
         return self._format % value
 
 
+class ComboBoxDelegate(QtGui.QStyledItemDelegate):
+
+    def __ini__(self, parent=None):
+        super(ComboBoxDelegate, self).__init__(parent)
+
+    def setEditorData(self, editor, index):
+        if not index.isValid() or index.data() is None:
+            return
+        editor.setCurrentIndex(index.data())
+
+    def setModelData(self, combobox, model, index):
+        if not index.isValid():
+            return
+        model.setData(index, combobox.currentIndex())
+
+
 class DoubleSpinBoxDelegate(QtGui.QStyledItemDelegate):
 
     """Item delegate for editing models with a spin box.

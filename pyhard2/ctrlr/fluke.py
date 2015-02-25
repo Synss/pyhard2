@@ -9,6 +9,7 @@ for cls in "QDate QDateTime QString QTextStream QTime QUrl QVariant".split():
 from PyQt4 import QtGui
 
 import pyhard2.ctrlr as ctrlr
+from pyhard2.gui.programs import SetpointRampProgram
 import pyhard2.driver as drv
 import pyhard2.driver.virtual as virtual
 import pyhard2.driver.fluke as fluke
@@ -22,7 +23,7 @@ def createController():
     if config.virtual:
         driver = virtual.VirtualInstrument()
         iface = ctrlr.Controller.virtualInstrumentController(config, driver)
-        iface.programPool.default_factory = ctrlr.SetpointRampProgram
+        iface.programs.default_factory = SetpointRampProgram
     else:
         driver = fluke.Fluke18x(drv.Serial(config.port))
         iface = ctrlr.Controller(config, driver)

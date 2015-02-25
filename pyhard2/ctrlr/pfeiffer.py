@@ -12,6 +12,7 @@ from PyQt4 import QtGui
 
 import pyhard2.ctrlr as ctrlr
 from pyhard2.gui.delegates import FormatTextDelegate
+from pyhard2.gui.programs import SetpointRampProgram
 import pyhard2.driver as drv
 from pyhard2.driver.pfeiffer import Maxigauge
 import pyhard2.driver.virtual as virtual
@@ -28,7 +29,7 @@ def createController():
     if config.virtual:
         driver = virtual.VirtualInstrument()
         iface = ctrlr.Controller.virtualInstrumentController(config, driver)
-        iface.programPool.default_factory = ctrlr.SetpointRampProgram
+        iface.programs.default_factory = SetpointRampProgram
     else:
         driver = Maxigauge(drv.Serial(config.port))
         iface = ctrlr.Controller(config, driver)
