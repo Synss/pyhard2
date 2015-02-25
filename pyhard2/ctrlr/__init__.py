@@ -203,7 +203,7 @@ class DashboardConfig(object):
                     .createController()
             except:
                 logger = logging.getLogger(__name__)
-                logger.error("%s controller failed to load." % module)
+                logger.exception("%s controller failed to load." % module)
                 continue
             self.controllers[controller] = []  # empty proxyWidget list
             for subsection in section.itervalues():
