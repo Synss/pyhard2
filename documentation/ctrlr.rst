@@ -25,16 +25,16 @@ Example:
 
       def createController():
          """Initialize controller."""
-         args = ctrlr.Config("NAME")  # name of the driver module
-         if args.virtual:
+         config = ctrlr.Config("NAME")  # name of the driver module
+         if config.virtual:
             driver = virtual.VirtualInstrument()
             # The virtual instrument comprises input, output, setpoint, and
             # a PID.
             iface = ctrlr.Controller.virtualInstrumentController(
-               driver, u"NAME")  # title of the controller window
+               config, driver)
          else:
-            driver = Driver(drv.Serial(args.port))
-            iface = ctrlr.Controller(driver, u"NAME")
+            driver = Driver(drv.Serial(config.port))
+            iface = ctrlr.Controller(config, driver)
             # We need at least one command.
             iface.addCommand(driver.SUBSYSTEM.COMMAND, "COLUMN_NAME")
          # We need at least one node.
