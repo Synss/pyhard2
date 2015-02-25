@@ -216,14 +216,16 @@ class DashboardConfig(object):
                     column = 0
                     proxyWidget = QtGui.QGraphicsProxyWidget()
                     proxyWidget.setWidget(controller.editorPrototype[column]
-                                    .__class__())  # XXX
+                                          .__class__())  # XXX
                     proxyWidget.setToolTip(config.get("name", row))
                     proxyWidget.setPos(x, y)
                     proxyWidget.rotate(config.get("angle", 0))
                     proxyWidget.setScale(config.get("scale", 1.5))
-                    if isinstance(proxyWidget.widget(), QtGui.QAbstractSpinBox):
-                        proxyWidget.setFlags(proxyWidget.flags()
-                                             | proxyWidget.ItemIgnoresTransformations)
+                    if isinstance(proxyWidget.widget(),
+                                  QtGui.QAbstractSpinBox):
+                        proxyWidget.setFlags(
+                            proxyWidget.flags()
+                            | proxyWidget.ItemIgnoresTransformations)
                     self.controllers[controller].append(proxyWidget)
 
 
@@ -246,7 +248,7 @@ class ScientificSpinBox(QtGui.QDoubleSpinBox):
 
 
 class ListData(Qwt.QwtData):
-    
+
     """Custom `QwtData` mapping a list onto `x,y` values."""
     X, Y = range(2)
 
@@ -302,7 +304,8 @@ class ListData(Qwt.QwtData):
 
         Does nothing if None is in `xy`.
         """
-        if None in xy: return
+        if None in xy:
+            return
         self._data.append(xy)
 
     def clear(self):
@@ -523,7 +526,9 @@ class SingleShotProgram(QtCore.QObject):
     @Slot()
     def start(self):
         """Start or restart the program."""
-        if self._running: self.stop()  # restart
+        if self._running:
+            # restart
+            self.stop()
         self._running = True
         self.started.emit()
         self._shoot()
@@ -531,7 +536,9 @@ class SingleShotProgram(QtCore.QObject):
     @Slot()
     def stop(self):
         """Stop the program."""
-        if not self._running: return  # ignore
+        if not self._running:
+            # ignore
+            return
         self._running = False
         self._timer.stop()
         self._index = -1
@@ -553,7 +560,7 @@ class SingleShotProgram(QtCore.QObject):
             # Next value does not exist.
             self.stop()
         else:
-            self._timer.start(1000 *  dt)  # msec
+            self._timer.start(1000 * dt)  # msec
 
 
 class SetpointRampProgram(SingleShotProgram):
@@ -822,20 +829,23 @@ class ItemSelectionModel(QtGui.QItemSelectionModel):
     def insertRow(self):
         """Insert an empty row into the table at the current row."""
         parent = self._parentItem()
-        parent.insertRow(self.currentRow(),
-               [QtGui.QStandardItem() for __ in range(parent.columnCount())])
+        parent.insertRow(
+            self.currentRow(),
+            [QtGui.QStandardItem() for __ in range(parent.columnCount())])
 
     def insertColumn(self):
         """Insert an empty column into the table at the current column."""
         parent = self._parentItem()
-        parent.insertColumn(self.currentColumn(),
-               [QtGui.QStandardItem() for __ in range(parent.rowCount())])
+        parent.insertColumn(
+            self.currentColumn(),
+            [QtGui.QStandardItem() for __ in range(parent.rowCount())])
 
     def removeRows(self):
         """Remove the selected rows."""
         currentIndex = self.currentIndex()
         selection = self.selectedRows()
-        if not selection: selection = [currentIndex]
+        if not selection:
+            selection = [currentIndex]
         parent = self._parentItem()
         rowCount = parent.rowCount()
         for row in (index.row() for index in selection):
@@ -846,7 +856,8 @@ class ItemSelectionModel(QtGui.QItemSelectionModel):
         """Remove the selected columns."""
         currentIndex = self.currentIndex()
         selection = self.selectedColumns()
-        if not selection: selection = [currentIndex]
+        if not selection:
+            selection = [currentIndex]
         parent = self._parentItem()
         columnCount = parent.columnCount()
         for column in (index.column() for index in selection):
@@ -1126,8 +1137,9 @@ class DriverModel(QtGui.QStandardItemModel):
 
     def __iter__(self):
         """Iterate on items."""
-        return (self.item(row, column) for row in range(self.rowCount())
-                                       for column in range(self.columnCount()))
+        return (self.item(row, column)
+                for row in range(self.rowCount())
+                for column in range(self.columnCount()))
 
     def driver(self):
         """Return the driver for this model."""
@@ -1418,11 +1430,13 @@ class Controller(QtCore.QObject):
         item = self._driverModel.item(row, column)
         rightClickMenu = QtGui.QMenu(self.ui.driverView)
         rightClickMenu.addActions(
-            [QtGui.QAction("Polling", self, checkable=True,
-                           checked=item.isPolling(), triggered=item.setPolling),
-             QtGui.QAction("Logging", self, checkable=True,
-                           checked=item.isLogging(), triggered=item.setLogging)
-            ])
+            [QtGui.QAction(
+                "Polling", self, checkable=True,
+                checked=item.isPolling(), triggered=item.setPolling),
+             QtGui.QAction(
+                 "Logging", self, checkable=True,
+                 checked=item.isLogging(), triggered=item.setLogging)
+             ])
         rightClickMenu.exec_(self.ui.driverView.viewport()
                              .mapToGlobal(pos))
 
@@ -1457,27 +1471,31 @@ class Controller(QtCore.QObject):
     def _dataPlotSingleInstrumentCB_stateChanged(self, state):
         selectionModel = self.ui.driverView.selectionModel()
         selection = selectionModel.selectedRows()
-        if not selection: return
+        if not selection:
+            return
         row = selection.pop().row()
         for row_, curve in self._dataPlotCurves.iteritems():
-            self._setDataPlotCurveVisibilityForRow(row_, not state or
-                                                            row_ is row)
-        self._setDataPlotCurvePenForRow(row, QtGui.QPen(Qt.black) if state else
-                                             QtGui.QPen(Qt.red))
+            self._setDataPlotCurveVisibilityForRow(
+                row_, not state or row_ is row)
+        self._setDataPlotCurvePenForRow(
+            row, QtGui.QPen(Qt.black) if state else QtGui.QPen(Qt.red))
         self.ui.dataPlot.replot()
 
     def _setDataPlotCurveZ(self, row, z):
-        if row is -1: return  # ignore invalid index
+        if row is -1:  # ignore invalid index
+            return
         for curve in self._dataPlotCurves[row]:
             curve.setZ(z)
 
     def _setDataPlotCurveVisibilityForRow(self, row, visible=True):
-        if row is -1: return  # ignore invalid index
+        if row is -1:  # ignore invalid index
+            return
         for curve in self._dataPlotCurves[row]:
             curve.setVisible(visible)
 
     def _setDataPlotCurvePenForRow(self, row, pen):
-        if row is -1: return  # ignore invalid index
+        if row is -1:  # ignore invalid index
+            return
         for curve in self._dataPlotCurves[row]:
             curve.setPen(pen)
 
@@ -1499,7 +1517,7 @@ class Controller(QtCore.QObject):
 
     def autoSaveFileName(self):
         path = _os.path
-        autoSaveFileName = _os.path.join(QtGui.QDesktopServices.storageLocation(
+        autoSaveFileName = path.join(QtGui.QDesktopServices.storageLocation(
             QtGui.QDesktopServices.DocumentsLocation),
             "pyhard2", _time.strftime("%Y"), _time.strftime("%m"),
             _time.strftime("%Y%m%d.zip"))
@@ -1509,7 +1527,8 @@ class Controller(QtCore.QObject):
         return autoSaveFileName
 
     def updateProgramTable(self, index):
-        if self._programmableColumn is None: return
+        if self._programmableColumn is None:
+            return
         self.ui.programView.setRootIndex(
             self._programModel.index(index.row(), 0))
         item = self._driverModel.item(0, self._programmableColumn)
@@ -1536,11 +1555,12 @@ class Controller(QtCore.QObject):
             dataPlotCurve = Qwt.QwtPlotCurve(text)
             dataPlotCurve.setData(self._dataLog[item])
             dataPlotCurve.attach(self.ui.dataPlot)
-            self._dataPlotCurves.setdefault(item.row(), [])\
-                    .append(dataPlotCurve)
+            curves = self._dataPlotCurves.setdefault(item.row(), [])
+            curves.append(dataPlotCurve)
 
     def updatePreviewPlotCurve(self, row):
-        if row is -1: return  # Comes from invalid index
+        if row is -1:  # ignore invalid index
+            return
         previewPlotCurve = self._previewPlotCurves[row]
         previewPlotMarker = self._previewPlotMarkers[row]
         data = previewPlotCurve.data()
@@ -1554,7 +1574,8 @@ class Controller(QtCore.QObject):
 
     def _setupPreviewPlotCurves(self):
         """Initialize GUI elements with the model."""
-        if self._programmableColumn is None: return
+        if self._programmableColumn is None:
+            return
         for row in range(self._driverModel.rowCount()):
             label = self._driverModel.verticalHeaderItem(row).text()
             previewPlotCurve = Qwt.QwtPlotCurve(label)
@@ -1579,7 +1600,8 @@ class Controller(QtCore.QObject):
 
     def _setupPrograms(self):
         """Initialize programs with the model."""
-        if self._programmableColumn is None: return
+        if self._programmableColumn is None:
+            return
 
         def program_setInterval(program, dt):  # early binding necessary
             program.setInterval(1000 * dt)
@@ -1592,8 +1614,10 @@ class Controller(QtCore.QObject):
             program = self.programPool[row]
             item = self._driverModel.item(row, self._programmableColumn)
             program.value.connect(_partial(item.setData))
-            program.started.connect(_partial(updateStartStopProgramButton, row))
-            program.finished.connect(_partial(updateStartStopProgramButton, row))
+            program.started.connect(
+                _partial(updateStartStopProgramButton, row))
+            program.finished.connect(
+                _partial(updateStartStopProgramButton, row))
             program.setInterval(1000 * self.ui.refreshRateEditor.value())
             self.ui.refreshRateEditor.valueChanged.connect(
                 _partial(program_setInterval, program))
@@ -1631,7 +1655,8 @@ class Controller(QtCore.QObject):
 
     def startProgram(self, row):
         """Start the program at `row`."""
-        if self._programmableColumn is None: return
+        if self._programmableColumn is None:
+            return
         program = self.programPool[row]
         program.setProfile(ProfileData(self._programModel.item(row, 0)))
         program.start()
@@ -1815,10 +1840,8 @@ class Dashboard(QtCore.QObject):
                 spinBox.toolTip(),  # title
                 text,               # label
                 value=item_.data(),
-                min=item_.minimum() if item_.minimum()
-                    is not None else 0.0,
-                max=item_.maximum() if item_.maximum()
-                    is not None else 99.0,
+                min=item_.minimum() if item_.minimum() is not None else 0.0,
+                max=item_.maximum() if item_.maximum() is not None else 99.0,
                 decimals=2,)
             if ok:
                 item_.setData(value)
@@ -1839,7 +1862,8 @@ class Dashboard(QtCore.QObject):
                                            triggered=onNewValueTriggered)
             spinBox.addAction(newValueAction)
             doubleClickEventFilter = DoubleClickEventFilter(spinBox.lineEdit())
-            doubleClickEventFilter.doubleClicked.connect(newValueAction.trigger)
+            doubleClickEventFilter.doubleClicked.connect(
+                newValueAction.trigger)
             spinBox.lineEdit().installEventFilter(doubleClickEventFilter)
 
     def _connectButtonToItem(self, button, item):
@@ -1902,7 +1926,8 @@ class Dashboard(QtCore.QObject):
             menu.exec_(pos)
 
         item.widget().setContextMenuPolicy(Qt.CustomContextMenu)
-        item.widget().customContextMenuRequested.connect(onContextMenuRequested)
+        item.widget().customContextMenuRequested.connect(
+            onContextMenuRequested)
         item.setPos(self.mapToScene(item.pos()))
         self.ui.graphicsScene.addItem(item)
 

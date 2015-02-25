@@ -91,7 +91,7 @@ logger = logging.getLogger("pyhard2")
 
 class HardwareError(Exception):
     """Exception upon error returned from the hardware.
-    
+
     Use this exception for errors documented in the hardware manual."""
 
 
@@ -187,11 +187,11 @@ class Command(QtCore.QObject):
 
     """
     def __init__(self, reader, writer=None,
-                 minimum=None, maximum=None, 
+                 minimum=None, maximum=None,
                  access=Access.RW,
                  rfunc=None, wfunc=None,
                  doc=None,
-                ):
+                 ):
         super(Command, self).__init__()
         self.reader = reader
         self.writer = writer if writer is not None else reader
@@ -306,9 +306,10 @@ class Subsystem(QtCore.QObject):
         """
         context.append(self)
         try:
-            (self._protocol if self._protocol else self.parent()).write(context)
+            child = self._protocol if self._protocol else self.parent()
+            child.write(context)
         except AttributeError:
-            if not self._protocol and not self._protocol:
+            if not child:
                 raise DriverError(" ".join(
                     ("%s does not know what to do with %r,",
                      "it has neither parent nor protocol."
@@ -438,11 +439,13 @@ class CommunicationProtocol(Protocol):
 def splitlines(txt, sep="\n"):
     """Return a list of the lines in `txt`, breaking at `sep`."""
     def _iterator(_txt):
-        if not _txt: raise StopIteration()
+        if not _txt:
+            raise StopIteration()
         partition = _txt.partition(sep)
         yield "".join(partition[0:2])
         # next line: `yield from` with python 3.4
-        for __ in _iterator(partition[2]): yield __
+        for __ in _iterator(partition[2]):
+            yield __
     return [__ for __ in _iterator(txt)]
 
 
@@ -510,9 +513,8 @@ class Serial(serial.Serial):
         line = ""
         while not line.endswith(self.newline):
             c = self.read(1)
-            if (not c and
-                self.timeout and
-                time.time() - _start > self.timeout):
+            if (not c and self.timeout and
+                    time.time() - _start > self.timeout):
                 # No time out set, but nothing on the line
                 break
             else:
