@@ -8,6 +8,7 @@
 
 """
 import logging
+logging.basicConfig()
 from collections import defaultdict
 from itertools import chain
 import os as _os
@@ -34,10 +35,6 @@ import pyhard2
 from pyhard2 import pid
 import pyhard2.driver as drv
 import pyhard2.rsc
-
-
-logging.basicConfig()
-logger = logging.getLogger("pyhard2")
 
 
 def Config(section, title="Controller",
@@ -204,6 +201,7 @@ class DashboardConfig(object):
                 controller = import_module("pyhard2.ctrlr.%s" % module)\
                     .createController()
             except:
+                logger = logging.getLogger(__name__)
                 logger.error("%s controller failed to load." % module)
                 continue
             self.controllers[controller] = []  # empty proxyWidget list
@@ -1083,10 +1081,10 @@ class DriverItem(QtGui.QStandardItem):
         try:
             self.command().read(self.node())
         except drv.HardwareError as e:
-            logger.error("%s:%s:%s" % (
-                self.command().reader,
-                self.node(),
-                e))
+            logging.getLogger(__name__).error(
+                "%s:%s:%s" % (self.command().reader,
+                              self.node(),
+                              e))
 
     def _connectDriver(self):
         """Connect the `Command` to this item using Qt4 signals and slots.
@@ -1948,7 +1946,7 @@ class Dashboard(QtCore.QObject):
             column = 0
             modelItem = controller._driverModel.item(row, column)
             if not modelItem:
-                logger.error(
+                logging.getLogger(__name__).error(
                     "Size of configuration file and model do not match in %s" %
                     controller.windowTitle())
                 continue

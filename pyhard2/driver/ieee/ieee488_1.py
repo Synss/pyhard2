@@ -67,5 +67,5 @@ class TestIeee488_1(unittest.TestCase):
 if __name__ == "__main__":
     import logging
     logging.basicConfig()
-    logging.getLogger("pyhard2").setLevel(logging.DEBUG)
+    logging.getLogger(__name__).setLevel(logging.DEBUG)
     unittest.main()

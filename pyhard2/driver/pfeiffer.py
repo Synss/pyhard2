@@ -3,14 +3,11 @@
 """
 import unittest
 import logging
+logging.basicConfig()
 import ascii
 
 import pyhard2.driver as drv
 Cmd, Access = drv.Command, drv.Access
-
-
-logging.basicConfig()
-logger = logging.getLogger("pyhard2")
 
 
 class PfeifferHardwareError(drv.HardwareError): pass
@@ -32,6 +29,7 @@ def _parse_pressure(msg):
     status, value = msg.split(",")
     status = int(status)
     if status != 0:
+        logger = logging.getLogger(__name__)
         logger.info("Sensor status: %s" % status_msg[status])
         raise PfeifferHardwareError("Sensor returned: %s" % status_msg[status])
     else:
@@ -187,5 +185,6 @@ class TestMaxigauge(unittest.TestCase):
 
 
 if __name__ == "__main__":
+    logger = logging.getLogger(__name__)
     logger.setLevel(logging.DEBUG)
     unittest.main()

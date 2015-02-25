@@ -19,16 +19,11 @@ Reference:
 
 """
 import unittest
-import logging
 from binascii import hexlify, unhexlify
 
 import pyhard2.driver as drv
 
 from _bronkhorst import Reader, Writer, Status, ValidationError
-
-
-logging.basicConfig()
-logger = logging.getLogger("pyhard2")
 
 
 class BronkhorstHardwareError(drv.HardwareError): pass
@@ -150,7 +145,6 @@ class AsciiProtocol(drv.CommunicationProtocol):
             status = Status.parse(AsciiProtocol.toBytes(ans))
             if not status.startswith("no_error"):
                 status_msg = " ".join(status.split("_"))
-                #logger.warning(status_msg)
                 raise BronkhorstHardwareError(
                     "Node %i: Command %s returned status: %s" %
                     (construct.node, construct, status_msg))

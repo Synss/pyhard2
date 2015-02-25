@@ -66,6 +66,7 @@ module is
 
 """
 import logging
+logging.basicConfig()
 import time
 from copy import deepcopy as _deepcopy
 from functools import partial as _partial
@@ -84,9 +85,6 @@ from PyQt4 import QtCore
 Signal, Slot = QtCore.pyqtSignal, QtCore.pyqtSlot
 
 import serial
-
-logging.basicConfig()
-logger = logging.getLogger("pyhard2")
 
 
 class HardwareError(Exception):
@@ -466,7 +464,7 @@ class TesterSocket(object):
 
     def write(self, message):
         """Buffer the canned answer for `message`."""
-        logger.debug("WRITE %r" % message)
+        logging.getLogger(__name__).debug("WRITE %r" % message)
         # should split on self.newline
         self._buffer.extend(splitlines(self.msg[message], self.newline))
 
@@ -476,11 +474,12 @@ class TesterSocket(object):
         ans, line = line[0:n], line[n:]
         if line:
             self._buffer.insert(0, line)
-        logger.debug("READ %i %r" % (n, ans))
+        logging.getLogger(__name__).debug("READ %i %r" % (n, ans))
         return ans
 
     def readline(self):
         """Return one line in the buffer."""
+        logger = logging.getLogger(__name__)
         try:
             line = self._buffer.pop(0)
         except IndexError:

@@ -361,6 +361,6 @@ class TestCS400(unittest.TestCase):
 if __name__ == "__main__":
     import logging
     logging.basicConfig()
-    logger = logging.getLogger("pyhard2")
+    logger = logging.getLogger(__name__)
     logger.setLevel(logging.DEBUG)
     unittest.main()

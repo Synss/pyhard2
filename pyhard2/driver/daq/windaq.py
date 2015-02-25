@@ -4,7 +4,6 @@
 import numpy as np
 import logging
 logging.basicConfig()
-logger = logging.getLogger("pyhard2")
 import pyhard2.driver as drv
 
 try:
@@ -12,7 +11,7 @@ try:
     from nidaqmx import DigitalOutputTask, DigitalInputTask
     from nidaqmx import AnalogInputTask, AnalogOutputTask
 except ImportError:
-    logger.critical(
+    logging.getLogger(__name__).exception(
         "The pylibnidaqmx library failed to load.  DAQ driver unavailable.")
 
     class __Dummy(object):
