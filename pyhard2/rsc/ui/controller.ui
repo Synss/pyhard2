@@ -106,58 +106,6 @@
       </layout>
      </widget>
     </item>
-    <item>
-     <widget class="QWidget" name="monitorPanel" native="true">
-      <layout class="QVBoxLayout" name="verticalLayout_2">
-       <item>
-        <layout class="QHBoxLayout" name="horizontalLayout_2">
-         <item>
-          <widget class="QLabel" name="autoSaveLabel">
-           <property name="text">
-            <string>AutoSave:</string>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QLineEdit" name="autoSaveEdit">
-           <property name="frame">
-            <bool>false</bool>
-           </property>
-           <property name="readOnly">
-            <bool>true</bool>
-           </property>
-          </widget>
-         </item>
-        </layout>
-       </item>
-       <item>
-        <widget class="QwtPlot" name="dataPlot">
-         <property name="contextMenuPolicy">
-          <enum>Qt::CustomContextMenu</enum>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <layout class="QVBoxLayout" name="verticalLayout_4">
-         <item>
-          <widget class="QCheckBox" name="dataPlotLogScaleCB">
-           <property name="text">
-            <string>Log scale</string>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QCheckBox" name="dataPlotSingleInstrumentCB">
-           <property name="text">
-            <string>Single instrument</string>
-           </property>
-          </widget>
-         </item>
-        </layout>
-       </item>
-      </layout>
-     </widget>
-    </item>
    </layout>
   </widget>
   <widget class="QMenuBar" name="menubar">
@@ -244,13 +192,6 @@
    </property>
   </action>
  </widget>
- <customwidgets>
-  <customwidget>
-   <class>QwtPlot</class>
-   <extends>QFrame</extends>
-   <header>qwt_plot.h</header>
-  </customwidget>
- </customwidgets>
  <resources/>
  <connections>
   <connection>
@@ -281,22 +222,6 @@
     </hint>
     <hint type="destinationlabel">
      <x>151</x>
-     <y>254</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>actionShow_monitor_panel</sender>
-   <signal>triggered(bool)</signal>
-   <receiver>monitorPanel</receiver>
-   <slot>setVisible(bool)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>-1</x>
-     <y>-1</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>382</x>
      <y>254</y>
     </hint>
    </hints>
