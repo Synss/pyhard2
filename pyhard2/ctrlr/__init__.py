@@ -10,10 +10,8 @@
 import logging
 logging.basicConfig()
 from collections import defaultdict
-from itertools import chain
 import os as _os
 import StringIO as _StringIO
-import csv as _csv
 import zipfile as _zipfile
 from functools import partial as _partial
 import time as _time
@@ -28,12 +26,11 @@ for _type in "QDate QDateTime QString QTextStream QTime QUrl QVariant".split():
 from PyQt4 import QtCore, QtGui, uic
 Qt = QtCore.Qt
 Slot, Signal = QtCore.pyqtSlot, QtCore.pyqtSignal
-import PyQt4.Qwt5 as Qwt
 
 import pyhard2
 from pyhard2.gui.delegates import DoubleSpinBoxDelegate
+from pyhard2.gui.monitor import MonitorWidget
 from pyhard2.gui.programs import ProfileData, ProgramWidget, SingleShotProgram
-import pyhard2.driver as drv
 import pyhard2.rsc
 
 
@@ -119,134 +116,6 @@ class ScientificSpinBox(QtGui.QDoubleSpinBox):
     def valueFromText(self, text):
         """Return the text as a float."""
         return float(text)
-
-
-class ListData(Qwt.QwtData):
-
-    """Custom `QwtData` mapping a list onto `x,y` values."""
-    X, Y = range(2)
-
-    def __init__(self):
-        super(ListData, self).__init__()
-        self._historySize = 10000
-        self._history = []
-        self._data = []
-        # methods
-        self.size = self.__len__
-
-    def __len__(self):
-        """Return length of data."""
-        return len(self._history) + len(self._data)
-
-    def __iter__(self):
-        """Iterate on the data."""
-        return iter(chain(self._history, self._data))
-
-    def __getitem__(self, i):
-        """Return `x,y` values at `i`."""
-        try:
-            return self._history[i]
-        except IndexError:
-            return self._data[i - len(self._history)]
-
-    def sample(self, i):
-        """Return `x,y` values at `i`."""
-        return self[i]
-
-    def copy(self):
-        """Return self."""
-        return self
-
-    def historySize(self):
-        """How many points of history to display after exportAndTrim."""
-        return self._historySize
-
-    def setHistorySize(self, historySize):
-        """Set how many points of history to display after exportAndTrim."""
-        self._historySize = historySize
-
-    def x(self, i):
-        """Return `x` value."""
-        return self[i][ListData.X]
-
-    def y(self, i):
-        """Return `y` value."""
-        return self[i][ListData.Y]
-
-    def append(self, xy):
-        """Add `x,y` values to the data.
-
-        Does nothing if None is in `xy`.
-        """
-        if None in xy:
-            return
-        self._data.append(xy)
-
-    def clear(self):
-        """Clear the data in place."""
-        self._history = []
-        self._data = []
-
-    def exportAndTrim(self, csvfile):
-        """Export the data to `csvfile` and trim it.
-
-        The data acquired since the previous call is saved to `csvfile`
-        and `historySize` points are kept.  The rest of the data is
-        deleted.
-        """
-        currentData, self._data = self._data, []
-        self._history.extend(currentData)
-        self._history = self._history[-self._historySize:]
-        _csv.writer(csvfile, delimiter="\t").writerows(currentData)
-
-
-class TimeSeriesData(ListData):
-
-    """A `ListData` to plot values against time.
-
-    Note:
-        The time is set to zero upon instantiation.
-
-    """
-    def __init__(self):
-        super(TimeSeriesData, self).__init__()
-        self.__start = _time.time()
-
-    def append(self, value):
-        """Append `time, value` to the list."""
-        super(TimeSeriesData, self).append(
-            (_time.time() - self.__start, value))
-
-
-class PlotZoomer(Qwt.QwtPlotZoomer):
-
-    """QwtPlotZoomer for zooming on QwtPlot."""
-
-    def __init__(self, canvas):
-        super(PlotZoomer, self).__init__(Qwt.QwtPlot.xBottom,
-                                         Qwt.QwtPlot.yLeft,
-                                         Qwt.QwtPicker.DragSelection,
-                                         Qwt.QwtPicker.AlwaysOff,
-                                         canvas)
-        self.setRubberBandPen(QtGui.QPen(QtGui.QColor("white")))
-        # ZOOM IN: left and drag; ZOOM OUT: shift + left
-        self.setMousePattern(Qwt.QwtEventPattern.MouseSelect2,
-                             Qt.LeftButton, Qt.ShiftModifier)
-        self.setTrackerPen(QtGui.QPen(QtGui.QColor("white")))
-        self.zoomed.connect(self._zoomed)
-
-    def _zoomed(self, rect):
-        if self.zoomRectIndex() == 0:
-            self.clearZoomStack()
-
-    def clearZoomStack(self):
-        """Force autoscaling and clear the zoom stack."""
-        self.plot().setAxisAutoScale(Qwt.QwtPlot.yLeft)
-        self.plot().setAxisAutoScale(Qwt.QwtPlot.yRight)
-        self.plot().setAxisAutoScale(Qwt.QwtPlot.xBottom)
-        self.plot().setAxisAutoScale(Qwt.QwtPlot.xTop)
-        self.plot().replot()
-        self.setZoomBase()
 
 
 class ItemRangedSpinBoxDelegate(DoubleSpinBoxDelegate):
@@ -589,18 +458,6 @@ class ControllerUi(QtGui.QMainWindow):
         verticalHeader = self.driverView.verticalHeader()
         verticalHeader.setResizeMode(QtGui.QHeaderView.ResizeToContents)
 
-        self.dataPlotZoomer = PlotZoomer(self.dataPlot.canvas())
-        self.dataPlotLogScaleCB.stateChanged.connect(self.setDataPlotLogScale)
-
-    def setDataPlotLogScale(self, state):
-        """Change the scale of `dataPlot` to log or linear."""
-        if state:
-            scale = Qwt.QwtLog10ScaleEngine()
-            scale.setAttribute(Qwt.QwtScaleEngine.Symmetric)
-        else:
-            scale = Qwt.QwtLinearScaleEngine()
-        self.dataPlot.setAxisScaleEngine(0, scale)
-
     @staticmethod
     def aboutBox(parent, checked):
         QtGui.QMessageBox.about(parent, u"About pyhard2", u"\n".join((
@@ -633,6 +490,7 @@ class Controller(QtCore.QObject):
         super(Controller, self).__init__(parent)
         self._config = config
         self.ui = ControllerUi(uifile)
+        self._addMonitorWidget()
         self._addProgramWidget()
         self.programs = defaultdict(SingleShotProgram)
 
@@ -660,20 +518,12 @@ class Controller(QtCore.QObject):
             pidi=self.setPidIColumn,
             pidd=self.setPidDColumn,)
 
-        self._dataPlotCurves = {}
-        self._dataLog = defaultdict(TimeSeriesData)
-
         self._driverModel = DriverModel(driver, self)
         self.populated.connect(self._setupWithConfig)
         self.ui.driverView.setModel(self._driverModel)
 
         self.ui.driverView.selectionModel().currentRowChanged.connect(
-            self._selectionModel_currentRowChanged)
-        self.ui.dataPlotSingleInstrumentCB.stateChanged.connect(
-            self._dataPlotSingleInstrumentCB_stateChanged)
-
-        self.ui.driverView.selectionModel().currentRowChanged.connect(
-            lambda index: self.programWidget.setProgramTableRoot(index.row()))
+            self._currentRowChanged)
 
         self.timer = QtCore.QTimer()
         self.timer.timeout.connect(self.replot)
@@ -692,14 +542,10 @@ class Controller(QtCore.QObject):
         self.pidBoxMapper.setSubmitPolicy(QtGui.QDataWidgetMapper.AutoSubmit)
         self.pidBoxMapper.setItemDelegate(
             ItemRangedSpinBoxDelegate(parent=self.pidBoxMapper))
-        self.ui.driverView.selectionModel().currentRowChanged.connect(
-            self.pidBoxMapper.setCurrentModelIndex)
         self.populated.connect(self.pidBoxMapper.toFirst)
 
         self.ui.driverView.customContextMenuRequested.connect(
             self.on_instrumentsTable_customContextMenuRequested)
-        self.ui.dataPlot.customContextMenuRequested.connect(
-            self.on_dataPlot_customContextMenuRequested)
 
         for row, node in enumerate(self._config.nodes):
             try:
@@ -708,11 +554,34 @@ class Controller(QtCore.QObject):
                 name = "%s" % node
             self.addNode(node, name)
 
+    def _addMonitorWidget(self, widget=MonitorWidget):
+        self.monitorWidget = widget(self.ui)
+        self.ui.centralWidget().layout().addWidget(self.monitorWidget)
+        self.monitorWidget.singleInstrumentCB.stateChanged.connect(
+            self._setSingleInstrument)
+
     def _addProgramWidget(self, widget=ProgramWidget):
         self.programWidget = widget(self.ui)
         self.programWidget.startRequested.connect(self.startProgram)
         self.programWidget.stopRequested.connect(self.stopProgram)
         self.ui.centralWidget().layout().addWidget(self.programWidget)
+
+    def _setupWithConfig(self):
+        self.programWidget.setDriverModel(self._driverModel)
+        self.monitorWidget.setDriverModel(self._driverModel)
+
+    def _setSingleInstrument(self, state):
+        selectionModel = self.ui.driverView.selectionModel()
+        selection = selectionModel.selectedRows()
+        if not selection:
+            return
+        row = selection.pop().row()
+        self.monitorWidget.setSingleInstrument(row, state)
+
+    def _currentRowChanged(self, current, previous):
+        self.pidBoxMapper.setCurrentModelIndex(current)
+        self.monitorWidget.setCurrentRow(current.row(), previous.row())
+        self.programWidget.setProgramTableRoot(current.row())
 
     def on_instrumentsTable_customContextMenuRequested(self, pos):
         column = self.ui.driverView.columnAt(pos.x())
@@ -730,86 +599,20 @@ class Controller(QtCore.QObject):
         rightClickMenu.exec_(self.ui.driverView.viewport()
                              .mapToGlobal(pos))
 
-    def on_dataPlot_customContextMenuRequested(self, pos):
-        rightClickMenu = QtGui.QMenu(self.ui.dataPlot)
-        rightClickMenu.addAction(
-            QtGui.QAction("Zoom out", self.ui.dataPlot,
-                          triggered=self.ui.dataPlotZoomer.clearZoomStack))
-        pos = self.ui.dataPlot.mapToGlobal(pos)
-        rightClickMenu.exec_(pos)
-
-    def _selectionModel_currentRowChanged(self, current, previous):
-        if self.ui.dataPlotSingleInstrumentCB.isChecked():
-            self._setDataPlotCurveVisibilityForRow(previous.row(), False)
-            self._setDataPlotCurveVisibilityForRow(current.row(), True)
-
-        self._setDataPlotCurveZ(previous.row(), 20)
-        self._setDataPlotCurvePenForRow(previous.row(), QtGui.QPen(Qt.black))
-        self._setDataPlotCurveZ(current.row(), 21)
-        self._setDataPlotCurvePenForRow(current.row(), QtGui.QPen(Qt.red))
-        self.ui.dataPlot.replot()
-
-    def _dataPlotSingleInstrumentCB_stateChanged(self, state):
-        selectionModel = self.ui.driverView.selectionModel()
-        selection = selectionModel.selectedRows()
-        if not selection:
-            return
-        row = selection.pop().row()
-        for row_, curve in self._dataPlotCurves.iteritems():
-            self._setDataPlotCurveVisibilityForRow(
-                row_, not state or row_ is row)
-        self._setDataPlotCurvePenForRow(
-            row, QtGui.QPen(Qt.black) if state else QtGui.QPen(Qt.red))
-        self.ui.dataPlot.replot()
-
-    def _setDataPlotCurveZ(self, row, z):
-        if row is -1:  # ignore invalid index
-            return
-        for curve in self._dataPlotCurves[row]:
-            curve.setZ(z)
-
-    def _setDataPlotCurveVisibilityForRow(self, row, visible=True):
-        if row is -1:  # ignore invalid index
-            return
-        for curve in self._dataPlotCurves[row]:
-            curve.setVisible(visible)
-
-    def _setDataPlotCurvePenForRow(self, row, pen):
-        if row is -1:  # ignore invalid index
-            return
-        for curve in self._dataPlotCurves[row]:
-            curve.setPen(pen)
-
-    def _setupWithConfig(self):
-        self._setupDataPlotCurves()
-        self.programWidget.setDriverModel(self._driverModel)
-
     def autoSaveFileName(self):
         path = _os.path
         autoSaveFileName = path.join(QtGui.QDesktopServices.storageLocation(
             QtGui.QDesktopServices.DocumentsLocation),
             "pyhard2", _time.strftime("%Y"), _time.strftime("%m"),
             _time.strftime("%Y%m%d.zip"))
-        self.ui.autoSaveEdit.setText(autoSaveFileName)
+        self.monitorWidget.autoSaveEdit.setText(autoSaveFileName)
         if not path.exists(path.dirname(autoSaveFileName)):
             _os.makedirs(path.dirname(autoSaveFileName))
         return autoSaveFileName
 
-    def _setupDataPlotCurves(self):
-        """Initialize GUI elements with the model. """
-        for item in self._driverModel:
-            text = _os.path.join(  # used in autoSave
-                self._driverModel.verticalHeaderItem(item.row()).text(),
-                self._driverModel.horizontalHeaderItem(item.column()).text())
-            dataPlotCurve = Qwt.QwtPlotCurve(text)
-            dataPlotCurve.setData(self._dataLog[item])
-            dataPlotCurve.attach(self.ui.dataPlot)
-            curves = self._dataPlotCurves.setdefault(item.row(), [])
-            curves.append(dataPlotCurve)
-
     @Slot()
     def replot(self):
-        self.ui.dataPlot.replot()
+        self.monitorWidget.draw()
 
     @Slot()
     def refreshData(self, force=False):
@@ -821,14 +624,14 @@ class Controller(QtCore.QObject):
     def logData(self):
         for item in self._driverModel:
             if item.isLogging():
-                self._dataLog[item].append(item.data())
+                self.monitorWidget.data[item].append(item.data())
 
     @Slot()
     def autoSave(self):
-        """Export the data in the `dataPlot` to an archive."""
+        """Export the data in the `monitor` to an archive."""
         path = _os.path
         with _zipfile.ZipFile(self.autoSaveFileName(), "a") as zipfile:
-            for curve in self.ui.dataPlot.itemList():
+            for curve in self.monitorWidget.monitor.itemList():
                 csvfile = _StringIO.StringIO()
                 curve.data().exportAndTrim(csvfile)
                 filename = path.join(
