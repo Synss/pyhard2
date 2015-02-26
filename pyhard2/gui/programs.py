@@ -1,5 +1,7 @@
 from __future__ import print_function
 
+import numpy as np
+
 import sip as _sip
 for _type in "QDate QDateTime QString QTextStream QTime QUrl QVariant".split():
     _sip.setapi(_type, 2)
@@ -7,12 +9,12 @@ for _type in "QDate QDateTime QString QTextStream QTime QUrl QVariant".split():
 from PyQt4 import QtCore, QtGui
 Qt = QtCore.Qt
 Slot, Signal = QtCore.pyqtSlot, QtCore.pyqtSignal
-import PyQt4.Qwt5 as Qwt
 
 from pyhard2 import pid
 import pyhard2.rsc
 from pyhard2.gui.delegates import DoubleSpinBoxDelegate
 from pyhard2.gui.selection import ItemSelectionModel
+from pyhard2.gui.mpl import MplWidget, Line
 
 
 class SingleShotProgram(QtCore.QObject):
@@ -144,92 +146,31 @@ class SetpointRampProgram(SingleShotProgram):
             self.stop()
 
 
-class ProfileData(Qwt.QwtData):
+class ProfileData(object):
 
-    """Custom `QwtData` handling a QStandardItemModel with two columns
-    as `x, y` values.
-
-    Parameters:
-        rootItem (QStandardItem): The root item of the model.
-
-    """
     X, Y = range(2)
 
-    def __init__(self, rootItem):
-        super(ProfileData, self).__init__()
-        self._rootItem = rootItem
+    def __init__(self, array):
+        self.array = array
 
-    def __iter__(self):
-        """Iterate on the model."""
-        return (self.sample(i) for i in range(self.size()))
+    @classmethod
+    def fromRootItem(cls, item):
 
-    def _sample(self, i):
-        """Return `x,y` values at `i`.
+        def unroll(column):
+            return [data for data
+                    in (item.child(row, column).data(Qt.DisplayRole)
+                        for row in range(item.rowCount()))
+                    if data is not None]
 
-        Raises:
-            ValueError: if the the data does not convert to float.
-
-        """
-        def _convert(row, column):
-            return float(self._rootItem.child(row, column).text())
-        try:
-            return [_convert(i, j) for j in (ProfileData.X, ProfileData.Y)]
-        except AttributeError:
-            raise ValueError
-
-    def copy(self):
-        """Return self."""
-        return self
-
-    def size(self):
-        """Return the number of rows under `rootItem`.
-
-        Note:
-            Rows where values cannot be converted to `float` are not
-            counted.
-
-        """
-        size = 0
-        for row in range(self._rootItem.rowCount()):
-            try:
-                self._sample(row)
-            except ValueError:
-                # Up to invalid data
-                return size
-            else:
-                size += 1
-        # Model full of valid data
-        return size
-
-    def sample(self, i):
-        """Return `x,y` values at `i`.
-
-        Raises:
-            IndexError: if `i` is invalid.
-            ValueError: if the data at `i` do not convert to float.
-
-        """
-        if i < 0:
-            i += self.size()
-        if not 0 <= i < self.size():
-            raise IndexError("%s index out of range" % self.__class__.__name__)
-        return self._sample(i)
+        x, y = unroll(0), unroll(1)
+        length = min(len(x), len(y))
+        return cls(np.array((x[:length], y[:length])))
 
     def x(self, i):
-        """Return `x` value at `i`.
-
-        See also:
-            `sample()` for the exceptions.
-        """
-        return self.sample(i)[ProfileData.X]
+        return self.array[ProfileData.X][i].item()
 
     def y(self, i):
-        """Return `y` value at `i`.
-
-        See also:
-            `sample()` for the exceptions.
-        """
-        return self.sample(i)[ProfileData.Y]
+        return self.array[ProfileData.Y][i].item()
 
 
 class ProgramWidgetUi(QtGui.QWidget):
@@ -254,11 +195,26 @@ class ProgramWidgetUi(QtGui.QWidget):
         self.programView.horizontalHeader().setResizeMode(
             0, QtGui.QHeaderView.ResizeToContents)
         self.verticalLayout.addWidget(self.programView)
-        self.previewPlot = Qwt.QwtPlot(self)
+        self.previewPlot = MplWidget(self)
         sizePolicy = QtGui.QSizePolicy(sp.Expanding, sp.Expanding)
         sizePolicy.setVerticalStretch(2)
         self.previewPlot.setSizePolicy(sizePolicy)
         self.verticalLayout.addWidget(self.previewPlot)
+        self.axes = self.previewPlot.figure.add_subplot(111)
+
+    def scaleToArtists(self, artists):
+        if not artists:
+            return
+        # Scale
+        xmin, xmax = self.axes.get_xbound()
+        ymin, ymax = self.axes.get_ybound()
+        data = np.hstack(artist.get_data() for artist in artists)
+        xdata_min, ydata_min = data.min(axis=1)
+        xdata_max, ydata_max = data.max(axis=1)
+        if xdata_min < xmin or xdata_max > xmax:
+            self.axes.set_xbound(xdata_min * 0.8, xdata_max * 1.2)
+        elif ydata_min < ymin or ydata_max > ymax:
+            self.axes.set_ybound(ydata_min * 0.8, ydata_max * 1.2)
 
 
 class ProgramWidget(ProgramWidgetUi):
@@ -351,29 +307,22 @@ class ProgramWidget(ProgramWidgetUi):
 
     def _clearPreview(self):
         while self._previewPlotItems:
-            self._previewPlotItems.pop().detach()
+            self._previewPlotItems.pop().remove()
 
     def _showPreview(self):
+
         self._clearPreview()
         for row in range(self.model.rowCount()):
             rootItem = self.model.item(row, 0)
-            data = ProfileData(rootItem)
-            if data.size() > 1:
+            data = ProfileData.fromRootItem(rootItem).array
+            if data.size > 1:
                 label = (self.driverModel.verticalHeaderItem(row).text()
                          if self.driverModel else "%i" % row)
-                curve = Qwt.QwtPlotCurve(label)
-                curve.setData(data)
-                curve.attach(self.previewPlot)
-                self._previewPlotItems.append(curve)
-                marker = Qwt.QwtPlotMarker()
-                marker.setLabel(curve.title())
-                x, y = (0.5 * (sample(data.size() - 2)
-                               + sample(data.size() - 1))
-                        for sample in (data.x, data.y))
-                marker.setValue(x, y)
-                marker.attach(self.previewPlot)
-                self._previewPlotItems.append(marker)
-        self.previewPlot.replot()
+                line = Line(data[0], data[1], label=label)
+                self.axes.add_artist(line)
+                self._previewPlotItems.append(line)
+        self.scaleToArtists(self._previewPlotItems)
+        self.previewPlot.draw_idle()
 
     @property
     def _currentRow(self):

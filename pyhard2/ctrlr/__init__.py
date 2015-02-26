@@ -1051,7 +1051,8 @@ class Controller(QtCore.QObject):
         program.setInterval(1000 * self.ui.refreshRateEditor.value())
         self.ui.refreshRateEditor.valueChanged.connect(setInterval)
         # Set (time, setpoint) profile
-        program.setProfile(ProfileData(self.programWidget.model.item(row, 0)))
+        program.setProfile(ProfileData.fromRootItem(
+            self.programWidget.model.item(row, 0)))
         # Bind to item in driverModel
         driverItem = self._driverModel.item(row, self.programmableColumn())
         program.value.connect(_partial(driverItem.setData))
