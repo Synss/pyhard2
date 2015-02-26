@@ -11,6 +11,7 @@ for cls in "QDate QDateTime QString QTextStream QTime QUrl QVariant".split():
 from PyQt4 import QtGui
 
 import pyhard2.ctrlr as ctrlr
+from pyhard2.gui.delegates import FormatTextDelegate
 import pyhard2.driver as drv
 from pyhard2.driver.pfeiffer import Maxigauge
 import pyhard2.driver.virtual as virtual
@@ -33,8 +34,7 @@ def createController():
         iface = ctrlr.Controller(config, driver)
         iface.editorPrototype.default_factory = ctrlr.ScientificSpinBox
         iface.addCommand(driver.gauge.pressure, u"pressure", poll=True, log=True)
-    iface.ui.driverView.setItemDelegateForColumn(
-        0, ctrlr.FormatTextDelegate("%.2e"))
+    iface.ui.driverView.setItemDelegateForColumn(0, FormatTextDelegate("%.2e"))
     iface.populate()
     return iface
 

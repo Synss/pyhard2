@@ -13,6 +13,7 @@ Qt = QtCore.Qt
 import pyhard2.rsc
 
 import pyhard2.ctrlr as ctrlr
+from pyhard2.gui.delegates import ButtonDelegate
 import pyhard2.driver as drv
 Cmd = drv.Command
 import pyhard2.driver.daq as daq
@@ -83,7 +84,7 @@ def createController():
     iface.addCommand(driver.digitalIO.state, "state")
     iface.editorPrototype.default_factory=ValveButton
     iface.ui.driverView.setItemDelegateForColumn(
-        0, ctrlr.ButtonDelegate(ValveButton(), iface.ui.driverView))
+        0, ButtonDelegate(ValveButton(), iface.ui.driverView))
     iface.ui.driverView.setEditTriggers(
         QtGui.QAbstractItemView.SelectedClicked |
         QtGui.QAbstractItemView.CurrentChanged)
