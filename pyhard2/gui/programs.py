@@ -159,7 +159,6 @@ class ProfileData(Qwt.QwtData):
     def __init__(self, rootItem):
         super(ProfileData, self).__init__()
         self._rootItem = rootItem
-        self._model = self._rootItem.model()
 
     def __iter__(self):
         """Iterate on the model."""
@@ -175,7 +174,7 @@ class ProfileData(Qwt.QwtData):
         def _convert(row, column):
             return float(self._rootItem.child(row, column).text())
         try:
-            return [_convert(i, j) for j in range(self._model.columnCount())]
+            return [_convert(i, j) for j in (ProfileData.X, ProfileData.Y)]
         except AttributeError:
             raise ValueError
 
@@ -192,7 +191,7 @@ class ProfileData(Qwt.QwtData):
 
         """
         size = 0
-        for row in range(self._model.rowCount(self._rootItem.index())):
+        for row in range(self._rootItem.rowCount()):
             try:
                 self._sample(row)
             except ValueError:
@@ -457,14 +456,13 @@ class ProgramWidget(ProgramWidgetUi):
             self._previewPlotItems.pop().detach()
 
     def _showPreview(self):
-        if not self.driverModel:
-            return
         self._clearPreview()
         for row in range(self.model.rowCount()):
             rootItem = self.model.item(row, 0)
             data = ProfileData(rootItem)
             if data.size() > 1:
-                label = self.driverModel.verticalHeaderItem(row).text()
+                label = (self.driverModel.verticalHeaderItem(row).text()
+                         if self.driverModel else "%i" % row)
                 curve = Qwt.QwtPlotCurve(label)
                 curve.setData(data)
                 curve.attach(self.previewPlot)
@@ -547,6 +545,6 @@ if __name__ == "__main__":
     for row in range(8):
         root.appendRow([QtGui.QStandardItem(), QtGui.QStandardItem()])
     widget.model.invisibleRootItem().appendRow(root)
-    widget.programView.setRootIndex(widget.model.index(0, 0))
+    widget.programView.setRootIndex(root.index())
     widget.show()
     sys.exit(app.exec_())
