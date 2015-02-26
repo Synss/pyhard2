@@ -28,7 +28,7 @@ Qt = QtCore.Qt
 Slot, Signal = QtCore.pyqtSlot, QtCore.pyqtSignal
 
 import pyhard2
-from pyhard2.gui.driver import DriverWidget
+from pyhard2.gui.driver import DriverModel, DriverWidget
 from pyhard2.gui.monitor import MonitorWidget
 from pyhard2.gui.programs import ProfileData, ProgramWidget, SingleShotProgram
 import pyhard2.rsc
@@ -140,12 +140,6 @@ class ControllerUi(QtGui.QMainWindow):
         self.actionAbout_pyhard2.triggered.connect(
             _partial(ControllerUi.aboutBox, self))
 
-        horizontalHeader = self.driverView.horizontalHeader()
-        horizontalHeader.setResizeMode(QtGui.QHeaderView.Stretch)
-        horizontalHeader.setResizeMode(QtGui.QHeaderView.ResizeToContents)
-        verticalHeader = self.driverView.verticalHeader()
-        verticalHeader.setResizeMode(QtGui.QHeaderView.ResizeToContents)
-
     @staticmethod
     def aboutBox(parent, checked):
         QtGui.QMessageBox.about(parent, u"About pyhard2", u"\n".join((
@@ -166,10 +160,6 @@ class Controller(QtCore.QObject):
             This property holds the window title (caption).
         show: Show the widget and its child widgets.
         close: Close the widget.
-        isColumnHidden: Return True if the given `column` is hidden;
-            otherwise return False.
-        setColumnHidden: if `hide` is True, the given `column` will be
-            hidden; otherwise it will be shown.
 
     """
     populated = Signal()
@@ -178,10 +168,12 @@ class Controller(QtCore.QObject):
         super(Controller, self).__init__(parent)
         self._config = config
         self.ui = ControllerUi(uifile)
-        self._addDriverWidget(driver)
+        self._addDriverWidget()
         self._addMonitorWidget()
         self._addProgramWidget()
+        self.driverModel = DriverModel(driver)
         self.programs = defaultdict(SingleShotProgram)
+        self.refreshRate = self.driverWidget.refreshRate
         self.timer = self.driverWidget.refreshRate.timer
 
         # UI methods
@@ -189,8 +181,6 @@ class Controller(QtCore.QObject):
         self.setWindowTitle = self.ui.setWindowTitle
         self.show = self.ui.show
         self.close = self.ui.close
-        self.setColumnHidden = self.ui.driverView.setColumnHidden
-        self.isColumnHidden = self.ui.driverView.isColumnHidden
 
         title = config.title + (" [virtual]" if config.virtual else "")
         self.setWindowTitle(title)
@@ -223,11 +213,9 @@ class Controller(QtCore.QObject):
                 name = "%s" % node
             self.addNode(node, name)
 
-    def _addDriverWidget(self, driver, widget=DriverWidget):
-        self.driverWidget = widget(driver, self.ui)
+    def _addDriverWidget(self, widget=DriverWidget):
+        self.driverWidget = widget(self.ui)
         self.ui.centralWidget().layout().addWidget(self.driverWidget)
-        selectionModel = self.driverWidget.driverView.selectionModel()
-        selectionModel.currentRowChanged.connect(self._currentRowChanged)
 
     def _addMonitorWidget(self, widget=MonitorWidget):
         self.monitorWidget = widget(self.ui)
@@ -242,8 +230,11 @@ class Controller(QtCore.QObject):
         self.ui.centralWidget().layout().addWidget(self.programWidget)
 
     def _setupWithConfig(self):
-        self.programWidget.setDriverModel(self.driverWidget.model)
-        self.monitorWidget.setDriverModel(self.driverWidget.model)
+        self.driverWidget.setDriverModel(self.driverModel)
+        selectionModel = self.driverWidget.driverView.selectionModel()
+        selectionModel.currentRowChanged.connect(self._currentRowChanged)
+        self.programWidget.setDriverModel(self.driverModel)
+        self.monitorWidget.setDriverModel(self.driverModel)
 
     def _setSingleInstrument(self, state):
         selectionModel = self.ui.driverView.selectionModel()
@@ -275,13 +266,13 @@ class Controller(QtCore.QObject):
 
     @Slot()
     def refreshData(self, force=False):
-        for item in self.driverWidget.model:
+        for item in self.driverModel:
             if item.isPolling() or force:
                 item.queryData()
 
     @Slot()
     def logData(self):
-        for item in self.driverWidget.model:
+        for item in self.driverModel:
             if item.isLogging():
                 self.monitorWidget.data[item].append(item.data())
 
@@ -328,15 +319,15 @@ class Controller(QtCore.QObject):
                 Connect the column to the relevant GUI elements.
 
         """
-        column = self.driverWidget.model.columnCount()
-        self.driverWidget.model.addCommand(command, label, poll, log)
-        self.setColumnHidden(column, hide)
+        column = self.driverModel.columnCount()
+        self.driverModel.addCommand(command, label, poll, log)
+        self.driverWidget.driverView.setColumnHidden(column, hide)
         if specialColumn:
             self._specialColumnMapper[specialColumn.lower()](column)
 
     def addNode(self, node, label=""):
         """Add `node` as a new row in the driver table."""
-        self.driverWidget.model.addNode(node, label)
+        self.driverModel.addNode(node, label)
 
     def programmableColumn(self):
         """Return the index of the programmable column."""
@@ -348,15 +339,15 @@ class Controller(QtCore.QObject):
 
     def setPidPColumn(self, column):
         """Set the pid P column to `column`."""
-        self.driverWidget.pidBoxMapper.addMapping(self.ui.pEditor, column)
+        self.driverWidget.mapPEditor(column)
 
     def setPidIColumn(self, column):
         """Set the pid I column to `column`."""
-        self.driverWidget.pidBoxMapper.addMapping(self.ui.iEditor, column)
+        self.driverWidget.mapIEditor(column)
 
     def setPidDColumn(self, column):
         """Set the pid D column to `column`."""
-        self.driverWidget.pidBoxMapper.addMapping(self.ui.dEditor, column)
+        self.driverWidget.mapDEditor(column)
 
     def startProgram(self, row):
         """Start program for item at (`row`, `programmableColumn`)."""
@@ -369,13 +360,13 @@ class Controller(QtCore.QObject):
         program = self.programs[row]
         # Connect program to GUI
         program.finished.connect(_partial(self.stopProgram, row))
-        program.setInterval(1000 * self.ui.refreshRateEditor.value())
-        self.ui.refreshRateEditor.valueChanged.connect(setInterval)
+        program.setInterval(1000 * self.refreshRate.value())
+        self.refreshRate.valueChanged.connect(setInterval)
         # Set (time, setpoint) profile
         program.setProfile(ProfileData.fromRootItem(
             self.programWidget.model.item(row, 0)))
         # Bind to item in driverModel
-        driverItem = self.driverWidget.model.item(
+        driverItem = self.driverModel.item(
             row, self.programmableColumn())
         program.value.connect(_partial(driverItem.setData))
         # Start
@@ -391,7 +382,7 @@ class Controller(QtCore.QObject):
 
     def populate(self):
         """Populate the driver table."""
-        self.driverWidget.model.populate()
+        self.driverModel.populate()
         self.populated.emit()
 
     def closeEvent(self, event):

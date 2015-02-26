@@ -338,8 +338,13 @@ class DriverWidgetUi(QtGui.QWidget):
             selectionBehavior=QtGui.QAbstractItemView.SelectRows
         )
         self.driverView.setContextMenuPolicy(Qt.CustomContextMenu)
-        self.driverView.horizontalHeader().setStretchLastSection(True)
-        self.driverView.horizontalHeader().setDefaultSectionSize(20)
+        hHeader = self.driverView.horizontalHeader()
+        hHeader.setStretchLastSection(True)
+        hHeader.setDefaultSectionSize(20)
+        hHeader.setResizeMode(QtGui.QHeaderView.Stretch)
+        hHeader.setResizeMode(QtGui.QHeaderView.ResizeToContents)
+        vHeader = self.driverView.verticalHeader()
+        vHeader.setResizeMode(QtGui.QHeaderView.ResizeToContents)
         self.verticalLayout.addWidget(self.driverView)
         self.pidBox = QtGui.QGroupBox("PID settings", self)
         self.pEditor = QtGui.QDoubleSpinBox(self)
@@ -354,10 +359,9 @@ class DriverWidgetUi(QtGui.QWidget):
 
 class DriverWidget(DriverWidgetUi):
 
-    def __init__(self, driver, parent=None):
+    def __init__(self, parent=None):
         super(DriverWidget, self).__init__(parent)
-        self.model = DriverModel(driver, self)
-        self.driverView.setModel(self.model)
+        self.driverMode = None
         self.driverView.setItemDelegate(
             ItemRangedSpinBoxDelegate(parent=self.driverView))
 
@@ -365,7 +369,6 @@ class DriverWidget(DriverWidgetUi):
             self._show_driverView_contextMenu)
 
         self.pidBoxMapper = QtGui.QDataWidgetMapper(self.pidBox)
-        self.pidBoxMapper.setModel(self.model)
         self.pidBoxMapper.setSubmitPolicy(QtGui.QDataWidgetMapper.AutoSubmit)
         self.pidBoxMapper.setItemDelegate(
             ItemRangedSpinBoxDelegate(parent=self.pidBoxMapper))
@@ -384,6 +387,20 @@ class DriverWidget(DriverWidgetUi):
                  checked=item.isLogging(), triggered=item.setLogging)
              ])
         rightClickMenu.exec_(self.driverView.viewport().mapToGlobal(pos))
+
+    def setDriverModel(self, model):
+        self.driverModel = model
+        self.driverView.setModel(self.driverModel)
+        self.pidBoxMapper.setModel(self.driverModel)
+
+    def mapPEditor(self, column):
+        self.pidBoxMapper.addMapping(self.pEditor, column)
+
+    def mapIEditor(self, column):
+        self.pidBoxMapper.addMapping(self.iEditor, column)
+
+    def mapDEditor(self, column):
+        self.pidBoxMapper.addMapping(self.dEditor, column)
 
 
 if __name__ == "__main__":
