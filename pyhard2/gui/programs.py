@@ -1,3 +1,6 @@
+"""Module with the stock programs and the default `ProgramWidget`.
+
+"""
 from __future__ import print_function
 
 import numpy as np
@@ -148,6 +151,8 @@ class SetpointRampProgram(SingleShotProgram):
 
 class ProfileData(object):
 
+    """Helper to use 2 x `n` arrays to monitor data."""
+
     X, Y = range(2)
 
     def __init__(self, array):
@@ -155,6 +160,8 @@ class ProfileData(object):
 
     @classmethod
     def fromRootItem(cls, item):
+
+        """Make a 2 x `n` array from the children of `item`."""
 
         def unroll(column):
             return [data for data
@@ -167,13 +174,17 @@ class ProfileData(object):
         return cls(np.array((x[:length], y[:length])))
 
     def x(self, i):
+        """Return `x` value at index `i`."""
         return self.array[ProfileData.X][i].item()
 
     def y(self, i):
+        """Return `y` value at index `i`."""
         return self.array[ProfileData.Y][i].item()
 
 
 class ProgramWidgetUi(QtGui.QWidget):
+
+    """The default UI for the program widget."""
 
     def __init__(self, parent=None):
         super(ProgramWidgetUi, self).__init__(parent)
@@ -219,6 +230,11 @@ class ProgramWidgetUi(QtGui.QWidget):
 
 class ProgramWidget(ProgramWidgetUi):
 
+    """The default widget for the program widget.
+
+    .. image:: img/programs.png
+
+    """
     startRequested = Signal(int)
     stopRequested = Signal(int)
 

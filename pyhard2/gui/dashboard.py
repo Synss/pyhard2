@@ -98,7 +98,7 @@ class DashboardConfig(object):
         the following line starts a dashboard containing virtual
         instruments::
 
-            python pyhard2.ctrlr.__init__.py circat.yml -v
+            python pyhard2/gui/dashboard.py circat.yml -v
 
     """
     def __init__(self, filename):
@@ -238,8 +238,8 @@ class Dashboard(DashboardUi):
             This property holds the window title (caption).
         show: Show the widget and its child widgets.
         close: Close the widget.
-    """
 
+    """
     def __init__(self, parent=None):
         super(Dashboard, self).__init__(parent)
         self.controllers = [self]

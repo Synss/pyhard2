@@ -16,6 +16,8 @@ class FormatTextDelegate(QtGui.QStyledItemDelegate):
 
 class ComboBoxDelegate(QtGui.QStyledItemDelegate):
 
+    """QStyledItemDelegate for ComboBox."""
+
     def __ini__(self, parent=None):
         super(ComboBoxDelegate, self).__init__(parent)
 

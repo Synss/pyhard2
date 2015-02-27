@@ -1,3 +1,7 @@
+"""Module with the classes used to communicate with the driver and display
+the results in the `DriverWidget`.
+
+"""
 import logging
 
 import sip as _sip
@@ -311,6 +315,8 @@ class ItemRangedSpinBoxDelegate(DoubleSpinBoxDelegate):
 
 class DriverWidgetUi(QtGui.QWidget):
 
+    """The default UI for the driver widget."""
+
     def __init__(self, parent=None):
         super(DriverWidgetUi, self).__init__(parent)
         self.verticalLayout = QtGui.QVBoxLayout(self)
@@ -346,6 +352,11 @@ class DriverWidgetUi(QtGui.QWidget):
 
 class DriverWidget(DriverWidgetUi):
 
+    """The default widget to display results from `DriverModel`.
+
+    .. image:: img/driver.png
+
+    """
     def __init__(self, parent=None):
         super(DriverWidget, self).__init__(parent)
         self.driverModel = None
@@ -370,6 +381,7 @@ class DriverWidget(DriverWidgetUi):
         rightClickMenu.exec_(self.driverView.viewport().mapToGlobal(pos))
 
     def setDriverModel(self, driverModel):
+        """Set `driverModel`."""
         self.driverModel = driverModel
         self.driverView.setModel(self.driverModel)
         self.pidBoxMapper.setModel(self.driverModel)
@@ -379,14 +391,17 @@ class DriverWidget(DriverWidgetUi):
         """Called when the model has been populated."""
 
     def mapPEditor(self, column):
+        """Map PID P editor to column `column` of `driverModel`."""
         assert(self.driverModel)
         self.pidBoxMapper.addMapping(self.pEditor, column)
 
     def mapIEditor(self, column):
+        """Map PID I editor to column `column` of `driverModel`."""
         assert(self.driverModel)
         self.pidBoxMapper.addMapping(self.iEditor, column)
 
     def mapDEditor(self, column):
+        """Map PID D editor to column `column` of `driverModel`."""
         assert(self.driverModel)
         self.pidBoxMapper.addMapping(self.dEditor, column)
 

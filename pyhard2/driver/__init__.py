@@ -63,6 +63,10 @@ module is
    Protocol             <|--                CommandCallerProtocol
    Protocol             <|--                CommunicationProtocol
    Protocol             <|--                ObjectWrapperProtocol
+   note bottom of CommunicationProtocol {
+     Handle templating, framing,
+     hardware errors, and parsing.
+   }
 
 """
 import logging

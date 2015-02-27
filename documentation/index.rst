@@ -62,6 +62,7 @@ API documentation
    :maxdepth: 1
 
    apidrv
+   apigui
    apictrlr
    apimisc
 

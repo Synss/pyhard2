@@ -22,6 +22,8 @@ from pyhard2.gui.monitor import MonitorWidget
 from pyhard2.gui.programs import ProfileData, ProgramWidget, SingleShotProgram
 from pyhard2.gui.widgets import Counter
 
+"""Default controller GUI."""
+
 
 __about__ = """
 pyhard2 {version}, the free DDK written in Python.
@@ -112,19 +114,23 @@ class ControllerUi(QtGui.QMainWindow):
 
     @staticmethod
     def aboutBox(parent, checked):
+        """Show about box."""
         QtGui.QMessageBox.about(parent, "About pyhard2", __about__)
 
     def _addDriverWidget(self, widget=DriverWidget):
+        """Add default driver widget.  Derive `Controller` to change."""
         self.driverWidget = widget(self)
         self.centralLayout.addWidget(self.driverWidget)
 
     def _addMonitorWidget(self, widget=MonitorWidget):
+        """Add default monitor widget.  Derive `Controller` to change."""
         self.monitorWidget = widget(self)
         self.centralLayout.addWidget(self.monitorWidget)
         self.monitorWidget.singleInstrumentCB.stateChanged.connect(
             self._setSingleInstrument)
 
     def _addProgramWidget(self, widget=ProgramWidget):
+        """Add default program widget.  Derive `Controller` to change."""
         self.programWidget = widget(self)
         self.programWidget.startRequested.connect(self.startProgram)
         self.programWidget.stopRequested.connect(self.stopProgram)
@@ -132,6 +138,8 @@ class ControllerUi(QtGui.QMainWindow):
 
 
 class Controller(ControllerUi):
+
+    """The default controller widget."""
 
     populated = Signal()
 
@@ -235,16 +243,19 @@ class Controller(ControllerUi):
 
     @Slot()
     def replot(self):
+        """Update the monitor."""
         self.monitorWidget.draw()
 
     @Slot()
     def refreshData(self, force=False):
+        """Request update to the `driverModel` from the hardware."""
         for item in self.driverModel:
             if item.isPolling() or force:
                 item.queryData()
 
     @Slot()
     def logData(self):
+        """Save data."""
         for item in self.driverModel:
             if item.isLogging():
                 self.monitorWidget.data[item].append(item.data())
@@ -330,6 +341,7 @@ class Controller(ControllerUi):
         program.start()
 
     def stopProgram(self, row):
+        """Stop program for `row`."""
         try:
             program = self.programs.pop(row)
         except KeyError:

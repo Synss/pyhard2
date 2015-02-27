@@ -1,40 +1,42 @@
-GUI controllers
-===============
+Controllers: User interface to the drivers
+==========================================
 
 The files in `pyhard2.ctrlr` initialize and launch the GUI controllers.
 
-In order to remain compatible with the :class:`~pyhard2.ctrlr.Dashboard`,
-they must contain a function named ``createController()`` that returns
-the initialized :class:`~pyhard2.ctrlr.Controller`.
+In order to remain compatible with the
+:class:`~pyhard2.gui.dashboard.Dashboard`, they must contain a function
+named ``createController()`` that returns the initialized
+:class:`~pyhard2.gui.controller.Controller`.
 
 The initialization itself may be driven on the command line with the
-help of the `ArgumentParser` setup in :func:`~pyhard2.ctrlr.Config` or
-in the configuration file passed to :func:`~pyhard2.ctrlr.Config`.
+help of the `ArgumentParser` setup in
+:func:`~pyhard2.gui.controller.Config` or in the configuration file
+passed to :func:`~pyhard2.gui.controller.Config`.
 
 See also:
    The format for the configuration file and the command line arguments
-   is describe in :func:`~pyhard2.ctrlr.Config`.
+   is describe in :func:`~pyhard2.gui.controller.Config`.
 
 Example:
    The skeleton for the ``createController()`` function follows::
 
-      import pyhard2.ctrlr as ctrlr
-      import pyhard2.driver as drv
+      from pyhard2.gui.controller import Config, Controller
+      from pyhard2.driver import Serial
       from pyhard2.driver.MODULE import Driver  # import the actual driver
       import pyhard2.driver.virtual as virtual
 
       def createController():
          """Initialize controller."""
-         config = ctrlr.Config("NAME")  # name of the driver module
+         config = Config("NAME")  # name of the driver module
          if config.virtual:
             driver = virtual.VirtualInstrument()
             # The virtual instrument comprises input, output, setpoint, and
             # a PID.
-            iface = ctrlr.Controller.virtualInstrumentController(
+            iface = Controller.virtualInstrumentController(
                config, driver)
          else:
-            driver = Driver(drv.Serial(config.port))
-            iface = ctrlr.Controller(config, driver)
+            driver = Driver(Serial(config.port))
+            iface = Controller(config, driver)
             # We need at least one command.
             iface.addCommand(driver.SUBSYSTEM.COMMAND, "COLUMN_NAME")
          # We need at least one node.

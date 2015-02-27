@@ -1,3 +1,6 @@
+"""Matplotlib helpers.
+
+"""
 import matplotlib as mpl
 
 from matplotlib.figure import Figure
@@ -14,12 +17,15 @@ from matplotlib.backends.backend_qt4agg import (FigureCanvasQTAgg
 
 class MplWidget(FigureCanvas):
 
+    """Matplotlib Qt widget."""
+
     def __init__(self, parent=None):
         fig = Figure()
         super(MplWidget, self).__init__(fig)
         self.setParent(parent)
 
     def setParent(self, parent):
+        """Set the colors to the parent's theme."""
         super(MplWidget, self).setParent(parent)
         if parent:
             color = parent.palette().brush(QPalette.Window).color()

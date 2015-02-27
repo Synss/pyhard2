@@ -1,3 +1,6 @@
+"""Module with the `MonitorWidget` widget.
+
+"""
 import os
 from collections import defaultdict
 from itertools import chain
@@ -16,7 +19,9 @@ import PyQt4.Qwt5 as Qwt
 
 class ListData(Qwt.QwtData):
 
-    """Custom `QwtData` mapping a list onto `x,y` values."""
+    """Custom `QwtData` mapping a list onto `x,y` values.
+
+    """
     X, Y = range(2)
 
     def __init__(self):
@@ -144,6 +149,8 @@ class PlotZoomer(Qwt.QwtPlotZoomer):
 
 class MonitorWidgetUi(QtGui.QWidget):
 
+    """The default UI for the monitor widget."""
+
     def __init__(self, parent=None):
         super(MonitorWidgetUi, self).__init__(parent)
         self.verticalLayout = QtGui.QVBoxLayout(self)
@@ -167,6 +174,11 @@ class MonitorWidgetUi(QtGui.QWidget):
 
 class MonitorWidget(MonitorWidgetUi):
 
+    """The default widget for the monitor.
+
+    .. image:: img/monitor.png
+
+    """
     def __init__(self, parent=None):
         super(MonitorWidget, self).__init__(parent)
         self.driverModel = None
@@ -211,6 +223,7 @@ class MonitorWidget(MonitorWidgetUi):
         self.monitor.setAxisScaleEngine(0, scale)
 
     def setSingleInstrument(self, row, state):
+        """Monitor instrument at `row` iff `state`."""
         for row_, curve in self._monitorItems.iteritems():
             self._setDataPlotCurveVisibilityForRow(
                 row_, not state or row_ is row)
