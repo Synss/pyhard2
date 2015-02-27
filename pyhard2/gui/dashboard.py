@@ -10,12 +10,13 @@ import yaml
 import sip as _sip
 for _type in "QDate QDateTime QString QTextStream QTime QUrl QVariant".split():
     _sip.setapi(_type, 2)
-from PyQt4 import QtCore, QtGui, QtSvg, uic
+from PyQt4 import QtCore, QtGui, QtSvg
 Qt = QtCore.Qt
 Slot, Signal = QtCore.pyqtSlot, QtCore.pyqtSignal
 import PyQt4.Qwt5 as Qwt
 
-from pyhard2.ctrlr import ControllerUi, TimeSeriesData
+from pyhard2.gui.controller import Controller
+from pyhard2.gui.monitor import TimeSeriesData
 
 
 class DoubleClickEventFilter(QtCore.QObject):
@@ -160,28 +161,43 @@ class DashboardConfig(object):
 
 class DashboardUi(QtGui.QMainWindow):
 
-    """QMainWindow for the dashboard.
+    """QMainWindow for the dashboard."""
 
-    This class loads `uifile` if one is provided or default to the
-    `ui/dashboard.ui` designer file.
-
-    """
-    def __init__(self, uifile=""):
-        super(DashboardUi, self).__init__()
-        try:
-            self.ui = uic.loadUi(uifile, self)
-        except IOError:
-            uifile = QtCore.QFile(":/ui/dashboard.ui")
-            uifile.open(QtCore.QFile.ReadOnly)
-            self.ui = uic.loadUi(uifile, self)
-            uifile.close()
-
-        self.actionAbout_pyhard2.triggered.connect(
-            partial(ControllerUi.aboutBox, self))
-
-        self.graphicsScene = QtGui.QGraphicsScene(self.ui)
+    def __init__(self, parent=None):
+        super(DashboardUi, self).__init__(parent)
+        sp = QtGui.QSizePolicy
+        centralWidget = QtGui.QWidget(self)
+        self.setCentralWidget(centralWidget)
+        self.centralLayout = QtGui.QHBoxLayout(centralWidget)
+        self.tabWidget = QtGui.QTabWidget(self)
+        self.centralLayout.addWidget(self.tabWidget)
+        self.dashboardTab = QtGui.QWidget(self)
+        self.tabWidget.addTab(self.dashboardTab, "Dashboard")
+        self.dashboardTabLayout = QtGui.QHBoxLayout(self.dashboardTab)
+        sizePolicy = QtGui.QSizePolicy(sp.Expanding, sp.Expanding)
+        sizePolicy.setHorizontalStretch(3)
+        self.graphicsView = QtGui.QGraphicsView(
+            self,
+            frameShape=QtGui.QFrame.NoFrame,
+            frameShadow=QtGui.QFrame.Plain,
+            sizePolicy=sizePolicy)
+        self.graphicsScene = QtGui.QGraphicsScene(self)
         self.graphicsView.setScene(self.graphicsScene)
-        self.setAttribute(Qt.WA_DeleteOnClose)
+        self.plotArea = QtGui.QScrollArea(self)
+        self.dashboardTabLayout.addWidget(self.graphicsView)
+        self.dashboardTabLayout.addWidget(self.plotArea)
+        self.plotAreaLayout = QtGui.QVBoxLayout(self.plotArea)
+
+        self.menuWindow = QtGui.QMenu("Window")
+        self.menuHelp = QtGui.QMenu("Help")
+        self.menuBar().addMenu(self.menuWindow)
+        self.menuBar().addMenu(self.menuHelp)
+
+        self.aboutAction = QtGui.QAction(
+            "About pyhard2", self,
+            triggered=partial(Controller.aboutBox, self))
+        self.menuHelp.addAction(self.aboutAction)
+
         self.tabWidget.currentChanged.connect(self.fitInView)
 
     @Slot()
@@ -194,7 +210,7 @@ class DashboardUi(QtGui.QMainWindow):
         self.fitInView()
 
 
-class Dashboard(QtCore.QObject):
+class Dashboard(DashboardUi):
 
     """Implement the behavior of the GUI.
 
@@ -206,32 +222,26 @@ class Dashboard(QtCore.QObject):
         close: Close the widget.
     """
 
-    def __init__(self, uifile="", parent=None):
+    def __init__(self, parent=None):
         super(Dashboard, self).__init__(parent)
-        self.ui = DashboardUi(uifile)
-        self._controllerPool = [self]
-        self._widgetDataMonitor = []
+        self.controllers = [self]
+        self._monitors = []
         self._currentIndex = 0
-        self.ui.tabWidget.currentChanged.connect(self._tabChanged)
-        # methods
-        self.windowTitle = self.ui.windowTitle
-        self.setWindowTitle = self.ui.setWindowTitle
-        self.show = self.ui.show
-        self.close = self.ui.close
+        self.tabWidget.currentChanged.connect(self._tabChanged)
 
     def _addMonitorForSpinBox(self, item):
         def spinBox_valueChanged(value):
             plotCurve.data().append(value)
             plot.replot()
 
-        plot = Qwt.QwtPlot(self.ui.plotHolder)
+        plot = Qwt.QwtPlot(self.plotArea)
         plot.setTitle(item.toolTip())
         plot.setContextMenuPolicy(Qt.ActionsContextMenu)
         plot.setSizePolicy(QtGui.QSizePolicy.Preferred,
                            QtGui.QSizePolicy.Expanding)
         plot.hide()
-        self._widgetDataMonitor.append(plot)
-        self.ui.plotHolder.layout().addWidget(plot)
+        self._monitors.append(plot)
+        self.plotArea.layout().addWidget(plot)
         plotCurve = Qwt.QwtPlotCurve()
         plotCurve.setData(TimeSeriesData())
         plotCurve.attach(plot)
@@ -252,7 +262,7 @@ class Dashboard(QtCore.QObject):
         def onNewValueTriggered():
             item_ = item.model().item(item.row(), programmableColumn)
             value, ok = QtGui.QInputDialog.getDouble(
-                self.ui.graphicsView,  # parent
+                self.graphicsView,  # parent
                 spinBox.toolTip(),  # title
                 text,               # label
                 value=item_.data(),
@@ -293,39 +303,39 @@ class Dashboard(QtCore.QObject):
         button.clicked.connect(item.setData)
 
     def _tabChanged(self, new):
-        controller = self._controllerPool[self._currentIndex]
+        controller = self.controllers[self._currentIndex]
         if controller is not self:
             controller.timer.timeout.disconnect(controller.replot)
-        controller = self._controllerPool[new]
+        controller = self.controllers[new]
         if controller is not self:
             controller.replot()
             controller.timer.timeout.connect(controller.replot)
         self._currentIndex = new
 
     def _goToController(self, controller, row=None):
-        self.ui.tabWidget.setCurrentIndex(
-            self.ui.tabWidget.indexOf(controller.ui))
+        self.tabWidget.setCurrentIndex(
+            self.tabWidget.indexOf(controller))
         if row is not None:
-            controller.ui.driverView.selectRow(row)
+            controller.driverWidget.driverView.selectRow(row)
 
     def mapToScene(self, point):
-        rect = self.ui.graphicsScene.sceneRect()
+        rect = self.graphicsScene.sceneRect()
         return QtCore.QPointF(rect.width() * point.x(),
                               rect.height() * point.y())
 
     def setBackgroundItem(self, backgroundItem):
         """Set the SVG image to use as a background."""
-        backgroundItem.setParent(self.ui.graphicsScene)
+        backgroundItem.setParent(self.graphicsScene)
         backgroundItem.setFlags(QtSvg.QGraphicsSvgItem.ItemClipsToShape)
         backgroundItem.setZValue(-1)
-        self.ui.graphicsScene.addItem(backgroundItem)
+        self.graphicsScene.addItem(backgroundItem)
         rect = backgroundItem.boundingRect()
-        self.ui.graphicsScene.setSceneRect(0, 0, rect.width(), rect.height())
-        self.ui.fitInView()
+        self.graphicsScene.setSceneRect(0, 0, rect.width(), rect.height())
+        self.fitInView()
 
     def addSimpleText(self, text):
         """Add the `text` to the scene."""
-        return self.ui.graphicsScene.addSimpleText(text)
+        return self.graphicsScene.addSimpleText(text)
 
     def addSceneItem(self, item):
         """Add the `item` to the scene."""
@@ -333,7 +343,7 @@ class Dashboard(QtCore.QObject):
         def onContextMenuRequested(pos):
             # cannot use ActionsContextMenu as the menu scales
             # with the widget
-            view = self.ui.graphicsView
+            view = self.graphicsView
             pos = view.viewport().mapToGlobal(
                 view.mapFromScene(item.mapToScene(pos)))
             menu = QtGui.QMenu()
@@ -345,16 +355,16 @@ class Dashboard(QtCore.QObject):
         item.widget().customContextMenuRequested.connect(
             onContextMenuRequested)
         item.setPos(self.mapToScene(item.pos()))
-        self.ui.graphicsScene.addItem(item)
+        self.graphicsScene.addItem(item)
 
     def addController(self, controller):
         """Add the `controller` as a new tab."""
         controller.timer.timeout.disconnect(controller.replot)
-        self.ui.menuWindow.addAction(QtGui.QAction(
-            controller.windowTitle(), self.ui.menuWindow,
+        self.menuWindow.addAction(QtGui.QAction(
+            controller.windowTitle(), self.menuWindow,
             triggered=lambda checked: self._goToController(controller)))
-        self.ui.tabWidget.addTab(controller.ui, controller.windowTitle())
-        self._controllerPool.append(controller)
+        self.tabWidget.addTab(controller, controller.windowTitle())
+        self.controllers.append(controller)
 
     def addControllerAndWidgets(self, controller, proxyWidgetList):
         """Add a `controller` and its associated widgets."""
@@ -362,7 +372,7 @@ class Dashboard(QtCore.QObject):
         for row, proxyWidget in enumerate(proxyWidgetList):
             self.addSceneItem(proxyWidget)
             column = 0
-            modelItem = controller._driverModel.item(row, column)
+            modelItem = controller.driverModel.item(row, column)
             if not modelItem:
                 logging.getLogger(__name__).error(
                     "Size of configuration file and model do not match in %s" %
@@ -381,6 +391,12 @@ class Dashboard(QtCore.QObject):
                 self._connectButtonToItem(widget, modelItem)
             else:
                 raise NotImplementedError
+
+    def closeEvent(self, event):
+        for controller in self.controllers:
+            if controller is not self:
+                controller.closeEvent(event)
+        event.accept()
 
 
 def main(argv):
