@@ -231,27 +231,18 @@ class DriverModel(QtGui.QStandardItemModel):
 
     """Model to handle the driver."""
 
-    def __init__(self, driver, parent=None):
+    def __init__(self, parent=None):
         super(DriverModel, self).__init__(parent)
-        self._thread = QtCore.QThread(self)
-        self._driver = driver
-        self._driver.moveToThread(self._thread)
-        self._thread.start()
         self.setItemPrototype(DriverItem())
 
     def __repr__(self):
-        return "%s(driver=%r, parent=%r)" % (
-            self.__class__.__name__, self._driver, self.parent())
+        return "%s(parent=%r)" % (self.__class__.__name__, self.parent())
 
     def __iter__(self):
         """Iterate on items."""
         return (self.item(row, column)
                 for row in range(self.rowCount())
                 for column in range(self.columnCount()))
-
-    def driver(self):
-        """Return the driver for this model."""
-        return self._driver
 
     def node(self, row):
         """Return node for `row`, if any."""
@@ -282,12 +273,6 @@ class DriverModel(QtGui.QStandardItemModel):
                      for column in range(self.columnCount())):
             item._connectDriver()
             item.queryData()
-
-    def closeEvent(self, event):
-        """Let the driver thread exit cleanly."""
-        self._thread.quit()
-        self._thread.wait()
-        event.accept()
 
 
 class ItemRangedSpinBoxDelegate(DoubleSpinBoxDelegate):
@@ -413,7 +398,6 @@ if __name__ == "__main__":
     import sys
     app = QtGui.QApplication(sys.argv)
     app.lastWindowClosed.connect(app.quit)
-    driver = QtCore.QObject()
-    widget = DriverWidget(driver)
+    widget = DriverWidget()
     widget.show()
     sys.exit(app.exec_())

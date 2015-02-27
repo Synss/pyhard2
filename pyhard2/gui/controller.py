@@ -136,11 +136,19 @@ class Controller(ControllerUi):
 
     def __init__(self, config, driver, parent=None):
         super(Controller, self).__init__(parent)
-        self.driverModel = DriverModel(driver, self)
+        self._config = config
+
+        self.driverThread = QtCore.QThread(self)
+        self.driver = driver
+        self.driver.moveToThread(self.driverThread)
+        self.driverThread.start()
+
+        self.driverModel = DriverModel(self)
+
         self.driverWidget.setDriverModel(self.driverModel)
         self.monitorWidget.setDriverModel(self.driverModel)
         self.programWidget.setDriverModel(self.driverModel)
-        self._config = config
+
         self.programs = defaultdict(SingleShotProgram)
         self.refreshRate = self.driverWidget.refreshRate
         self.timer = self.driverWidget.refreshRate.timer
@@ -336,4 +344,6 @@ class Controller(ControllerUi):
         self.timer.stop()
         self._autoSaveTimer.stop()
         self.autoSave()
+        self.driverThread.quit()
+        self.driverThread.wait()
         super(Controller, self).closeEvent(event)

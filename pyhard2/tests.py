@@ -22,32 +22,35 @@ import pyhard2.ctrlr.pfeiffer as pfeiffer
 import pyhard2.ctrlr.watlow as watlow
 
 
-class TestGui(unittest.TestCase):
+class TestQt(unittest.TestCase):
 
     def setUp(self):
         self.app = QApplication(sys.argv)
         self.app.lastWindowClosed.connect(self.app.quit)
 
+
+class TestGui(TestQt):
+
     def test_open_driverWidget(self):
         widget = DriverWidget()
-        driver = VirtualInstrument()
-        driverModel = DriverModel(driver, widget)
+        driverModel = DriverModel(widget)
         widget.setDriverModel(driverModel)
         widget.populate()
 
     def test_open_monitorWidget(self):
         widget = MonitorWidget()
-        driver = VirtualInstrument()
-        driverModel = DriverModel(driver, widget)
+        driverModel = DriverModel(widget)
         widget.setDriverModel(driverModel)
         widget.populate()
 
     def test_open_programWidget(self):
         widget = ProgramWidget()
-        driver = VirtualInstrument()
-        driverModel = DriverModel(driver, widget)
+        driverModel = DriverModel(widget)
         widget.setDriverModel(driverModel)
         widget.populate()
+
+
+class TestCtrlr(TestQt):
 
     def test_amtron(self):
         amtron.createController()
