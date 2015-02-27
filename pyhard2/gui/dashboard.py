@@ -6,6 +6,7 @@ logging.basicConfig()
 from importlib import import_module  # DashboardConfig
 from functools import partial
 import yaml
+import time
 
 import sip as _sip
 for _type in "QDate QDateTime QString QTextStream QTime QUrl QVariant".split():
@@ -13,10 +14,12 @@ for _type in "QDate QDateTime QString QTextStream QTime QUrl QVariant".split():
 from PyQt4 import QtCore, QtGui, QtSvg
 Qt = QtCore.Qt
 Slot, Signal = QtCore.pyqtSlot, QtCore.pyqtSignal
-import PyQt4.Qwt5 as Qwt
+
+import numpy as np
+from matplotlib.lines import Line2D
 
 from pyhard2.gui.controller import Controller
-from pyhard2.gui.monitor import TimeSeriesData
+from pyhard2.gui.mpl import MplWidget
 
 
 class DoubleClickEventFilter(QtCore.QObject):
@@ -210,6 +213,21 @@ class DashboardUi(QtGui.QMainWindow):
         self.fitInView()
 
 
+def scaleToArtists(axes, artists):
+    if not artists:
+        return
+    # Scale
+    xmin, xmax = axes.get_xbound()
+    ymin, ymax = axes.get_ybound()
+    data = np.hstack(artist.get_data() for artist in artists)
+    xdata_min, ydata_min = data.min(axis=1)
+    xdata_max, ydata_max = data.max(axis=1)
+    if xdata_min < xmin or xdata_max > xmax:
+        axes.set_xbound(xdata_min * 0.8, xdata_max * 1.2)
+    elif ydata_min < ymin or ydata_max > ymax:
+        axes.set_ybound(ydata_min * 0.8, ydata_max * 1.2)
+
+
 class Dashboard(DashboardUi):
 
     """Implement the behavior of the GUI.
@@ -225,32 +243,38 @@ class Dashboard(DashboardUi):
     def __init__(self, parent=None):
         super(Dashboard, self).__init__(parent)
         self.controllers = [self]
-        self._monitors = []
+        self._axes = {}
         self._currentIndex = 0
         self.tabWidget.currentChanged.connect(self._tabChanged)
 
     def _addMonitorForSpinBox(self, item):
         def spinBox_valueChanged(value):
-            plotCurve.data().append(value)
-            plot.replot()
+            x, y = line.get_data()
+            x.append(time.time())
+            y.append(value)
+            line.set_data(x, y)
+            scaleToArtists(axes, [line])
+            plot.draw_idle()
 
-        plot = Qwt.QwtPlot(self.plotArea)
-        plot.setTitle(item.toolTip())
+        plot = MplWidget(self.plotArea)
         plot.setContextMenuPolicy(Qt.ActionsContextMenu)
         plot.setSizePolicy(QtGui.QSizePolicy.Preferred,
                            QtGui.QSizePolicy.Expanding)
         plot.hide()
-        self._monitors.append(plot)
+        axes = plot.figure.add_subplot(111)
+        axes.set_title(item.toolTip())
+        self._axes[plot] = axes
         self.plotArea.layout().addWidget(plot)
-        plotCurve = Qwt.QwtPlotCurve()
-        plotCurve.setData(TimeSeriesData())
-        plotCurve.attach(plot)
+        line = Line2D([], [])
+        axes.add_artist(line)
         showMonitorAction = QtGui.QAction(u"monitor ...", item, checkable=True,
                                           toggled=plot.setVisible)
         plot.addAction(QtGui.QAction(u"hide", plot,
                                      triggered=showMonitorAction.toggle))
-        plot.addAction(QtGui.QAction(u"clear", plot,
-                                     triggered=plotCurve.data().clear))
+        plot.addAction(QtGui.QAction(
+            u"clear", plot,
+            triggered=lambda:
+            line.set_data([], [])))
         item.addAction(showMonitorAction)
         item.widget().valueChanged.connect(spinBox_valueChanged)
 
