@@ -13,7 +13,6 @@
   <file>icons/Tango/media-seek-forward.svg</file>
   <file>icons/Tango/process-stop.svg</file>
   <file>ui/controller.ui</file>
-  <file>ui/dashboard.ui</file>
 </qresource>
 </RCC>
 
