@@ -20,6 +20,7 @@ from pyhard2 import __version__
 from pyhard2.gui.driver import DriverModel, DriverWidget
 from pyhard2.gui.monitor import MonitorWidget
 from pyhard2.gui.programs import ProfileData, ProgramWidget, SingleShotProgram
+from pyhard2.gui.widgets import Counter
 
 
 __about__ = """
@@ -150,8 +151,9 @@ class Controller(ControllerUi):
         self.programWidget.setDriverModel(self.driverModel)
 
         self.programs = defaultdict(SingleShotProgram)
-        self.refreshRate = self.driverWidget.refreshRate
-        self.timer = self.driverWidget.refreshRate.timer
+        self.refreshRate = Counter(self)
+        self.driverWidget.verticalLayout.insertWidget(0, self.refreshRate)
+        self.timer = self.refreshRate.timer
         self.setWindowTitle(config.title
                             + (" [virtual]" if config.virtual else ""))
         self.editorPrototype = defaultdict(QtGui.QDoubleSpinBox)

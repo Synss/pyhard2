@@ -1,8 +1,30 @@
+"""Extra widgets.
+
+"""
 import sip as _sip
 for _type in "QDate QDateTime QString QTextStream QTime QUrl QVariant".split():
     _sip.setapi(_type, 2)
 
-from PyQt4 import QtGui
+from PyQt4 import QtCore, QtGui
+
+
+class Counter(QtGui.QWidget):
+
+    """Widget with a timer."""
+
+    def __init__(self, parent=None):
+        super(Counter, self).__init__(parent)
+        self.refreshRateLayout = QtGui.QFormLayout(self)
+        self.editor = QtGui.QDoubleSpinBox(
+            self,
+            minimum=0.01,
+            maximum=3600.0,
+            value=5.0)
+        self.refreshRateLayout.addRow("Refresh /s", self.editor)
+        self.timer = QtCore.QTimer()
+        self.timer.setInterval(self.editor.value() * 1000)
+        self.editor.valueChanged.connect(
+            lambda rate: self.timer.setInterval(rate * 1000))
 
 
 class ScientificSpinBox(QtGui.QDoubleSpinBox):

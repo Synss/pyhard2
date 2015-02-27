@@ -9,7 +9,6 @@ Qt = QtCore.Qt
 Slot, Signal = QtCore.pyqtSlot, QtCore.pyqtSignal
 
 from pyhard2.gui.delegates import DoubleSpinBoxDelegate
-from pyhard2.gui.refresh import RefreshRate
 import pyhard2.driver as drv
 
 
@@ -315,8 +314,6 @@ class DriverWidgetUi(QtGui.QWidget):
     def __init__(self, parent=None):
         super(DriverWidgetUi, self).__init__(parent)
         self.verticalLayout = QtGui.QVBoxLayout(self)
-        self.refreshRate = RefreshRate(self)
-        self.verticalLayout.addWidget(self.refreshRate)
         self.driverView = QtGui.QTableView(
             self,
             selectionMode=QtGui.QAbstractItemView.SingleSelection,
