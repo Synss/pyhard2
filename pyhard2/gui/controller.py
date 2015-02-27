@@ -346,4 +346,4 @@ class Controller(ControllerUi):
         self.autoSave()
         self.driverThread.quit()
         self.driverThread.wait()
-        super(Controller, self).closeEvent(event)
+        event.accept()
