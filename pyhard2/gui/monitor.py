@@ -169,6 +169,7 @@ class MonitorWidget(MonitorWidgetUi):
 
     def __init__(self, parent=None):
         super(MonitorWidget, self).__init__(parent)
+        self.driverModel = None
         self.data = defaultdict(TimeSeriesData)
         self._monitorItems = defaultdict(list)
 
@@ -181,9 +182,16 @@ class MonitorWidget(MonitorWidgetUi):
             "Zoom out", self, triggered=self.zoomer.clearZoomStack)
         self.monitor.addAction(self.zoomOutAction)
 
-    def setDriverModel(self, model):
-        self.driverModel = model
-        # Initialize items from the model
+    def setDriverModel(self, driverModel):
+        self.driverModel = driverModel
+
+    @Slot()
+    def populate(self):
+        """Called when the model has been populated.
+
+        Initialize monitor items.
+
+        """
         for item in self.driverModel:
             text = os.path.join(  # used in autoSave
                 self.driverModel.verticalHeaderItem(item.row()).text(),

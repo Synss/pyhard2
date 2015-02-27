@@ -310,7 +310,6 @@ class ProgramWidget(ProgramWidgetUi):
             self._previewPlotItems.pop().remove()
 
     def _showPreview(self):
-
         self._clearPreview()
         for row in range(self.model.rowCount()):
             rootItem = self.model.item(row, 0)
@@ -330,14 +329,21 @@ class ProgramWidget(ProgramWidgetUi):
         rootIndex = self.programView.rootIndex()
         return -1 if not rootIndex.isValid() else rootIndex.row()
 
-    def setDriverModel(self, model):
-        self.driverModel = model
-        # Make program tree
+    def setDriverModel(self, driverModel):
+        self.driverModel = driverModel
+
+    @Slot()
+    def populate(self):
+        """Called when the model has been populated.
+
+        Generate the program tree.
+
+        """
         self.model.clear()
         self.model.setHorizontalHeaderLabels([u"time /s", u"setpoint"])
-        for root in range(model.rowCount()):
+        for root in range(self.driverModel.rowCount()):
             rootItem = QtGui.QStandardItem(
-                model.verticalHeaderItem(root).text())
+                self.driverModel.verticalHeaderItem(root).text())
             rootItem.setEditable(False)
             self.model.invisibleRootItem().appendRow(rootItem)
             for row in range(8):

@@ -7,11 +7,11 @@ port COM1.  Both instruments communicate via the software PID controller.
 
 """
 import sys
+from pyhard2.gui.controller import Config, Controller
 import pyhard2.driver as drv
 import pyhard2.driver.virtual as virtual
 import pyhard2.driver.fluke as fluke
 import pyhard2.driver.deltaelektronika as delta
-import pyhard2.ctrlr as ctrlr
 
 
 class DeltaFluke(drv.Subsystem):
@@ -40,13 +40,14 @@ class DeltaFluke(drv.Subsystem):
 
 def createController():
     """Initialize controller."""
-    config = ctrlr.Config("deltaelektronika", "Delta-Fluke")
+
+    config = Config("deltaelektronika", "Delta-Fluke")
     if not config.nodes:
         config.nodes, config.names = ([1], ["DeltaFluke"])
     fluke_serial = drv.Serial(config.port)
     delta_serial = drv.Serial("COM1")
     driver = DeltaFluke(fluke_serial, delta_serial)
-    iface = ctrlr.Controller(config, driver)
+    iface = Controller(config, driver)
     iface.addCommand(driver.fluke.measure, "Temperature", poll=True, log=True)
     iface.addCommand(driver.pid.setpoint, "Setpoint", log=True,
                      specialColumn="programmable")

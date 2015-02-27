@@ -356,22 +356,21 @@ class DriverWidgetUi(QtGui.QWidget):
         self.pidLayout.addRow("Derivative", self.dEditor)
         self.verticalLayout.addWidget(self.pidBox)
 
+        self.pidBoxMapper = QtGui.QDataWidgetMapper(self.pidBox)
+        self.pidBoxMapper.setSubmitPolicy(QtGui.QDataWidgetMapper.AutoSubmit)
+        self.pidBoxMapper.setItemDelegate(
+            ItemRangedSpinBoxDelegate(parent=self.pidBoxMapper))
+
 
 class DriverWidget(DriverWidgetUi):
 
     def __init__(self, parent=None):
         super(DriverWidget, self).__init__(parent)
-        self.driverMode = None
+        self.driverModel = None
         self.driverView.setItemDelegate(
             ItemRangedSpinBoxDelegate(parent=self.driverView))
-
         self.driverView.customContextMenuRequested.connect(
             self._show_driverView_contextMenu)
-
-        self.pidBoxMapper = QtGui.QDataWidgetMapper(self.pidBox)
-        self.pidBoxMapper.setSubmitPolicy(QtGui.QDataWidgetMapper.AutoSubmit)
-        self.pidBoxMapper.setItemDelegate(
-            ItemRangedSpinBoxDelegate(parent=self.pidBoxMapper))
 
     def _show_driverView_contextMenu(self, pos):
         column = self.driverView.columnAt(pos.x())
@@ -388,18 +387,25 @@ class DriverWidget(DriverWidgetUi):
              ])
         rightClickMenu.exec_(self.driverView.viewport().mapToGlobal(pos))
 
-    def setDriverModel(self, model):
-        self.driverModel = model
+    def setDriverModel(self, driverModel):
+        self.driverModel = driverModel
         self.driverView.setModel(self.driverModel)
         self.pidBoxMapper.setModel(self.driverModel)
 
+    @Slot()
+    def populate(self):
+        """Called when the model has been populated."""
+
     def mapPEditor(self, column):
+        assert(self.driverModel)
         self.pidBoxMapper.addMapping(self.pEditor, column)
 
     def mapIEditor(self, column):
+        assert(self.driverModel)
         self.pidBoxMapper.addMapping(self.iEditor, column)
 
     def mapDEditor(self, column):
+        assert(self.driverModel)
         self.pidBoxMapper.addMapping(self.dEditor, column)
 
 

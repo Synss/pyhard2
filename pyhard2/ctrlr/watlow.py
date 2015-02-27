@@ -11,7 +11,8 @@ from PyQt4 import QtCore, QtGui
 Signal, Slot = QtCore.pyqtSignal, QtCore.pyqtSlot
 Qt = QtCore.Qt
 
-import pyhard2.ctrlr as ctrlr
+from pyhard2.gui.driver import DriverWidget
+from pyhard2.gui.controller import Config, Controller
 from pyhard2.gui.programs import SingleShotProgram
 from pyhard2.gui.delegates import ComboBoxDelegate
 import pyhard2.driver as drv
@@ -52,68 +53,77 @@ class WatlowProgram(SingleShotProgram):
             self._timer.start(1000 * self._dt)
 
 
-class WatlowController(ctrlr.Controller):
+class WatlowDriverWidget(DriverWidget):
 
-    def __init__(self, config, driver, uifile="", parent=None):
-        super(WatlowController, self).__init__(config, driver, uifile, parent)
+    def __init__(self, parent=None):
+        super(WatlowDriverWidget, self).__init__(parent)
+        self.rateEdit = QtGui.QSpinBox(self, enabled=False,
+                                       minimum=0, maximum=9999)
+        self.initCombo = QtGui.QComboBox(self)
+        self.initCombo.addItems([
+            "no ramp",
+            "on startup",
+            "on setpoint change"
+        ])
+        self.initCombo.currentIndexChanged[str].connect(
+            lambda current: self.rateEdit.setDisabled(current == "no ramp"))
+
+        self.rampLayout = QtGui.QHBoxLayout()
+        self.rampLayout.addWidget(self.initCombo)
+        self.rampLayout.addWidget(self.rateEdit)
+        self.verticalLayout.addLayout(self.rampLayout)
+
+        self.rampInitMapper = QtGui.QDataWidgetMapper(self)
+        self.rampInitMapper.setItemDelegate(ComboBoxDelegate(self))
+        self.initCombo.currentIndexChanged[int].connect(
+            self.rampInitMapper.submit)
+        self.rateEditMapper = QtGui.QDataWidgetMapper(self)
+        self.rateEdit.valueChanged.connect(self.rateEditMapper.submit)
+
+    def setDriverModel(self, model):
+        super(WatlowDriverWidget, self).setDriverModel(model)
+        self.rampInitMapper.setModel(model)
+        self.rateEditMapper.setModel(model)
+
+    def mapRampInitComboBox(self, column):
+        assert(self.rampInitMapper.model())
+        self.rampInitMapper.addMapping(self.initCombo, column)
+
+    def mapRateEditor(self, column):
+        assert(self.rateEditMapper.model())
+        self.rateEditMapper.addMapping(self.rateEdit, column)
+
+
+class WatlowController(Controller):
+
+    def __init__(self, config, driver, parent=None):
+        super(WatlowController, self).__init__(config, driver, parent)
         self.programs.default_factory = WatlowProgram
+        self.populated.connect(self.driverWidget.rampInitMapper.toFirst)
+        self.populated.connect(self.driverWidget.rampInitMapper.toFirst)
+
         self.rampInitColumn = None
         self.rampRateColumn = None
         self._rampInitValuePool = {}
         self._rateValuePool = {}
 
-        self.ui.initCombo = QtGui.QComboBox(self.ui)
-        self.ui.initCombo.addItems([
-            "no ramp",
-            "on startup",
-            "on setpoint change"
-        ])
-
-        self.ui.rateEdit = QtGui.QSpinBox(self.ui)
-        self.ui.rateEdit.setRange(0, 9999)
-
-        self.ui.initCombo.currentIndexChanged[str].connect(
-            self._disableRateEditOnNoRamp)
-
-        self.ui.rampSettings = QtGui.QWidget(self.ui)
-        self.ui.instrumentPanel.layout().addWidget(self.ui.rampSettings)
-        self.ui._layout = QtGui.QHBoxLayout(self.ui.rampSettings)
-        self.ui._layout.addWidget(self.ui.initCombo)
-        self.ui._layout.addWidget(self.ui.rateEdit)
-
         self._specialColumnMapper.update(dict(
             rampinit=self.setRampInitColumn,
             ramprate=self.setRampRateColumn))
 
-        self.rampInitMapper = QtGui.QDataWidgetMapper(self)
-        self.rampInitMapper.setModel(self._driverModel)
-        self.rampInitMapper.setItemDelegate(ComboBoxDelegate(self))
-        self.ui.driverView.selectionModel().currentRowChanged.connect(
-            self.rampInitMapper.setCurrentModelIndex)
-        self.populated.connect(self.rampInitMapper.toFirst)
-        self.ui.initCombo.currentIndexChanged[int].connect(
-            self.rampInitMapper.submit)
+    def _addDriverWidget(self):
+        super(WatlowController, self)._addDriverWidget(WatlowDriverWidget)
 
-        self.rateEditMapper = QtGui.QDataWidgetMapper(self)
-        self.rateEditMapper.setModel(self._driverModel)
-        self.ui.driverView.selectionModel().currentRowChanged.connect(
-            self.rateEditMapper.setCurrentModelIndex)
-        self.populated.connect(self.rampInitMapper.toFirst)
-        self.ui.rateEdit.valueChanged.connect(self.rateEditMapper.submit)
-
-    def _disableRateEditOnNoRamp(self, currentIndex):
-        self.ui.rateEdit.setDisabled(
-            {"no ramp": True}.get(currentIndex, False))
-
-    def setRampRateColumn(self, column):
-        """Set ramp rate column to `column`."""
-        self.rampRateColumn = column
-        self.rateEditMapper.addMapping(self.ui.rateEdit, column)
+    def _currentRowChanged(self, current, previous):
+        super(WatlowController, self)._currentRowChanged(current, previous)
+        self.driverWidget.rampInitMapper.setCurrentModelIndex(current)
+        self.driverWidget.rateEditMapper.setCurrentModelIndex(current)
 
     def setRampInitColumn(self, column):
-        """Set ramp init column to `column`."""
-        self.rampInitColumn = column
-        self.rampInitMapper.addMapping(self.ui.initCombo, column)
+        self.driverWidget.mapRampInitComboBox(column)
+
+    def setRampRateColumn(self, column):
+        self.driverWidget.mapRateEditor(column)
 
     def startProgram(self, row):
         if self.programmableColumn() is None:
@@ -165,7 +175,7 @@ class _VirtualRamping(object):
 
 def createController():
     """Initialize controller."""
-    config = ctrlr.Config("watlow")
+    config = Config("watlow")
     if not config.nodes:
         config.nodes = [None]
     if config.virtual:
@@ -188,13 +198,13 @@ def createController():
                          specialColumn="pidp")
         iface.addCommand(driver.operation.pid.a1.integral, "PID I", hide=True,
                          specialColumn="pidi")
-        iface.addCommand(driver.operation.pid.a1.derivative, "PID D", hide=True,
-                         specialColumn="pidd")
-    iface.addCommand(driver.setup.global_.ramp_init, "ramp_init", hide=True,
-                     specialColumn="rampinit")
-    iface.addCommand(driver.setup.global_.ramp_rate, "ramp_rate", hide=True,
-                     specialColumn="ramprate")
-    iface.editorPrototype.default_factory=QtGui.QSpinBox
+        iface.addCommand(driver.operation.pid.a1.derivative, "PID D",
+                         hide=True, specialColumn="pidd")
+    iface.addCommand(driver.setup.global_.ramp_init, "ramp_init",
+                     hide=True, specialColumn="rampinit")
+    iface.addCommand(driver.setup.global_.ramp_rate, "ramp_rate",
+                     hide=True, specialColumn="ramprate")
+    iface.editorPrototype.default_factory = QtGui.QSpinBox
     # Make sure we can read the rate
     driver.setup.global_.ramp_init.write(1)
     iface.populate()

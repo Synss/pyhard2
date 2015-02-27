@@ -2,7 +2,6 @@
 """Graphical user interface to Pfeiffer Maxigauge pressure controller."""
 
 import sys
-from itertools import izip_longest
 
 import sip
 for cls in "QDate QDateTime QString QTextStream QTime QUrl QVariant".split():
@@ -10,7 +9,8 @@ for cls in "QDate QDateTime QString QTextStream QTime QUrl QVariant".split():
 
 from PyQt4 import QtGui
 
-import pyhard2.ctrlr as ctrlr
+from pyhard2.gui.controller import Config, Controller
+from pyhard2.gui.widgets import ScientificSpinBox
 from pyhard2.gui.delegates import FormatTextDelegate
 from pyhard2.gui.programs import SetpointRampProgram
 import pyhard2.driver as drv
@@ -20,7 +20,7 @@ import pyhard2.driver.virtual as virtual
 
 def createController():
     """Initialize controller."""
-    config = ctrlr.Config("pfeiffer", "Multigauge")
+    config = Config("pfeiffer", "Multigauge")
     if not config.nodes:
         config.nodes = range(6)
     if not config.nodes:
@@ -28,14 +28,16 @@ def createController():
         config.names = ["G%i" % node for node in config.nodes]
     if config.virtual:
         driver = virtual.VirtualInstrument()
-        iface = ctrlr.Controller.virtualInstrumentController(config, driver)
+        iface = Controller.virtualInstrumentController(config, driver)
         iface.programs.default_factory = SetpointRampProgram
     else:
         driver = Maxigauge(drv.Serial(config.port))
-        iface = ctrlr.Controller(config, driver)
-        iface.editorPrototype.default_factory = ctrlr.ScientificSpinBox
-        iface.addCommand(driver.gauge.pressure, u"pressure", poll=True, log=True)
-    iface.ui.driverView.setItemDelegateForColumn(0, FormatTextDelegate("%.2e"))
+        iface = Controller(config, driver)
+        iface.editorPrototype.default_factory = ScientificSpinBox
+        iface.addCommand(driver.gauge.pressure,
+                         u"pressure", poll=True, log=True)
+    iface.driverWidget.driverView.setItemDelegateForColumn(
+        0, FormatTextDelegate("%.2e"))
     iface.populate()
     return iface
 

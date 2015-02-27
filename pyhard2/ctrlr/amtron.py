@@ -11,7 +11,8 @@ for cls in "QDate QDateTime QString QTextStream QTime QUrl QVariant".split():
 from PyQt4 import QtCore, QtGui
 Qt = QtCore.Qt
 
-import pyhard2.ctrlr as ctrlr
+from pyhard2.gui.driver import DriverWidget
+from pyhard2.gui.controller import Controller, Config
 from pyhard2.gui.programs import SetpointRampProgram
 import pyhard2.driver as drv
 Cmd = drv.Command
@@ -20,69 +21,98 @@ import pyhard2.driver.amtron as amtron
 import pyhard2.driver.daq as daq
 
 
-class _ButtonDelegate(QtGui.QAbstractItemDelegate):
+class ButtonDelegate(QtGui.QAbstractItemDelegate):
 
     def __init__(self, parent=None):
-        super(_ButtonDelegate, self).__init__(parent)
+        super(ButtonDelegate, self).__init__(parent)
 
     def setEditorData(self, editor, index):
-        if not index.isValid(): return
+        if not index.isValid():
+            return
         editor.setChecked(index.data() is True)
 
     def setModelData(self, editor, model, index):
-        if not index.isValid(): return
+        if not index.isValid():
+            return
         model.setData(index, editor.isChecked())
 
 
-class AmtronController(ctrlr.Controller):
+class AmtronDriverWidget(DriverWidget):
 
-    def __init__(self, config, driver, uifile="", parent=None):
-        super(AmtronController, self).__init__(config, driver, uifile, parent)
+    def __init__(self, parent=None):
+        super(AmtronDriverWidget, self).__init__(parent)
+        self.powerBtn = QtGui.QPushButton("Power", checkable=True)
+        self.gateBtn = QtGui.QPushButton("Gate", checkable=True)
+        self.pilotBtn = QtGui.QPushButton("Pilot laser", checkable=True)
+        self.buttonsLayout = QtGui.QHBoxLayout()
+        self.buttonsLayout.addWidget(self.powerBtn)
+        self.buttonsLayout.addWidget(self.gateBtn)
+        self.buttonsLayout.addWidget(self.pilotBtn)
+        self.verticalLayout.addLayout(self.buttonsLayout)
 
-        self.ui.powerBtn = QtGui.QPushButton(u"Power", checkable=True)
-        self.ui.gateBtn = QtGui.QPushButton(u"Gate", checkable=True)
-        self.ui.pilotBtn = QtGui.QPushButton(u"Pilot laser", checkable=True)
+        self.powerBtnMapper = QtGui.QDataWidgetMapper(self)
+        self.gateBtnMapper = QtGui.QDataWidgetMapper(self)
+        self.pilotBtnMapper = QtGui.QDataWidgetMapper(self)
+        self.powerBtnMapper.setItemDelegate(
+            ButtonDelegate(self.powerBtnMapper))
+        self.gateBtnMapper.setItemDelegate(
+            ButtonDelegate(self.gateBtnMapper))
+        self.pilotBtnMapper.setItemDelegate(
+            ButtonDelegate(self.pilotBtnMapper))
+        self.powerBtn.toggled.connect(self.powerBtnMapper.submit)
+        self.gateBtn.toggled.connect(self.gateBtnMapper.submit)
+        self.pilotBtn.toggled.connect(self.pilotBtnMapper.submit)
 
-        self.ui._layout = QtGui.QHBoxLayout()
-        self.ui._layout.addWidget(self.ui.powerBtn)
-        self.ui._layout.addWidget(self.ui.gateBtn)
-        self.ui._layout.addWidget(self.ui.pilotBtn)
-        self.ui.instrumentPanel.layout().addLayout(self.ui._layout)
+    def setDriverModel(self, model):
+        super(AmtronDriverWidget, self).setDriverModel(model)
+        self.powerBtnMapper.setModel(model)
+        self.gateBtnMapper.setModel(model)
+        self.pilotBtnMapper.setModel(model)
 
+    def mapPowerStateEditor(self, column):
+        assert(self.powerBtnMapper.model())
+        self.powerBtnMapper.addMapping(self.powerBtn, column)
+
+    def mapGateStateEditor(self, column):
+        assert(self.gateBtnMapper.model())
+        self.gateBtnMapper.addMapping(self.gateBtn, column)
+
+    def mapPilotStateEditor(self, column):
+        assert(self.pilotBtnMapper.model())
+        self.pilotBtnMapper.addMapping(self.pilotBtn, column)
+
+
+class AmtronController(Controller):
+
+    def __init__(self, config, driver, parent=None):
+        super(AmtronController, self).__init__(config, driver, parent)
         self.programs.default_factory = SetpointRampProgram
-
-        self.powerBtnMapper = QtGui.QDataWidgetMapper(self.ui.powerBtn)
-        self.powerBtnMapper.setModel(self._driverModel)
-        self.powerBtnMapper.setItemDelegate(_ButtonDelegate(self.powerBtnMapper))
-        self.ui.driverView.selectionModel().currentRowChanged.connect(
-            self.powerBtnMapper.setCurrentModelIndex)
-        self.populated.connect(self.powerBtnMapper.toFirst)
-        self.ui.powerBtn.toggled.connect(self.powerBtnMapper.submit)
-
-        self.gateBtnMapper = QtGui.QDataWidgetMapper(self.ui.gateBtn)
-        self.gateBtnMapper.setModel(self._driverModel)
-        self.gateBtnMapper.setItemDelegate(_ButtonDelegate(self.gateBtnMapper))
-        self.ui.driverView.selectionModel().currentRowChanged.connect(
-            self.gateBtnMapper.setCurrentModelIndex)
-        self.populated.connect(self.gateBtnMapper.toFirst)
-        self.ui.gateBtn.toggled.connect(self.gateBtnMapper.submit)
-
-        self.pilotBtnMapper = QtGui.QDataWidgetMapper(self.ui.pilotBtn)
-        self.pilotBtnMapper.setModel(self._driverModel)
-        self.pilotBtnMapper.setItemDelegate(_ButtonDelegate(self.pilotBtnMapper))
-        self.ui.driverView.selectionModel().currentRowChanged.connect(
-            self.pilotBtnMapper.setCurrentModelIndex)
-        self.populated.connect(self.pilotBtnMapper.toFirst)
-        self.ui.pilotBtn.toggled.connect(self.pilotBtnMapper.submit)
-
+        self.populated.connect(self.driverWidget.powerBtnMapper.toFirst)
+        self.populated.connect(self.driverWidget.gateBtnMapper.toFirst)
+        self.populated.connect(self.driverWidget.pilotBtnMapper.toFirst)
         self._specialColumnMapper.update(dict(
-            laserpower=lambda column:
-            self.powerBtnMapper.addMapping(self.ui.powerBtn, column),
-            lasergate=lambda column:
-            self.gateBtnMapper.addMapping(self.ui.gateBtn, column),
-            pilotlaser=lambda column:
-            self.pilotBtnMapper.addMapping(self.ui.pilotBtn, column),
+            laserpower=self.setPowerStateColumn,
+            lasergate=self.setGateStateColumn,
+            pilotlaser=self.setPilotStateColumn
         ))
+
+    def _addDriverWidget(self):
+        super(AmtronController, self)._addDriverWidget(AmtronDriverWidget)
+
+    def _currentRowChanged(self, current, previous):
+        super(AmtronController, self)._currentRowChanged(current, previous)
+        self.driverWidget.powerBtnMapper.setCurrentModelIndex(current)
+        self.driverWidget.gateBtnMapper.setCurrentModelIndex(current)
+        self.driverWidget.pilotBtnMapper.setCurrentModelIndex(current)
+
+    def setPowerStateColumn(self, column):
+        self.driverWidget.mapPowerStateEditor(column)
+
+    def setGateStateColumn(self, column):
+        self.driverWidget.mapGateStateEditor(column)
+
+    def setPilotStateColumn(self, column):
+        self.driverWidget.mapPilotStateEditor(column)
 
 
 class AmtronDaq(drv.Subsystem):
@@ -140,7 +170,7 @@ class VirtualAmtronInstrument(virtual.VirtualInstrument):
 
 def createController():
     """Initialize controller."""
-    config = ctrlr.Config("amtron", "CS400")
+    config = Config("amtron", "CS400")
     if not config.nodes:
         config.nodes, config.names = (["ai0"], ["CS400"])
     if config.virtual:
@@ -149,7 +179,8 @@ def createController():
     else:
         driver = AmtronDaq(drv.Serial(config.port), "Circat1")
         iface = AmtronController(config, driver)
-        iface.addCommand(driver.temperature.voltage.ai, "temperature / C", poll=True, log=True)
+        iface.addCommand(driver.temperature.voltage.ai,
+                         "temperature / C", poll=True, log=True)
         iface.addCommand(driver.pid.setpoint, "setpoint / C",
                          log=True, specialColumn="programmable")
         iface.addCommand(driver.laser.control.total_power, "power / W",

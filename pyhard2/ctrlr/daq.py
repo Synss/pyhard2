@@ -3,7 +3,6 @@
 acquisition hardware.
 
 """
-from itertools import izip_longest
 import sip
 for cls in "QDate QDateTime QString QTextStream QTime QUrl QVariant".split():
     sip.setapi(cls, 2)
@@ -12,7 +11,7 @@ from PyQt4 import QtCore, QtGui, QtSvg
 Qt = QtCore.Qt
 import pyhard2.rsc
 
-import pyhard2.ctrlr as ctrlr
+from pyhard2.gui.controller import Config, Controller
 from pyhard2.gui.delegates import ButtonDelegate
 import pyhard2.driver as drv
 Cmd = drv.Command
@@ -72,7 +71,7 @@ class VirtualDaq(QtCore.QObject):
 
 def createController():
     """Initialize controller."""
-    config = ctrlr.Config("daq")
+    config = Config("daq")
     if not config.nodes:
         config.nodes = range(20)
         config.names = ["V%i" % node for node in config.nodes]
@@ -80,12 +79,12 @@ def createController():
         driver = VirtualDaq(config.port)
     else:
         driver = daq.Daq(config.port)
-    iface = ctrlr.Controller(config, driver)
+    iface = Controller(config, driver)
     iface.addCommand(driver.digitalIO.state, "state")
-    iface.editorPrototype.default_factory=ValveButton
-    iface.ui.driverView.setItemDelegateForColumn(
-        0, ButtonDelegate(ValveButton(), iface.ui.driverView))
-    iface.ui.driverView.setEditTriggers(
+    iface.editorPrototype.default_factory = ValveButton
+    iface.driverWidget.driverView.setItemDelegateForColumn(
+        0, ButtonDelegate(ValveButton(), iface))
+    iface.driverWidget.driverView.setEditTriggers(
         QtGui.QAbstractItemView.SelectedClicked |
         QtGui.QAbstractItemView.CurrentChanged)
     iface.populate()
