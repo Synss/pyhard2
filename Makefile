@@ -1,24 +1,24 @@
 CUR_BRANCH = $(shell git branch | sed -n -e 's,^\*[[:blank:]]*,,p')
 
 unittest:
-	python -m unittest discover --start-directory pyhard2 --pattern '*.py'
+	python3.4 -m unittest discover --start-directory pyhard2 --pattern '*.py'
 
 unittestdoc:
-	python -m unittest discover --start-directory documentation --pattern '*.py'
+	python3.4 -m unittest discover --start-directory documentation --pattern '*.py'
 
 doctest:
-	python -m doctest pyhard2/pid.py
-	python -m doctest pyhard2/driver/__init__.py
-	python -m doctest pyhard2/driver/ieee/scpi.py
+	python3.4 -m doctest pyhard2/pid.py
+	python3.4 -m doctest pyhard2/driver/__init__.py
+	python3.4 -m doctest pyhard2/driver/ieee/scpi.py
 
 test: unittest doctest
 
 distribute:
-	python setup.py sdist --formats=gztar,zip
+	python3.4 setup.py sdist --formats=gztar,zip
 
 doc: unittestdoc doc-img
 	-mkdir -p documentation/gv
-	PYTHONPATH="." python documentation/gen_tree_graphs.py
+	PYTHONPATH="." python3.4 documentation/gen_tree_graphs.py
 	PYTHONPATH="." sphinx-build -w tmp/sphinx.out -b html documentation html
 
 doc-img:
