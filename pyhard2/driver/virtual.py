@@ -12,10 +12,6 @@ except ImportError:
     sys.stderr.flush()
     raise
 
-import sip as _sip
-for _type in "QDate QDateTime QString QTextStream QTime QUrl QVariant".split():
-    _sip.setapi(_type, 2)
-
 import pyhard2.driver as drv
 Cmd, Access = drv.Command, drv.Access
 import pyhard2.pid as pid

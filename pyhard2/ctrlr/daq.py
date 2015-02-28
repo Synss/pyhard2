@@ -3,11 +3,7 @@
 acquisition hardware.
 
 """
-import sip
-for cls in "QDate QDateTime QString QTextStream QTime QUrl QVariant".split():
-    sip.setapi(cls, 2)
-
-from PyQt4 import QtCore, QtGui, QtSvg
+from PyQt5 import QtWidgets, QtCore, QtGui, QtSvg
 Qt = QtCore.Qt
 import pyhard2.rsc
 
@@ -18,7 +14,7 @@ Cmd = drv.Command
 import pyhard2.driver.daq as daq
 
 
-class ValveButton(QtGui.QAbstractButton):
+class ValveButton(QtWidgets.QAbstractButton):
 
     """Button displaying the image of a valve."""
 
@@ -85,15 +81,15 @@ def createController():
     iface.driverWidget.driverView.setItemDelegateForColumn(
         0, ButtonDelegate(ValveButton(), iface))
     iface.driverWidget.driverView.setEditTriggers(
-        QtGui.QAbstractItemView.SelectedClicked |
-        QtGui.QAbstractItemView.CurrentChanged)
+        QtWidgets.QAbstractItemView.SelectedClicked |
+        QtWidgets.QAbstractItemView.CurrentChanged)
     iface.populate()
     return iface
 
 
 def main(argv):
     """Start controller."""
-    app = QtGui.QApplication(argv)
+    app = QtWidgets.QApplication(argv)
     app.lastWindowClosed.connect(app.quit)
     iface = createController()
     iface.show()

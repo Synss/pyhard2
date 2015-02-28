@@ -2,13 +2,10 @@
 """Graphical user interface to Amtron CS400 laser controller."""
 
 import sys
-import sip
 from functools import partial
 from operator import mul
-for cls in "QDate QDateTime QString QTextStream QTime QUrl QVariant".split():
-    sip.setapi(cls, 2)
 
-from PyQt4 import QtCore, QtGui
+from PyQt5 import QtWidgets, QtCore
 Qt = QtCore.Qt
 
 from pyhard2.gui.driver import DriverWidget
@@ -21,7 +18,7 @@ import pyhard2.driver.amtron as amtron
 import pyhard2.driver.daq as daq
 
 
-class ButtonDelegate(QtGui.QAbstractItemDelegate):
+class ButtonDelegate(QtWidgets.QAbstractItemDelegate):
 
     def __init__(self, parent=None):
         super(ButtonDelegate, self).__init__(parent)
@@ -41,18 +38,18 @@ class AmtronDriverWidget(DriverWidget):
 
     def __init__(self, parent=None):
         super(AmtronDriverWidget, self).__init__(parent)
-        self.powerBtn = QtGui.QPushButton("Power", checkable=True)
-        self.gateBtn = QtGui.QPushButton("Gate", checkable=True)
-        self.pilotBtn = QtGui.QPushButton("Pilot laser", checkable=True)
-        self.buttonsLayout = QtGui.QHBoxLayout()
+        self.powerBtn = QtWidgets.QPushButton("Power", checkable=True)
+        self.gateBtn = QtWidgets.QPushButton("Gate", checkable=True)
+        self.pilotBtn = QtWidgets.QPushButton("Pilot laser", checkable=True)
+        self.buttonsLayout = QtWidgets.QHBoxLayout()
         self.buttonsLayout.addWidget(self.powerBtn)
         self.buttonsLayout.addWidget(self.gateBtn)
         self.buttonsLayout.addWidget(self.pilotBtn)
         self.verticalLayout.addLayout(self.buttonsLayout)
 
-        self.powerBtnMapper = QtGui.QDataWidgetMapper(self)
-        self.gateBtnMapper = QtGui.QDataWidgetMapper(self)
-        self.pilotBtnMapper = QtGui.QDataWidgetMapper(self)
+        self.powerBtnMapper = QtWidgets.QDataWidgetMapper(self)
+        self.gateBtnMapper = QtWidgets.QDataWidgetMapper(self)
+        self.pilotBtnMapper = QtWidgets.QDataWidgetMapper(self)
         self.powerBtnMapper.setItemDelegate(
             ButtonDelegate(self.powerBtnMapper))
         self.gateBtnMapper.setItemDelegate(
@@ -203,7 +200,7 @@ def createController():
 
 def main(argv):
     """Start controller."""
-    app = QtGui.QApplication(argv)
+    app = QtWidgets.QApplication(argv)
     app.lastWindowClosed.connect(app.quit)
     iface = createController()
     iface.show()

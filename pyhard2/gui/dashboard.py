@@ -8,10 +8,7 @@ from functools import partial
 import yaml
 import time
 
-import sip as _sip
-for _type in "QDate QDateTime QString QTextStream QTime QUrl QVariant".split():
-    _sip.setapi(_type, 2)
-from PyQt4 import QtCore, QtGui, QtSvg
+from PyQt5 import QtWidgets, QtCore, QtSvg
 Qt = QtCore.Qt
 Slot, Signal = QtCore.pyqtSlot, QtCore.pyqtSignal
 
@@ -105,7 +102,7 @@ class DashboardConfig(object):
         with open(filename, "rb") as file:
             self.yaml = yaml.load(file)
         self.windowTitle = "Dashboard"
-        self.backgroundItem = QtGui.QGraphicsRectItem(0, 0, 640, 480)
+        self.backgroundItem = QtWidgets.QGraphicsRectItem(0, 0, 640, 480)
         self.controllers = {}
         self.labels = {}
 
@@ -114,8 +111,9 @@ class DashboardConfig(object):
         dashboard.setBackgroundItem(self.backgroundItem)
         for text, (x, y) in self.labels.iteritems():
             textItem = dashboard.addSimpleText(text)
-            textItem.setFlags(textItem.flags()
-                              | QtGui.QGraphicsItem.ItemIgnoresTransformations)
+            textItem.setFlags(
+                textItem.flags()
+                | QtWidgets.QGraphicsItem.ItemIgnoresTransformations)
             textItem.setPos(dashboard.mapToScene(QtCore.QPointF(x, y)))
         for controller, proxyWidgets in self.controllers.iteritems():
             dashboard.addControllerAndWidgets(controller, proxyWidgets)
@@ -147,56 +145,56 @@ class DashboardConfig(object):
                     except KeyError:
                         continue
                     column = 0
-                    proxyWidget = QtGui.QGraphicsProxyWidget()
+                    proxyWidget = QtWidgets.QGraphicsProxyWidget()
                     proxyWidget.setWidget(controller.editorPrototype[column]
                                           .__class__())  # XXX
                     proxyWidget.setToolTip(config.get("name", row))
                     proxyWidget.setPos(x, y)
-                    proxyWidget.rotate(config.get("angle", 0))
+                    proxyWidget.setRotation(config.get("angle", 0))
                     proxyWidget.setScale(config.get("scale", 1.5))
                     if isinstance(proxyWidget.widget(),
-                                  QtGui.QAbstractSpinBox):
+                                  QtWidgets.QAbstractSpinBox):
                         proxyWidget.setFlags(
                             proxyWidget.flags()
                             | proxyWidget.ItemIgnoresTransformations)
                     self.controllers[controller].append(proxyWidget)
 
 
-class DashboardUi(QtGui.QMainWindow):
+class DashboardUi(QtWidgets.QMainWindow):
 
     """QMainWindow for the dashboard."""
 
     def __init__(self, parent=None):
         super(DashboardUi, self).__init__(parent)
-        sp = QtGui.QSizePolicy
-        centralWidget = QtGui.QWidget(self)
+        sp = QtWidgets.QSizePolicy
+        centralWidget = QtWidgets.QWidget(self)
         self.setCentralWidget(centralWidget)
-        self.centralLayout = QtGui.QHBoxLayout(centralWidget)
-        self.tabWidget = QtGui.QTabWidget(self)
+        self.centralLayout = QtWidgets.QHBoxLayout(centralWidget)
+        self.tabWidget = QtWidgets.QTabWidget(self)
         self.centralLayout.addWidget(self.tabWidget)
-        self.dashboardTab = QtGui.QWidget(self)
+        self.dashboardTab = QtWidgets.QWidget(self)
         self.tabWidget.addTab(self.dashboardTab, "Dashboard")
-        self.dashboardTabLayout = QtGui.QHBoxLayout(self.dashboardTab)
-        sizePolicy = QtGui.QSizePolicy(sp.Expanding, sp.Expanding)
+        self.dashboardTabLayout = QtWidgets.QHBoxLayout(self.dashboardTab)
+        sizePolicy = QtWidgets.QSizePolicy(sp.Expanding, sp.Expanding)
         sizePolicy.setHorizontalStretch(3)
-        self.graphicsView = QtGui.QGraphicsView(
+        self.graphicsView = QtWidgets.QGraphicsView(
             self,
-            frameShape=QtGui.QFrame.NoFrame,
-            frameShadow=QtGui.QFrame.Plain,
+            frameShape=QtWidgets.QFrame.NoFrame,
+            frameShadow=QtWidgets.QFrame.Plain,
             sizePolicy=sizePolicy)
-        self.graphicsScene = QtGui.QGraphicsScene(self)
+        self.graphicsScene = QtWidgets.QGraphicsScene(self)
         self.graphicsView.setScene(self.graphicsScene)
-        self.plotArea = QtGui.QScrollArea(self)
+        self.plotArea = QtWidgets.QScrollArea(self)
         self.dashboardTabLayout.addWidget(self.graphicsView)
         self.dashboardTabLayout.addWidget(self.plotArea)
-        self.plotAreaLayout = QtGui.QVBoxLayout(self.plotArea)
+        self.plotAreaLayout = QtWidgets.QVBoxLayout(self.plotArea)
 
-        self.menuWindow = QtGui.QMenu("Window")
-        self.menuHelp = QtGui.QMenu("Help")
+        self.menuWindow = QtWidgets.QMenu("Window")
+        self.menuHelp = QtWidgets.QMenu("Help")
         self.menuBar().addMenu(self.menuWindow)
         self.menuBar().addMenu(self.menuHelp)
 
-        self.aboutAction = QtGui.QAction(
+        self.aboutAction = QtWidgets.QAction(
             "About pyhard2", self,
             triggered=partial(Controller.aboutBox, self))
         self.menuHelp.addAction(self.aboutAction)
@@ -258,8 +256,8 @@ class Dashboard(DashboardUi):
 
         plot = MplWidget(self.plotArea)
         plot.setContextMenuPolicy(Qt.ActionsContextMenu)
-        plot.setSizePolicy(QtGui.QSizePolicy.Preferred,
-                           QtGui.QSizePolicy.Expanding)
+        plot.setSizePolicy(QtWidgets.QSizePolicy.Preferred,
+                           QtWidgets.QSizePolicy.Expanding)
         plot.hide()
         axes = plot.figure.add_subplot(111)
         axes.set_title(item.toolTip())
@@ -267,11 +265,13 @@ class Dashboard(DashboardUi):
         self.plotArea.layout().addWidget(plot)
         line = Line2D([], [])
         axes.add_artist(line)
-        showMonitorAction = QtGui.QAction(u"monitor ...", item, checkable=True,
-                                          toggled=plot.setVisible)
-        plot.addAction(QtGui.QAction(u"hide", plot,
-                                     triggered=showMonitorAction.toggle))
-        plot.addAction(QtGui.QAction(
+        showMonitorAction = QtWidgets.QAction(
+            u"monitor ...", item, checkable=True,
+            toggled=plot.setVisible)
+        plot.addAction(QtWidgets.QAction(
+            u"hide", plot,
+            triggered=showMonitorAction.toggle))
+        plot.addAction(QtWidgets.QAction(
             u"clear", plot,
             triggered=lambda:
             line.set_data([], [])))
@@ -285,7 +285,7 @@ class Dashboard(DashboardUi):
 
         def onNewValueTriggered():
             item_ = item.model().item(item.row(), programColumn)
-            value, ok = QtGui.QInputDialog.getDouble(
+            value, ok = QtWidgets.QInputDialog.getDouble(
                 self.graphicsView,  # parent
                 spinBox.toolTip(),  # title
                 text,               # label
@@ -301,15 +301,16 @@ class Dashboard(DashboardUi):
         if item.maximum():
             spinBox.setMaximum(item.maximum())
         spinBox.setReadOnly(item.isReadOnly())
-        spinBox.setButtonSymbols(QtGui.QAbstractSpinBox.NoButtons
+        spinBox.setButtonSymbols(QtWidgets.QAbstractSpinBox.NoButtons
                                  if item.isReadOnly() else
-                                 QtGui.QAbstractSpinBox.UpDownArrows)
+                                 QtWidgets.QAbstractSpinBox.UpDownArrows)
         item.model().itemChanged.connect(onItemChanged)
 
         if programColumn is not None:
             text = item.model().horizontalHeaderItem(programColumn).text()
-            newValueAction = QtGui.QAction("new %s" % text.lower(), spinBox,
-                                           triggered=onNewValueTriggered)
+            newValueAction = QtWidgets.QAction(
+                "new %s" % text.lower(), spinBox,
+                triggered=onNewValueTriggered)
             spinBox.addAction(newValueAction)
             doubleClickEventFilter = DoubleClickEventFilter(spinBox.lineEdit())
             doubleClickEventFilter.doubleClicked.connect(
@@ -370,7 +371,7 @@ class Dashboard(DashboardUi):
             view = self.graphicsView
             pos = view.viewport().mapToGlobal(
                 view.mapFromScene(item.mapToScene(pos)))
-            menu = QtGui.QMenu()
+            menu = QtWidgets.QMenu()
             menu.addActions(item.actions())
             menu.addActions(item.widget().actions())
             menu.exec_(pos)
@@ -384,7 +385,7 @@ class Dashboard(DashboardUi):
     def addController(self, controller):
         """Add the `controller` as a new tab."""
         controller.timer.timeout.disconnect(controller.replot)
-        self.menuWindow.addAction(QtGui.QAction(
+        self.menuWindow.addAction(QtWidgets.QAction(
             controller.windowTitle(), self.menuWindow,
             triggered=lambda checked: self._goToController(controller)))
         self.tabWidget.addTab(controller, controller.windowTitle())
@@ -402,16 +403,16 @@ class Dashboard(DashboardUi):
                     "Size of configuration file and model do not match in %s" %
                     controller.windowTitle())
                 continue
-            proxyWidget.addAction(QtGui.QAction(
+            proxyWidget.addAction(QtWidgets.QAction(
                 u"go to controller...", proxyWidget,
                 # needs early binding in the loop
                 triggered=partial(self._goToController, controller, row)))
             widget = proxyWidget.widget()
-            if isinstance(widget, QtGui.QAbstractSpinBox):
+            if isinstance(widget, QtWidgets.QAbstractSpinBox):
                 self._addMonitorForSpinBox(proxyWidget)
                 self._connectSpinBoxToItem(widget, modelItem,
                                            controller.programColumn())
-            elif isinstance(widget, QtGui.QAbstractButton):
+            elif isinstance(widget, QtWidgets.QAbstractButton):
                 self._connectButtonToItem(widget, modelItem)
             else:
                 raise NotImplementedError
@@ -424,7 +425,7 @@ class Dashboard(DashboardUi):
 
 
 def main(argv):
-    app = QtGui.QApplication(argv)
+    app = QtWidgets.QApplication(argv)
     app.lastWindowClosed.connect(app.quit)
     w = Dashboard()
     w.show()

@@ -1,12 +1,8 @@
 import sys
 import unittest
 
-import sip as _sip
-for _type in "QDate QDateTime QString QTextStream QTime QUrl QVariant".split():
-    _sip.setapi(_type, 2)
-
-from PyQt4.QtGui import QApplication
-from PyQt4.QtTest import QTest
+from PyQt5.QtWidgets import QApplication
+from PyQt5.QtTest import QTest
 
 from pyhard2.driver.virtual import VirtualInstrument
 from pyhard2.gui.model import DriverModel

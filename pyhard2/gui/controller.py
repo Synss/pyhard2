@@ -11,12 +11,7 @@ from StringIO import StringIO
 import argparse
 import yaml
 
-import sip as _sip
-for _type in "QDate QDateTime QString QTextStream QTime QUrl QVariant".split():
-    _sip.setapi(_type, 2)
-
-from PyQt4 import QtCore, QtGui
-Qt = QtCore.Qt
+from PyQt5 import QtWidgets, QtCore, QtGui
 Slot, Signal = QtCore.pyqtSlot, QtCore.pyqtSignal
 
 from pyhard2 import __version__
@@ -101,15 +96,15 @@ def Config(section, title="Controller",
     return config
 
 
-class ControllerUi(QtGui.QMainWindow):
+class ControllerUi(QtWidgets.QMainWindow):
 
     """QMainWindow for the controllers."""
 
     def __init__(self, parent=None):
         super(ControllerUi, self).__init__(parent)
-        centralWidget = QtGui.QWidget(self)
+        centralWidget = QtWidgets.QWidget(self)
         self.setCentralWidget(centralWidget)
-        self.centralLayout = QtGui.QHBoxLayout(centralWidget)
+        self.centralLayout = QtWidgets.QHBoxLayout(centralWidget)
         self._addDriverWidget()
         self._addMonitorWidget()
         self._addProgramWidget()
@@ -117,7 +112,7 @@ class ControllerUi(QtGui.QMainWindow):
     @staticmethod
     def aboutBox(parent, checked):
         """Show about box."""
-        QtGui.QMessageBox.about(parent, "About pyhard2", __about__)
+        QtWidgets.QMessageBox.about(parent, "About pyhard2", __about__)
 
     def _addDriverWidget(self, widget=DriverWidget):
         """Add default driver widget.  Derive `Controller` to change."""
@@ -166,7 +161,7 @@ class Controller(ControllerUi):
         self.timer = self.refreshRate.timer
         self.setWindowTitle(config.title
                             + (" [virtual]" if config.virtual else ""))
-        self.editorPrototype = defaultdict(QtGui.QDoubleSpinBox)
+        self.editorPrototype = defaultdict(QtWidgets.QDoubleSpinBox)
 
         selectionModel = self.driverWidget.driverView.selectionModel()
         selectionModel.currentRowChanged.connect(self._currentRowChanged)
@@ -235,7 +230,7 @@ class Controller(ControllerUi):
     def autoSaveFileName(self):
         path = os.path
         autoSaveFileName = path.join(QtGui.QDesktopServices.storageLocation(
-            QtGui.QDesktopServices.DocumentsLocation),
+            QtWidgets.QDesktopServices.DocumentsLocation),
             "pyhard2", time.strftime("%Y"), time.strftime("%m"),
             time.strftime("%Y%m%d.zip"))
         self.monitorWidget.autoSaveEdit.setText(autoSaveFileName)

@@ -21,11 +21,7 @@ is addressed:
 """
 import logging
 
-import sip as _sip
-for _type in "QDate QDateTime QString QTextStream QTime QUrl QVariant".split():
-    _sip.setapi(_type, 2)
-
-from PyQt4 import QtCore, QtGui
+from PyQt5 import QtCore, QtGui
 Qt = QtCore.Qt
 Slot, Signal = QtCore.pyqtSlot, QtCore.pyqtSignal
 

@@ -2,11 +2,8 @@
 """Graphical user interface to Bronkhorst flow and pressure controllers."""
 
 import sys
-import sip
-for cls in "QDate QDateTime QString QTextStream QTime QUrl QVariant".split():
-    sip.setapi(cls, 2)
 
-from PyQt4 import QtCore, QtGui
+from PyQt5 import QtWidgets, QtCore
 Qt = QtCore.Qt
 
 from pyhard2.gui.controller import Config, Controller
@@ -47,7 +44,7 @@ def createController():
 
 def main(argv):
     """Start controller."""
-    app = QtGui.QApplication(argv)
+    app = QtWidgets.QApplication(argv)
     app.lastWindowClosed.connect(app.quit)
     iface = createController()
     iface.show()
@@ -56,5 +53,3 @@ def main(argv):
 
 if __name__ == "__main__":
     main(sys.argv)
-
-

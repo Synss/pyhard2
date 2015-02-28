@@ -82,10 +82,7 @@ except ImportError:
     # Curses does not exist on windows, import local copy.
     import ascii
 
-import sip as _sip
-for _type in "QDate QDateTime QString QTextStream QTime QUrl QVariant".split():
-    _sip.setapi(_type, 2)
-from PyQt4 import QtCore
+from PyQt5 import QtCore
 Signal, Slot = QtCore.pyqtSignal, QtCore.pyqtSlot
 
 import serial

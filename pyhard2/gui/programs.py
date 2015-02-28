@@ -5,11 +5,7 @@ from __future__ import print_function
 
 import numpy as np
 
-import sip as _sip
-for _type in "QDate QDateTime QString QTextStream QTime QUrl QVariant".split():
-    _sip.setapi(_type, 2)
-
-from PyQt4 import QtCore, QtGui
+from PyQt5 import QtWidgets, QtCore, QtGui
 Qt = QtCore.Qt
 Slot, Signal = QtCore.pyqtSlot, QtCore.pyqtSignal
 
@@ -182,32 +178,30 @@ class ProfileData(object):
         return self.array[ProfileData.Y][i].item()
 
 
-class ProgramWidgetUi(QtGui.QWidget):
+class ProgramWidgetUi(QtWidgets.QWidget):
 
     """The default UI for the program widget."""
 
     def __init__(self, parent=None):
         super(ProgramWidgetUi, self).__init__(parent)
-        sp = QtGui.QSizePolicy
-        self.verticalLayout = QtGui.QVBoxLayout(self)
+        sp = QtWidgets.QSizePolicy
+        self.verticalLayout = QtWidgets.QVBoxLayout(self)
         self.setSizePolicy(sp.Fixed, sp.Expanding)
         self.updateGeometry()
-        self.toolBar = QtGui.QToolBar(self)
+        self.toolBar = QtWidgets.QToolBar(self)
         self.verticalLayout.addWidget(self.toolBar)
-        self.programView = QtGui.QTableView(self)
-        sizePolicy = QtGui.QSizePolicy(sp.Expanding, sp.Expanding)
+        self.programView = QtWidgets.QTableView(self)
+        sizePolicy = QtWidgets.QSizePolicy(sp.Expanding, sp.Expanding)
         sizePolicy.setVerticalStretch(3)
         self.programView.setSizePolicy(sizePolicy)
         self.programView.setContextMenuPolicy(Qt.ActionsContextMenu)
-        self.programView.horizontalHeader().setResizeMode(
-            QtGui.QHeaderView.Stretch)
+        self.programView.horizontalHeader().setSectionResizeMode(
+            QtWidgets.QHeaderView.Stretch)
         self.programView.verticalHeader().setVisible(False)
         self.programView.verticalHeader().setDefaultSectionSize(20)
-        self.programView.horizontalHeader().setResizeMode(
-            0, QtGui.QHeaderView.ResizeToContents)
         self.verticalLayout.addWidget(self.programView)
         self.previewPlot = MplWidget(self)
-        sizePolicy = QtGui.QSizePolicy(sp.Expanding, sp.Expanding)
+        sizePolicy = QtWidgets.QSizePolicy(sp.Expanding, sp.Expanding)
         sizePolicy.setVerticalStretch(2)
         self.previewPlot.setSizePolicy(sizePolicy)
         self.verticalLayout.addWidget(self.previewPlot)
@@ -273,35 +267,35 @@ class ProgramWidget(ProgramWidgetUi):
             try:
                 self.programSelectionModel.paste()
             except IndexError:
-                QtGui.QMessageBox.critical(
+                QtWidgets.QMessageBox.critical(
                     self.programView,  # parent
                     "Invalid clipboard data",  # title
                     "The number of columns in the clipboard is too large.")
 
-        self.copyAction = QtGui.QAction(
+        self.copyAction = QtWidgets.QAction(
             icon("edit-copy"), u"Copy", self,
             shortcut=QtGui.QKeySequence.Copy,
             triggered=self.programSelectionModel.copy)
-        self.pasteAction = QtGui.QAction(
+        self.pasteAction = QtWidgets.QAction(
             icon("edit-paste"), u"Paste", self,
             shortcut=QtGui.QKeySequence.Paste,
             triggered=viewPaste)
-        self.addRowAction = QtGui.QAction(
+        self.addRowAction = QtWidgets.QAction(
             icon("list-add"), u"Add row", self,
             triggered=self.programSelectionModel.insertRow)
-        self.removeRowAction = QtGui.QAction(
+        self.removeRowAction = QtWidgets.QAction(
             icon("list-remove"), u"Remove row", self,
             triggered=self.programSelectionModel.removeRows)
-        self.startProgramAction = QtGui.QAction(
+        self.startProgramAction = QtWidgets.QAction(
             icon("media-playback-start"), u"Start program", self,
             triggered=self.startProgram)
-        self.stopProgramAction = QtGui.QAction(
+        self.stopProgramAction = QtWidgets.QAction(
             icon("media-playback-stop"), u"Stop program", self,
             triggered=self.stopProgram)
-        self.startAllProgramsAction = QtGui.QAction(
+        self.startAllProgramsAction = QtWidgets.QAction(
             icon("media-seek-forward"), u"Start all programs", self,
             triggered=self.startAllPrograms)
-        self.stopAllProgramsAction = QtGui.QAction(
+        self.stopAllProgramsAction = QtWidgets.QAction(
             icon("process-stop"), u"Stop all programs", self,
             triggered=self.stopAllPrograms)
 
@@ -404,7 +398,7 @@ class ProgramWidget(ProgramWidgetUi):
 
 if __name__ == "__main__":
     import sys
-    app = QtGui.QApplication(sys.argv)
+    app = QtWidgets.QApplication(sys.argv)
     app.lastWindowClosed.connect(app.quit)
     widget = ProgramWidget()
     widget.startRequested.connect(lambda row: print("start %i" % row))

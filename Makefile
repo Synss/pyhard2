@@ -1,7 +1,7 @@
 CUR_BRANCH = $(shell git branch | sed -n -e 's,^\*[[:blank:]]*,,p')
 
 unittest:
-	python -m unittest discover --start-directory pyhard2/driver --pattern '*.py'
+	python -m unittest discover --start-directory pyhard2 --pattern '*.py'
 
 unittestdoc:
 	python -m unittest discover --start-directory documentation --pattern '*.py'
@@ -40,7 +40,7 @@ export:
 	git archive $(CUR_BRANCH) --format=zip > /Users/laurin/Desktop/pyhard2-code.zip
 
 rcc:
-	pyrcc4 -o pyhard2/rsc/__init__.py pyhard2/rsc/resources.qrc
+	pyrcc5 -o pyhard2/rsc/__init__.py pyhard2/rsc/resources.qrc
 
 lint:
 	pylint --disable=C0103 pyhard2

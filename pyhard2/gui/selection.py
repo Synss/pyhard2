@@ -1,14 +1,10 @@
 import StringIO as _StringIO
 import csv as _csv
 
-import sip as _sip
-for _type in "QDate QDateTime QString QTextStream QTime QUrl QVariant".split():
-    _sip.setapi(_type, 2)
-
-from PyQt4 import QtCore, QtGui
+from PyQt5 import QtWidgets, QtCore, QtGui
 
 
-class ItemSelectionModel(QtGui.QItemSelectionModel):
+class ItemSelectionModel(QtCore.QItemSelectionModel):
 
     """QItemSelectionModel with copy/paste and a part of the
     QTableWidget interface.
@@ -81,7 +77,7 @@ class ItemSelectionModel(QtGui.QItemSelectionModel):
         csvfile = _StringIO.StringIO()
         writer = _csv.writer(csvfile)
         writer.writerows(fields)
-        QtGui.QApplication.clipboard().setText(csvfile.getvalue())
+        QtWidgets.QApplication.clipboard().setText(csvfile.getvalue())
 
     def paste(self):
         """Paste values in the clipboard at the current item.
@@ -93,7 +89,7 @@ class ItemSelectionModel(QtGui.QItemSelectionModel):
         """
         currentIndex = self.currentIndex()
         parent = self._parentItem()
-        csvfile = _StringIO.StringIO(QtGui.QApplication.clipboard().text())
+        csvfile = _StringIO.StringIO(QtWidgets.QApplication.clipboard().text())
         try:
             dialect = _csv.Sniffer().sniff(csvfile.read(1024))
         except _csv.Error:

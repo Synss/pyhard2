@@ -1,11 +1,7 @@
 """Module with the `DriverWidget` widget.
 
 """
-import sip as _sip
-for _type in "QDate QDateTime QString QTextStream QTime QUrl QVariant".split():
-    _sip.setapi(_type, 2)
-
-from PyQt4 import QtCore, QtGui
+from PyQt5 import QtWidgets, QtCore
 Qt = QtCore.Qt
 Slot, Signal = QtCore.pyqtSlot, QtCore.pyqtSignal
 
@@ -47,39 +43,40 @@ class ItemRangedSpinBoxDelegate(DoubleSpinBoxDelegate):
         return spinBox
 
 
-class DriverWidgetUi(QtGui.QWidget):
+class DriverWidgetUi(QtWidgets.QWidget):
 
     """The default UI for the driver widget."""
 
     def __init__(self, parent=None):
         super(DriverWidgetUi, self).__init__(parent)
-        self.verticalLayout = QtGui.QVBoxLayout(self)
-        self.driverView = QtGui.QTableView(
+        self.verticalLayout = QtWidgets.QVBoxLayout(self)
+        self.driverView = QtWidgets.QTableView(
             self,
-            selectionMode=QtGui.QAbstractItemView.SingleSelection,
-            selectionBehavior=QtGui.QAbstractItemView.SelectRows
+            selectionMode=QtWidgets.QAbstractItemView.SingleSelection,
+            selectionBehavior=QtWidgets.QAbstractItemView.SelectRows
         )
         self.driverView.setContextMenuPolicy(Qt.CustomContextMenu)
         hHeader = self.driverView.horizontalHeader()
         hHeader.setStretchLastSection(True)
         hHeader.setDefaultSectionSize(20)
-        hHeader.setResizeMode(QtGui.QHeaderView.Stretch)
-        hHeader.setResizeMode(QtGui.QHeaderView.ResizeToContents)
+        hHeader.setSectionResizeMode(QtWidgets.QHeaderView.Stretch)
+        hHeader.setSectionResizeMode(QtWidgets.QHeaderView.ResizeToContents)
         vHeader = self.driverView.verticalHeader()
-        vHeader.setResizeMode(QtGui.QHeaderView.ResizeToContents)
+        vHeader.setSectionResizeMode(QtWidgets.QHeaderView.ResizeToContents)
         self.verticalLayout.addWidget(self.driverView)
-        self.pidBox = QtGui.QGroupBox("PID settings", self)
-        self.pEditor = QtGui.QDoubleSpinBox(self)
-        self.iEditor = QtGui.QDoubleSpinBox(self)
-        self.dEditor = QtGui.QDoubleSpinBox(self)
-        self.pidLayout = QtGui.QFormLayout(self.pidBox)
+        self.pidBox = QtWidgets.QGroupBox("PID settings", self)
+        self.pEditor = QtWidgets.QDoubleSpinBox(self)
+        self.iEditor = QtWidgets.QDoubleSpinBox(self)
+        self.dEditor = QtWidgets.QDoubleSpinBox(self)
+        self.pidLayout = QtWidgets.QFormLayout(self.pidBox)
         self.pidLayout.addRow("Proportional", self.pEditor)
         self.pidLayout.addRow("Integral", self.iEditor)
         self.pidLayout.addRow("Derivative", self.dEditor)
         self.verticalLayout.addWidget(self.pidBox)
 
-        self.pidBoxMapper = QtGui.QDataWidgetMapper(self.pidBox)
-        self.pidBoxMapper.setSubmitPolicy(QtGui.QDataWidgetMapper.AutoSubmit)
+        self.pidBoxMapper = QtWidgets.QDataWidgetMapper(self.pidBox)
+        self.pidBoxMapper.setSubmitPolicy(
+            QtWidgets.QDataWidgetMapper.AutoSubmit)
         self.pidBoxMapper.setItemDelegate(
             ItemRangedSpinBoxDelegate(parent=self.pidBoxMapper))
 
@@ -103,12 +100,12 @@ class DriverWidget(DriverWidgetUi):
         column = self.driverView.columnAt(pos.x())
         row = self.driverView.rowAt(pos.y())
         item = self.model.item(row, column)
-        rightClickMenu = QtGui.QMenu(self.driverView)
+        rightClickMenu = QtWidgets.QMenu(self.driverView)
         rightClickMenu.addActions(
-            [QtGui.QAction(
+            [QtWidgets.QAction(
                 "Polling", self, checkable=True,
                 checked=item.isPolling(), triggered=item.setPolling),
-             QtGui.QAction(
+             QtWidgets.QAction(
                  "Logging", self, checkable=True,
                  checked=item.isLogging(), triggered=item.setLogging)
              ])
@@ -142,7 +139,7 @@ class DriverWidget(DriverWidgetUi):
 
 if __name__ == "__main__":
     import sys
-    app = QtGui.QApplication(sys.argv)
+    app = QtWidgets.QApplication(sys.argv)
     app.lastWindowClosed.connect(app.quit)
     widget = DriverWidget()
     widget.show()

@@ -8,10 +8,10 @@ import matplotlib.lines as lines
 import matplotlib.transforms as mtransforms
 import matplotlib.text as mtext
 
-from PyQt4.QtGui import QPalette
-import PyQt4.QtCore as QtCore
-mpl.use("Qt4Agg")
-from matplotlib.backends.backend_qt4agg import (FigureCanvasQTAgg
+from PyQt5 import QtCore
+from PyQt5.QtGui import QPalette
+mpl.use("Qt5Agg")
+from matplotlib.backends.backend_qt5agg import (FigureCanvasQTAgg
                                                 as FigureCanvas)
 
 

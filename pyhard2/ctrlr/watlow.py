@@ -2,14 +2,10 @@
 """Graphical user interface to Watlow Series988 temperature controller."""
 
 import sys
-import sip
 from functools import partial
-for cls in "QDate QDateTime QString QTextStream QTime QUrl QVariant".split():
-    sip.setapi(cls, 2)
 
-from PyQt4 import QtCore, QtGui
+from PyQt5 import QtWidgets, QtCore
 Signal, Slot = QtCore.pyqtSignal, QtCore.pyqtSlot
-Qt = QtCore.Qt
 
 from pyhard2.gui.driver import DriverWidget
 from pyhard2.gui.controller import Config, Controller
@@ -57,9 +53,9 @@ class WatlowDriverWidget(DriverWidget):
 
     def __init__(self, parent=None):
         super(WatlowDriverWidget, self).__init__(parent)
-        self.rateEdit = QtGui.QSpinBox(self, enabled=False,
-                                       minimum=0, maximum=9999)
-        self.initCombo = QtGui.QComboBox(self)
+        self.rateEdit = QtWidgets.QSpinBox(self, enabled=False,
+                                           minimum=0, maximum=9999)
+        self.initCombo = QtWidgets.QComboBox(self)
         self.initCombo.addItems([
             "no ramp",
             "on startup",
@@ -68,16 +64,16 @@ class WatlowDriverWidget(DriverWidget):
         self.initCombo.currentIndexChanged[str].connect(
             lambda current: self.rateEdit.setDisabled(current == "no ramp"))
 
-        self.rampLayout = QtGui.QHBoxLayout()
+        self.rampLayout = QtWidgets.QHBoxLayout()
         self.rampLayout.addWidget(self.initCombo)
         self.rampLayout.addWidget(self.rateEdit)
         self.verticalLayout.addLayout(self.rampLayout)
 
-        self.rampInitMapper = QtGui.QDataWidgetMapper(self)
+        self.rampInitMapper = QtWidgets.QDataWidgetMapper(self)
         self.rampInitMapper.setItemDelegate(ComboBoxDelegate(self))
         self.initCombo.currentIndexChanged[int].connect(
             self.rampInitMapper.submit)
-        self.rateEditMapper = QtGui.QDataWidgetMapper(self)
+        self.rateEditMapper = QtWidgets.QDataWidgetMapper(self)
         self.rateEdit.valueChanged.connect(self.rateEditMapper.submit)
 
     def setDriverModel(self, model):
@@ -204,7 +200,7 @@ def createController():
                      hide=True, role="rampinit")
     iface.addCommand(driver.setup.global_.ramp_rate, "ramp_rate",
                      hide=True, role="ramprate")
-    iface.editorPrototype.default_factory = QtGui.QSpinBox
+    iface.editorPrototype.default_factory = QtWidgets.QSpinBox
     # Make sure we can read the rate
     driver.setup.global_.ramp_init.write(1)
     iface.populate()
@@ -213,7 +209,7 @@ def createController():
 
 def main(argv):
     """Start controller."""
-    app = QtGui.QApplication(argv)
+    app = QtWidgets.QApplication(argv)
     app.lastWindowClosed.connect(app.quit)
     iface = createController()
     iface.show()

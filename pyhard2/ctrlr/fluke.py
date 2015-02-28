@@ -2,11 +2,7 @@
 
 import sys
 
-import sip
-for cls in "QDate QDateTime QString QTextStream QTime QUrl QVariant".split():
-    sip.setapi(cls, 2)
-
-from PyQt4 import QtGui
+from PyQt5 import QtWidgets
 
 from pyhard2.gui.controller import Config, Controller
 from pyhard2.gui.programs import SetpointRampProgram
@@ -35,7 +31,7 @@ def createController():
 
 def main(argv):
     """Start controller."""
-    app = QtGui.QApplication(argv)
+    app = QtWidgets.QApplication(argv)
     app.lastWindowClosed.connect(app.quit)
     iface = createController()
     iface.show()

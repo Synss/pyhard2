@@ -1,8 +1,8 @@
-from PyQt4 import QtCore, QtGui
+from PyQt5 import QtWidgets, QtCore, QtGui
 Qt = QtCore.Qt
 
 
-class FormatTextDelegate(QtGui.QStyledItemDelegate):
+class FormatTextDelegate(QtWidgets.QStyledItemDelegate):
 
     """QStyledItemDelegate formatting the text displayed."""
 
@@ -14,7 +14,7 @@ class FormatTextDelegate(QtGui.QStyledItemDelegate):
         return self._format % value
 
 
-class ComboBoxDelegate(QtGui.QStyledItemDelegate):
+class ComboBoxDelegate(QtWidgets.QStyledItemDelegate):
 
     """QStyledItemDelegate for ComboBox."""
 
@@ -32,7 +32,7 @@ class ComboBoxDelegate(QtGui.QStyledItemDelegate):
         model.setData(index, combobox.currentIndex())
 
 
-class DoubleSpinBoxDelegate(QtGui.QStyledItemDelegate):
+class DoubleSpinBoxDelegate(QtWidgets.QStyledItemDelegate):
 
     """Item delegate for editing models with a spin box.
 
@@ -70,7 +70,8 @@ class DoubleSpinBoxDelegate(QtGui.QStyledItemDelegate):
     """
     def __init__(self, spinBox=None, parent=None):
         super(DoubleSpinBoxDelegate, self).__init__(parent)
-        self._spinBox = QtGui.QDoubleSpinBox() if spinBox is None else spinBox
+        self._spinBox = (QtWidgets.QDoubleSpinBox() if spinBox is None
+                         else spinBox)
 
     def __repr__(self):
         return "%s(spinBox=%r, parent=%r)" % (
@@ -123,7 +124,7 @@ class DoubleSpinBoxDelegate(QtGui.QStyledItemDelegate):
         self.closeEditor.emit(self.sender(), self.NoHint)
 
 
-class ButtonDelegate(QtGui.QStyledItemDelegate):
+class ButtonDelegate(QtWidgets.QStyledItemDelegate):
 
     """Item delegate for editing models with a button.
 
@@ -134,7 +135,7 @@ class ButtonDelegate(QtGui.QStyledItemDelegate):
     """
     def __init__(self, button=None, parent=None):
         super(ButtonDelegate, self).__init__(parent)
-        self._btn = QtGui.QPushButton() if button is None else button
+        self._btn = QtWidgets.QPushButton() if button is None else button
         self._btn.setParent(parent)
         self._btn.hide()
 
@@ -157,9 +158,9 @@ class ButtonDelegate(QtGui.QStyledItemDelegate):
     def paint(self, painter, option, index):
         self._btn.setChecked(index.data() if index.data() else Qt.Unchecked)
         self._btn.setGeometry(option.rect)
-        if option.state & QtGui.QStyle.State_Selected:
+        if option.state & QtWidgets.QStyle.State_Selected:
             painter.fillRect(option.rect, option.palette.highlight())
-        pixmap = QtGui.QPixmap.grabWidget(self._btn)
+        pixmap = self._btn.grab()
         painter.drawPixmap(option.rect.x(), option.rect.y(), pixmap)
 
     def editorEvent(self, event, model, option, index):

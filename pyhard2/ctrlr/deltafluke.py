@@ -66,8 +66,8 @@ def createController():
 
 def main(argv):
     """Start controller."""
-    from PyQt4 import QtGui
-    app = QtGui.QApplication(argv)
+    from PyQt5 import QtWidgets
+    app = QtWidgets.QApplication(argv)
     app.lastWindowClosed.connect(app.quit)
     iface = createController()
     iface.show()

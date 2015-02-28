@@ -7,11 +7,7 @@ from itertools import chain
 import csv
 import time
 
-import sip as _sip
-for _type in "QDate QDateTime QString QTextStream QTime QUrl QVariant".split():
-    _sip.setapi(_type, 2)
-
-from PyQt4 import QtCore, QtGui
+from PyQt5 import QtWidgets, QtCore, QtGui
 Qt = QtCore.Qt
 Slot, Signal = QtCore.pyqtSlot, QtCore.pyqtSignal
 
@@ -61,13 +57,13 @@ class ListData(object):
 
     def x(self):
         try:
-            return np.array(self)[:,0]
+            return np.array(self)[:, 0]
         except IndexError:
             return np.array([])
 
     def y(self):
         try:
-            return np.array(self)[:,1:]
+            return np.array(self)[:, 1:]
         except IndexError:
             return np.array([])
 
@@ -90,16 +86,19 @@ class TimeSeriesData(ListData):
             (time.time() - self.__start, value))
 
 
-class MonitorWidgetUi(QtGui.QWidget):
+class MonitorWidgetUi(QtWidgets.QWidget):
 
     """The default UI for the monitor widget."""
 
     def __init__(self, parent=None):
         super(MonitorWidgetUi, self).__init__(parent)
-        self.verticalLayout = QtGui.QVBoxLayout(self)
-        self.headerLayout = QtGui.QHBoxLayout()
-        self.autoSaveLabel = QtGui.QLabel(u"AutoSave:", self)
-        self.autoSaveEdit = QtGui.QLineEdit(self, frame=False, readOnly=True)
+        self.verticalLayout = QtWidgets.QVBoxLayout(self)
+        self.headerLayout = QtWidgets.QHBoxLayout()
+        self.autoSaveLabel = QtWidgets.QLabel(u"AutoSave:", self)
+        self.autoSaveEdit = QtWidgets.QLineEdit(
+            self,
+            frame=False,
+            readOnly=True)
         self.headerLayout.addWidget(self.autoSaveLabel)
         self.headerLayout.addWidget(self.autoSaveEdit)
         self.verticalLayout.addLayout(self.headerLayout)
@@ -107,9 +106,10 @@ class MonitorWidgetUi(QtGui.QWidget):
         self.axes = self.monitor.figure.add_subplot(111)
         self.monitor.setContextMenuPolicy(Qt.ActionsContextMenu)
         self.verticalLayout.addWidget(self.monitor)
-        self.logScaleCB = QtGui.QCheckBox(self, text=u"Log scale")
-        self.singleInstrumentCB = QtGui.QCheckBox(self,
-                                                  text=u"Single instrument")
+        self.logScaleCB = QtWidgets.QCheckBox(self, text=u"Log scale")
+        self.singleInstrumentCB = QtWidgets.QCheckBox(
+            self,
+            text=u"Single instrument")
         self.verticalLayout.addWidget(self.logScaleCB)
         self.verticalLayout.addWidget(self.singleInstrumentCB)
 
@@ -181,7 +181,7 @@ class MonitorWidget(MonitorWidgetUi):
 
 if __name__ == "__main__":
     import sys
-    app = QtGui.QApplication(sys.argv)
+    app = QtWidgets.QApplication(sys.argv)
     app.lastWindowClosed.connect(app.quit)
     widget = MonitorWidget()
     widget.show()
