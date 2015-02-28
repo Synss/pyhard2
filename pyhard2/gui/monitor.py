@@ -14,76 +14,38 @@ for _type in "QDate QDateTime QString QTextStream QTime QUrl QVariant".split():
 from PyQt4 import QtCore, QtGui
 Qt = QtCore.Qt
 Slot, Signal = QtCore.pyqtSlot, QtCore.pyqtSignal
-import PyQt4.Qwt5 as Qwt
+
+from matplotlib.lines import Line2D
+import numpy as np
+
+from pyhard2.gui.mpl import MplWidget
 
 
-class ListData(Qwt.QwtData):
-
-    """Custom `QwtData` mapping a list onto `x,y` values.
-
-    """
-    X, Y = range(2)
+class ListData(object):
 
     def __init__(self):
-        super(ListData, self).__init__()
         self._historySize = 10000
         self._history = []
         self._data = []
-        # methods
-        self.size = self.__len__
 
     def __len__(self):
         """Return length of data."""
         return len(self._history) + len(self._data)
 
     def __iter__(self):
-        """Iterate on the data."""
-        return iter(chain(self._history, self._data))
+        """Iterate over the data."""
+        return chain(self._history, self._data)
 
     def __getitem__(self, i):
-        """Return `x,y` values at `i`."""
+        """Return value at `i`."""
         try:
             return self._history[i]
         except IndexError:
             return self._data[i - len(self._history)]
 
-    def sample(self, i):
-        """Return `x,y` values at `i`."""
-        return self[i]
-
-    def copy(self):
-        """Return self."""
-        return self
-
-    def historySize(self):
-        """How many points of history to display after exportAndTrim."""
-        return self._historySize
-
-    def setHistorySize(self, historySize):
-        """Set how many points of history to display after exportAndTrim."""
-        self._historySize = historySize
-
-    def x(self, i):
-        """Return `x` value."""
-        return self[i][ListData.X]
-
-    def y(self, i):
-        """Return `y` value."""
-        return self[i][ListData.Y]
-
-    def append(self, xy):
-        """Add `x,y` values to the data.
-
-        Does nothing if None is in `xy`.
-        """
-        if None in xy:
-            return
-        self._data.append(xy)
-
-    def clear(self):
-        """Clear the data in place."""
-        self._history = []
-        self._data = []
+    def append(self, value):
+        """Append `value` to the data."""
+        self._data.append(value)
 
     def exportAndTrim(self, csvfile):
         """Export the data to `csvfile` and trim it.
@@ -96,6 +58,18 @@ class ListData(Qwt.QwtData):
         self._history.extend(currentData)
         self._history = self._history[-self._historySize:]
         csv.writer(csvfile, delimiter="\t").writerows(currentData)
+
+    def x(self):
+        try:
+            return np.array(self)[:,0]
+        except IndexError:
+            return np.array([])
+
+    def y(self):
+        try:
+            return np.array(self)[:,1:]
+        except IndexError:
+            return np.array([])
 
 
 class TimeSeriesData(ListData):
@@ -116,37 +90,6 @@ class TimeSeriesData(ListData):
             (time.time() - self.__start, value))
 
 
-class PlotZoomer(Qwt.QwtPlotZoomer):
-
-    """QwtPlotZoomer for zooming on QwtPlot."""
-
-    def __init__(self, canvas):
-        super(PlotZoomer, self).__init__(Qwt.QwtPlot.xBottom,
-                                         Qwt.QwtPlot.yLeft,
-                                         Qwt.QwtPicker.DragSelection,
-                                         Qwt.QwtPicker.AlwaysOff,
-                                         canvas)
-        self.setRubberBandPen(QtGui.QPen(QtGui.QColor("white")))
-        # ZOOM IN: left and drag; ZOOM OUT: shift + left
-        self.setMousePattern(Qwt.QwtEventPattern.MouseSelect2,
-                             Qt.LeftButton, Qt.ShiftModifier)
-        self.setTrackerPen(QtGui.QPen(QtGui.QColor("white")))
-        self.zoomed.connect(self._zoomed)
-
-    def _zoomed(self, rect):
-        if self.zoomRectIndex() == 0:
-            self.clearZoomStack()
-
-    def clearZoomStack(self):
-        """Force autoscaling and clear the zoom stack."""
-        self.plot().setAxisAutoScale(Qwt.QwtPlot.yLeft)
-        self.plot().setAxisAutoScale(Qwt.QwtPlot.yRight)
-        self.plot().setAxisAutoScale(Qwt.QwtPlot.xBottom)
-        self.plot().setAxisAutoScale(Qwt.QwtPlot.xTop)
-        self.plot().replot()
-        self.setZoomBase()
-
-
 class MonitorWidgetUi(QtGui.QWidget):
 
     """The default UI for the monitor widget."""
@@ -160,7 +103,8 @@ class MonitorWidgetUi(QtGui.QWidget):
         self.headerLayout.addWidget(self.autoSaveLabel)
         self.headerLayout.addWidget(self.autoSaveEdit)
         self.verticalLayout.addLayout(self.headerLayout)
-        self.monitor = Qwt.QwtPlot(self)
+        self.monitor = MplWidget(self)
+        self.axes = self.monitor.figure.add_subplot(111)
         self.monitor.setContextMenuPolicy(Qt.ActionsContextMenu)
         self.verticalLayout.addWidget(self.monitor)
         self.logScaleCB = QtGui.QCheckBox(self, text=u"Log scale")
@@ -168,8 +112,6 @@ class MonitorWidgetUi(QtGui.QWidget):
                                                   text=u"Single instrument")
         self.verticalLayout.addWidget(self.logScaleCB)
         self.verticalLayout.addWidget(self.singleInstrumentCB)
-
-        self.zoomer = PlotZoomer(self.monitor.canvas())
 
 
 class MonitorWidget(MonitorWidgetUi):
@@ -185,15 +127,6 @@ class MonitorWidget(MonitorWidgetUi):
         self.data = defaultdict(TimeSeriesData)
         self._monitorItems = defaultdict(list)
 
-        self.__initActions()
-
-        self.logScaleCB.stateChanged.connect(self.setLogScale)
-
-    def __initActions(self):
-        self.zoomOutAction = QtGui.QAction(
-            "Zoom out", self, triggered=self.zoomer.clearZoomStack)
-        self.monitor.addAction(self.zoomOutAction)
-
     def setDriverModel(self, driverModel):
         self.driverModel = driverModel
 
@@ -204,27 +137,10 @@ class MonitorWidget(MonitorWidgetUi):
         Initialize monitor items.
 
         """
-        for item in self.driverModel:
-            text = os.path.join(  # used in autoSave
-                self.driverModel.verticalHeaderItem(item.row()).text(),
-                self.driverModel.horizontalHeaderItem(item.column()).text())
-            curve = Qwt.QwtPlotCurve(text)
-            curve.setData(self.data[item])
-            curve.attach(self.monitor)
-            self._monitorItems[item.row()].append(curve)
-
-    def setLogScale(self, state):
-        """Change the scale of `dataPlot` to log or linear."""
-        if state:
-            scale = Qwt.QwtLog10ScaleEngine()
-            scale.setAttribute(Qwt.QwtScaleEngine.Symmetric)
-        else:
-            scale = Qwt.QwtLinearScaleEngine()
-        self.monitor.setAxisScaleEngine(0, scale)
 
     def setSingleInstrument(self, row, state):
         """Monitor instrument at `row` iff `state`."""
-        for row_, curve in self._monitorItems.iteritems():
+        for row_, line in self._monitorItems.iteritems():
             self._setDataPlotCurveVisibilityForRow(
                 row_, not state or row_ is row)
         self._setDataPlotCurvePenForRow(
@@ -234,33 +150,33 @@ class MonitorWidget(MonitorWidgetUi):
     def _setDataPlotCurveZ(self, row, z):
         if row is -1:  # ignore invalid index
             return
-        for curve in self._monitorItems[row]:
-            curve.setZ(z)
+        for line in self._monitorItems[row]:
+            line.setZ(z)
 
     def _setDataPlotCurveVisibilityForRow(self, row, visible=True):
         if row is -1:  # ignore invalid index
             return
-        for curve in self._monitorItems[row]:
-            curve.setVisible(visible)
+        for line in self._monitorItems[row]:
+            line.setVisible(visible)
 
     def _setDataPlotCurvePenForRow(self, row, pen):
         if row is -1:  # ignore invalid index
             return
-        for curve in self._monitorItems[row]:
-            curve.setPen(pen)
+        for line in self._monitorItems[row]:
+            line.setPen(pen)
 
     def setCurrentRow(self, current, previous):
         if self.singleInstrumentCB.isChecked():
             self._setDataPlotCurveVisibilityForRow(previous, False)
             self._setDataPlotCurveVisibilityForRow(current, True)
-        self._setDataPlotCurveZ(previous, 20)
-        self._setDataPlotCurvePenForRow(previous, QtGui.QPen(Qt.black))
-        self._setDataPlotCurveZ(current, 21)
-        self._setDataPlotCurvePenForRow(current, QtGui.QPen(Qt.red))
-        self.monitor.replot()
+        #self._setDataPlotCurveZ(previous, 20)
+        #self._setDataPlotCurvePenForRow(previous, QtGui.QPen(Qt.black))
+        #self._setDataPlotCurveZ(current, 21)
+        #self._setDataPlotCurvePenForRow(current, QtGui.QPen(Qt.red))
+        self.monitor.draw()
 
     def draw(self):
-        self.monitor.replot()
+        self.monitor.draw()
 
 
 if __name__ == "__main__":

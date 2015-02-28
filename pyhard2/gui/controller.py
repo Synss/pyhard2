@@ -258,21 +258,19 @@ class Controller(ControllerUi):
     @Slot()
     def logData(self):
         """Save data."""
-        for item in self.driverModel:
-            if item.isLogging():
-                self.monitorWidget.data[item].append(item.data())
 
     @Slot()
     def autoSave(self):
         """Export the data in the `monitor` to an archive."""
+        return
         path = os.path
         with ZipFile(self.autoSaveFileName(), "a") as zipfile:
-            for curve in self.monitorWidget.monitor.itemList():
+            for line in self.monitorWidget.axes.artists:
                 csvfile = StringIO()
-                curve.data().exportAndTrim(csvfile)
+                line.data().exportAndTrim(csvfile)
                 filename = path.join(
                     self.windowTitle(),
-                    curve.title().text(),
+                    line.get_label(),
                     time.strftime("T%H%M%S")) + ".txt"
                 zipfile.writestr(filename, csvfile.getvalue())
 
