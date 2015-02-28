@@ -60,15 +60,14 @@ def createController():
     # Add commands, create new columns in the `driver table`:
     iface.addCommand(driver.temperature1, "TC sample", poll=True, log=True)
     iface.addCommand(driver.temperature2, "TC heater", poll=True, log=True)
-    iface.addCommand(driver.setpoint, "setpoint", log=True,
-                     specialColumn="programmable")
+    iface.addCommand(driver.setpoint, "setpoint", log=True, role="program")
     iface.addCommand(driver.power, "output", poll=True, log=True)
     iface.addCommand(driver.operation.pid.a1.gain, "PID P", hide=True,
-                     specialColumn="pidp")
+                     role="pidp")
     iface.addCommand(driver.operation.pid.a1.integral, "PID I", hide=True,
-                     specialColumn="pidi")
+                     role="pidi")
     iface.addCommand(driver.operation.pid.a1.derivative, "PID D", hide=True,
-                     specialColumn="pidd")
+                     role="pidd")
     # Add at least one node:
     iface.addNode(0, u"Watlow")
     # Fill the table with a call to `populate`

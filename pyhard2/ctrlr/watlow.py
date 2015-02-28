@@ -107,7 +107,7 @@ class WatlowController(Controller):
         self._rampInitValuePool = {}
         self._rateValuePool = {}
 
-        self._specialColumnMapper.update(dict(
+        self._roleMapper.update(dict(
             rampinit=self.setRampInitColumn,
             ramprate=self.setRampRateColumn))
 
@@ -126,7 +126,7 @@ class WatlowController(Controller):
         self.driverWidget.mapRateEditor(column)
 
     def startProgram(self, row):
-        if self.programmableColumn() is None:
+        if self.programColumn() is None:
             return
         program = self.programs[row]
         # Connect program to GUI
@@ -192,18 +192,18 @@ def createController():
         iface.addCommand(driver.temperature1, "TC sample", poll=True, log=True)
         iface.addCommand(driver.temperature2, "TC heater", poll=True, log=True)
         iface.addCommand(driver.setpoint, "setpoint", log=True,
-                         specialColumn="programmable")
+                         role="program")
         iface.addCommand(driver.power, "output", poll=True, log=True)
         iface.addCommand(driver.operation.pid.a1.gain, "PID P", hide=True,
-                         specialColumn="pidp")
+                         role="pidp")
         iface.addCommand(driver.operation.pid.a1.integral, "PID I", hide=True,
-                         specialColumn="pidi")
+                         role="pidi")
         iface.addCommand(driver.operation.pid.a1.derivative, "PID D",
-                         hide=True, specialColumn="pidd")
+                         hide=True, role="pidd")
     iface.addCommand(driver.setup.global_.ramp_init, "ramp_init",
-                     hide=True, specialColumn="rampinit")
+                     hide=True, role="rampinit")
     iface.addCommand(driver.setup.global_.ramp_rate, "ramp_rate",
-                     hide=True, specialColumn="ramprate")
+                     hide=True, role="ramprate")
     iface.editorPrototype.default_factory = QtGui.QSpinBox
     # Make sure we can read the rate
     driver.setup.global_.ramp_init.write(1)

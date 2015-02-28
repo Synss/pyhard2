@@ -90,7 +90,7 @@ class AmtronController(Controller):
         self.populated.connect(self.driverWidget.powerBtnMapper.toFirst)
         self.populated.connect(self.driverWidget.gateBtnMapper.toFirst)
         self.populated.connect(self.driverWidget.pilotBtnMapper.toFirst)
-        self._specialColumnMapper.update(dict(
+        self._roleMapper.update(dict(
             laserpower=self.setPowerStateColumn,
             lasergate=self.setGateStateColumn,
             pilotlaser=self.setPilotStateColumn
@@ -182,21 +182,21 @@ def createController():
         iface.addCommand(driver.temperature.voltage.ai,
                          "temperature / C", poll=True, log=True)
         iface.addCommand(driver.pid.setpoint, "setpoint / C",
-                         log=True, specialColumn="programmable")
+                         log=True, role="program")
         iface.addCommand(driver.laser.control.total_power, "power / W",
                          poll=True, log=True)
         iface.addCommand(driver.pid.proportional, "PID P", hide=True,
-                         specialColumn="pidp")
+                         role="pidp")
         iface.addCommand(driver.pid.integral_time, "PID I", hide=True,
-                         specialColumn="pidi")
+                         role="pidi")
         iface.addCommand(driver.pid.derivative_time, "PID D", hide=True,
-                         specialColumn="pidd")
+                         role="pidd")
     iface.addCommand(driver.laser.command.laser_state, "power", hide=True,
-                     poll=True, specialColumn="laserpower")
+                     poll=True, role="laserpower")
     iface.addCommand(driver.laser.command.gate_state, "gate", hide=True,
-                     poll=True, specialColumn="lasergate")
+                     poll=True, role="lasergate")
     iface.addCommand(driver.laser.interface.pilot_laser_state, "pilot",
-                     hide=True, poll=False, specialColumn="pilotlaser")
+                     hide=True, poll=False, role="pilotlaser")
     iface.populate()
     return iface
 

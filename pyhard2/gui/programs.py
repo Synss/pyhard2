@@ -241,7 +241,7 @@ class ProgramWidget(ProgramWidgetUi):
     def __init__(self, parent=None):
         super(ProgramWidget, self).__init__(parent)
         self.driverModel = None
-        self.programmableColumn = None
+        self.programColumn = None
         self._previewPlotItems = []  # defeat GC
 
         self.model = QtGui.QStandardItemModel(self)
@@ -367,13 +367,13 @@ class ProgramWidget(ProgramWidgetUi):
                     [QtGui.QStandardItem(), QtGui.QStandardItem()])
 
     def setProgramTableRoot(self, row):
-        if None in (self.programmableColumn, self.driverModel):
+        if None in (self.programColumn, self.driverModel):
             return
         self.programView.setRootIndex(self.model.index(row, 0))
         if not self.driverModel:
             return
         delegate = self.programView.itemDelegateForColumn(1)
-        item = self.driverModel.item(0, self.programmableColumn)
+        item = self.driverModel.item(0, self.programColumn)
         if item.minimum() is not None:
             delegate.setMinimum(item.minimum())
         if item.maximum() is not None:

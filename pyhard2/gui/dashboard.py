@@ -278,13 +278,13 @@ class Dashboard(DashboardUi):
         item.addAction(showMonitorAction)
         item.widget().valueChanged.connect(spinBox_valueChanged)
 
-    def _connectSpinBoxToItem(self, spinBox, item, programmableColumn=None):
+    def _connectSpinBoxToItem(self, spinBox, item, programColumn=None):
         def onItemChanged(item_):
             if item_ is item:
                 spinBox.setValue(item.data())
 
         def onNewValueTriggered():
-            item_ = item.model().item(item.row(), programmableColumn)
+            item_ = item.model().item(item.row(), programColumn)
             value, ok = QtGui.QInputDialog.getDouble(
                 self.graphicsView,  # parent
                 spinBox.toolTip(),  # title
@@ -306,8 +306,8 @@ class Dashboard(DashboardUi):
                                  QtGui.QAbstractSpinBox.UpDownArrows)
         item.model().itemChanged.connect(onItemChanged)
 
-        if programmableColumn is not None:
-            text = item.model().horizontalHeaderItem(programmableColumn).text()
+        if programColumn is not None:
+            text = item.model().horizontalHeaderItem(programColumn).text()
             newValueAction = QtGui.QAction("new %s" % text.lower(), spinBox,
                                            triggered=onNewValueTriggered)
             spinBox.addAction(newValueAction)
@@ -410,7 +410,7 @@ class Dashboard(DashboardUi):
             if isinstance(widget, QtGui.QAbstractSpinBox):
                 self._addMonitorForSpinBox(proxyWidget)
                 self._connectSpinBoxToItem(widget, modelItem,
-                                           controller.programmableColumn())
+                                           controller.programColumn())
             elif isinstance(widget, QtGui.QAbstractButton):
                 self._connectButtonToItem(widget, modelItem)
             else:

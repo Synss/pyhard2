@@ -31,15 +31,15 @@ def createController():
         iface.addCommand(driver.direct_reading.measure, "measure",
                          poll=True, log=True)
         iface.addCommand(driver.direct_reading.setpoint, "setpoint",
-                         log=True, specialColumn="programmable")
+                         log=True, role="program")
         iface.addCommand(driver.controller.valve_output, "output",
                          poll=True, log=True)
         iface.addCommand(driver.controller.PIDKp, "PID P", hide=True,
-                         specialColumn="pidp")
+                         role="pidp")
         iface.addCommand(driver.controller.PIDKi, "PID I", hide=True,
-                         specialColumn="pidi")
+                         role="pidi")
         iface.addCommand(driver.controller.PIDKd, "PID D", hide=True,
-                         specialColumn="pidd")
+                         role="pidd")
     iface.programs.default_factory = SetpointRampProgram
     iface.populate()
     return iface

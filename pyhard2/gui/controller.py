@@ -175,8 +175,8 @@ class Controller(ControllerUi):
         self._autoSaveTimer.timeout.connect(self.autoSave)
         QtCore.QTimer.singleShot(0, self.autoSave)
 
-        self._specialColumnMapper = dict(
-            programmable=self.setProgrammableColumn,
+        self._roleMapper = dict(
+            program=self.setProgramColumn,
             pidp=self.setPidPColumn,
             pidi=self.setPidIColumn,
             pidd=self.setPidDColumn,)
@@ -202,14 +202,14 @@ class Controller(ControllerUi):
         self = cls(config, driver)
         self.addCommand(driver.input.measure, u"measure", poll=True, log=True)
         self.addCommand(driver.pid.setpoint, u"setpoint", log=True,
-                        specialColumn="programmable")
+                        role="program")
         self.addCommand(driver.output.output, u"output", poll=True, log=True)
         self.addCommand(driver.pid.proportional, u"PID P", hide=True,
-                        specialColumn="pidp")
+                        role="pidp")
         self.addCommand(driver.pid.integral_time, u"PID I", hide=True,
-                        specialColumn="pidi")
+                        role="pidi")
         self.addCommand(driver.pid.derivative_time, u"PID D", hide=True,
-                        specialColumn="pidd")
+                        role="pidd")
         return self
 
     def _setupWithModel(self):
@@ -276,34 +276,34 @@ class Controller(ControllerUi):
 
     def addCommand(self, command, label="",
                    hide=False, poll=False, log=False,
-                   specialColumn=""):
+                   role=""):
         """Add `command` as a new column in the driver table.
 
         Parameters:
             hide (bool): Hide the column.
             poll (bool): Set the default polling state.
             log (bool): Set the default logging state.
-            specialColumn {"programmable", "pidp", "pidi", "pidd"}:
+            role {"program", "pidp", "pidi", "pidd"}:
                 Connect the column to the relevant GUI elements.
 
         """
         column = self.driverModel.columnCount()
         self.driverModel.addCommand(command, label, poll, log)
         self.driverWidget.driverView.setColumnHidden(column, hide)
-        if specialColumn:
-            self._specialColumnMapper[specialColumn.lower()](column)
+        if role:
+            self._roleMapper[role.lower()](column)
 
     def addNode(self, node, label=""):
         """Add `node` as a new row in the driver table."""
         self.driverModel.addNode(node, label)
 
-    def programmableColumn(self):
+    def programColumn(self):
         """Return the index of the programmable column."""
-        return self.programWidget.programmableColumn
+        return self.programWidget.programColumn
 
-    def setProgrammableColumn(self, column):
+    def setProgramColumn(self, column):
         """Set the programmable column to `column`."""
-        self.programWidget.programmableColumn = column
+        self.programWidget.programColumn = column
 
     def setPidPColumn(self, column):
         """Set the pid P column to `column`."""
@@ -318,8 +318,8 @@ class Controller(ControllerUi):
         self.driverWidget.mapDEditor(column)
 
     def startProgram(self, row):
-        """Start program for item at (`row`, `programmableColumn`)."""
-        if self.programmableColumn() is None:
+        """Start program for item at (`row`, `programColumn`)."""
+        if self.programColumn() is None:
             return
 
         def setInterval(dt):
@@ -335,7 +335,7 @@ class Controller(ControllerUi):
             self.programWidget.model.item(row, 0)))
         # Bind to item in driverModel
         driverItem = self.driverModel.item(
-            row, self.programmableColumn())
+            row, self.programColumn())
         program.value.connect(partial(driverItem.setData))
         # Start
         program.start()

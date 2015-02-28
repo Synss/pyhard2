@@ -49,18 +49,17 @@ def createController():
     driver = DeltaFluke(fluke_serial, delta_serial)
     iface = Controller(config, driver)
     iface.addCommand(driver.fluke.measure, "Temperature", poll=True, log=True)
-    iface.addCommand(driver.pid.setpoint, "Setpoint", log=True,
-                     specialColumn="programmable")
+    iface.addCommand(driver.pid.setpoint, "Setpoint", log=True, role="program")
     iface.addCommand(driver.delta.source.voltage, "Voltage",
                      poll=True, log=True)
     iface.addCommand(driver.delta.source.current, "Current",
                      poll=True, log=True)
     iface.addCommand(driver.pid.proportional, u"PID P", hide=True,
-                     specialColumn="pidp")
+                     role="pidp")
     iface.addCommand(driver.pid.integral_time, u"PID I", hide=True,
-                     specialColumn="pidi")
+                     role="pidi")
     iface.addCommand(driver.pid.derivative_time, u"PID D", hide=True,
-                     specialColumn="pidd")
+                     role="pidd")
     iface.populate()
     return iface
 
