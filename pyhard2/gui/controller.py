@@ -1,3 +1,6 @@
+"""Module with the default controller.
+
+"""
 import os
 import time
 from collections import defaultdict
@@ -17,12 +20,11 @@ Qt = QtCore.Qt
 Slot, Signal = QtCore.pyqtSlot, QtCore.pyqtSignal
 
 from pyhard2 import __version__
-from pyhard2.gui.driver import DriverModel, DriverWidget
+from pyhard2.gui.model import DriverModel
+from pyhard2.gui.driver import DriverWidget
 from pyhard2.gui.monitor import MonitorWidget
 from pyhard2.gui.programs import ProfileData, ProgramWidget, SingleShotProgram
 from pyhard2.gui.widgets import Counter
-
-"""Default controller GUI."""
 
 
 __about__ = """

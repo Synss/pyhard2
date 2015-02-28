@@ -9,7 +9,8 @@ from PyQt4.QtGui import QApplication
 from PyQt4.QtTest import QTest
 
 from pyhard2.driver.virtual import VirtualInstrument
-from pyhard2.gui.driver import DriverModel, DriverWidget
+from pyhard2.gui.model import DriverModel
+from pyhard2.gui.driver import DriverWidget
 from pyhard2.gui.monitor import MonitorWidget
 from pyhard2.gui.programs import ProgramWidget
 import pyhard2.ctrlr.amtron as amtron
