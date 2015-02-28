@@ -29,6 +29,13 @@ upload-doc:
 	rsync --archive --verbose --partial --progress -e ssh\
 	   	html/ mathias_laurin@web.sourceforge.net:/home/project-web/pyhard2/htdocs/
 
+pdf:
+	-rm -r latex
+	mkdir latex
+	PYTHONPATH="." sphinx-build -w tmp/sphinx.out -b latex documentation latex
+	-cd latex && make all; make all; cp pyhard2.pdf ..
+	rm -r latex
+
 export:
 	git archive $(CUR_BRANCH) --format=zip > /Users/laurin/Desktop/pyhard2-code.zip
 
