@@ -23,7 +23,7 @@ from binascii import hexlify, unhexlify
 
 import pyhard2.driver as drv
 
-from _bronkhorst import Reader, Writer, Status, ValidationError
+from ._bronkhorst import Reader, Writer, Status, ValidationError
 
 
 class BronkhorstHardwareError(drv.HardwareError): pass

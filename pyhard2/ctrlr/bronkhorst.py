@@ -17,7 +17,7 @@ def createController():
     """Initialize controller."""
     config = Config("bronkhorst")
     if not config.nodes:
-        config.nodes = range(10, 16)
+        config.nodes = list(range(10, 16))
         config.names = ["MFC%i" % node for node in config.nodes]
     if config.virtual:
         driver = virtual.VirtualInstrument()

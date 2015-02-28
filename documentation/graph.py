@@ -3,7 +3,7 @@ import pyhard2.driver as drv
 
 
 def traverse_iface(parent_node, parent, graph):
-    for child_name, child in parent.__dict__.iteritems():
+    for child_name, child in parent.__dict__.items():
         child_node = pydot.Node(name=id(child), label=child_name)
         if isinstance(child, drv.Protocol):
             parent_node.set_fontcolor("red")

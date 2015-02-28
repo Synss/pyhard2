@@ -1,4 +1,4 @@
-import StringIO as _StringIO
+import io as _StringIO
 import csv as _csv
 
 from PyQt5 import QtWidgets, QtCore, QtGui

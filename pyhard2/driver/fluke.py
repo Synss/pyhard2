@@ -101,7 +101,7 @@ class Fluke18x(drv.Subsystem):
                                cancel=27,
                                wake_up=28,
                                setup=29,
-                               save=30).iteritems():
+                               save=30).items():
             self.button.__setattr__("press_%s" % name, Cmd("SF %i" % code, access=Access.WO))
         self.identification = Cmd("ID", doc="""Return model, S/N and software version information""")
         self.measure = Cmd("QM", rfunc=_parse_measure, access=Access.RO)

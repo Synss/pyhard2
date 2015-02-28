@@ -69,7 +69,7 @@ def createController():
     """Initialize controller."""
     config = Config("daq")
     if not config.nodes:
-        config.nodes = range(20)
+        config.nodes = list(range(20))
         config.names = ["V%i" % node for node in config.nodes]
     if config.virtual:
         driver = VirtualDaq(config.port)

@@ -54,11 +54,11 @@ def createController():
                      poll=True, log=True)
     iface.addCommand(driver.delta.source.current, "Current",
                      poll=True, log=True)
-    iface.addCommand(driver.pid.proportional, u"PID P", hide=True,
+    iface.addCommand(driver.pid.proportional, "PID P", hide=True,
                      role="pidp")
-    iface.addCommand(driver.pid.integral_time, u"PID I", hide=True,
+    iface.addCommand(driver.pid.integral_time, "PID I", hide=True,
                      role="pidi")
-    iface.addCommand(driver.pid.derivative_time, u"PID D", hide=True,
+    iface.addCommand(driver.pid.derivative_time, "PID D", hide=True,
                      role="pidd")
     iface.populate()
     return iface

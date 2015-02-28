@@ -1,8 +1,6 @@
 """Module with the stock programs and the default `ProgramWidget`.
 
 """
-from __future__ import print_function
-
 import numpy as np
 
 from PyQt5 import QtWidgets, QtCore, QtGui
@@ -135,7 +133,7 @@ class SetpointRampProgram(SingleShotProgram):
     def _shoot(self):
         """Emit a new value if it exists or terminate the program."""
         try:
-            self.value.emit(self._ramp.next())
+            self.value.emit(next(self._ramp))
         except StopIteration:
             try:
                 self.value.emit(self._profile.y(-1))
@@ -273,30 +271,30 @@ class ProgramWidget(ProgramWidgetUi):
                     "The number of columns in the clipboard is too large.")
 
         self.copyAction = QtWidgets.QAction(
-            icon("edit-copy"), u"Copy", self,
+            icon("edit-copy"), "Copy", self,
             shortcut=QtGui.QKeySequence.Copy,
             triggered=self.programSelectionModel.copy)
         self.pasteAction = QtWidgets.QAction(
-            icon("edit-paste"), u"Paste", self,
+            icon("edit-paste"), "Paste", self,
             shortcut=QtGui.QKeySequence.Paste,
             triggered=viewPaste)
         self.addRowAction = QtWidgets.QAction(
-            icon("list-add"), u"Add row", self,
+            icon("list-add"), "Add row", self,
             triggered=self.programSelectionModel.insertRow)
         self.removeRowAction = QtWidgets.QAction(
-            icon("list-remove"), u"Remove row", self,
+            icon("list-remove"), "Remove row", self,
             triggered=self.programSelectionModel.removeRows)
         self.startProgramAction = QtWidgets.QAction(
-            icon("media-playback-start"), u"Start program", self,
+            icon("media-playback-start"), "Start program", self,
             triggered=self.startProgram)
         self.stopProgramAction = QtWidgets.QAction(
-            icon("media-playback-stop"), u"Stop program", self,
+            icon("media-playback-stop"), "Stop program", self,
             triggered=self.stopProgram)
         self.startAllProgramsAction = QtWidgets.QAction(
-            icon("media-seek-forward"), u"Start all programs", self,
+            icon("media-seek-forward"), "Start all programs", self,
             triggered=self.startAllPrograms)
         self.stopAllProgramsAction = QtWidgets.QAction(
-            icon("process-stop"), u"Stop all programs", self,
+            icon("process-stop"), "Stop all programs", self,
             triggered=self.stopAllPrograms)
 
         self.toolBar.addActions((self.startProgramAction,
@@ -350,7 +348,7 @@ class ProgramWidget(ProgramWidgetUi):
 
         """
         self.model.clear()
-        self.model.setHorizontalHeaderLabels([u"time /s", u"setpoint"])
+        self.model.setHorizontalHeaderLabels(["time /s", "setpoint"])
         for root in range(self.driverModel.rowCount()):
             rootItem = QtGui.QStandardItem(
                 self.driverModel.verticalHeaderItem(root).text())

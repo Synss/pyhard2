@@ -17,10 +17,10 @@ Reference:
 import sys
 
 if sys.platform == "linux2":
-    from lindaq import DioProtocol, AioProtocol
+    from .lindaq import DioProtocol, AioProtocol
 else:
-    from windaq import DioProtocol
-    from windaq import VoltageAioProtocol as AioProtocol
+    from .windaq import DioProtocol
+    from .windaq import VoltageAioProtocol as AioProtocol
 
 import pyhard2.driver as drv
 Access = drv.Access

@@ -94,7 +94,7 @@ class MonitorWidgetUi(QtWidgets.QWidget):
         super(MonitorWidgetUi, self).__init__(parent)
         self.verticalLayout = QtWidgets.QVBoxLayout(self)
         self.headerLayout = QtWidgets.QHBoxLayout()
-        self.autoSaveLabel = QtWidgets.QLabel(u"AutoSave:", self)
+        self.autoSaveLabel = QtWidgets.QLabel("AutoSave:", self)
         self.autoSaveEdit = QtWidgets.QLineEdit(
             self,
             frame=False,
@@ -106,10 +106,10 @@ class MonitorWidgetUi(QtWidgets.QWidget):
         self.axes = self.monitor.figure.add_subplot(111)
         self.monitor.setContextMenuPolicy(Qt.ActionsContextMenu)
         self.verticalLayout.addWidget(self.monitor)
-        self.logScaleCB = QtWidgets.QCheckBox(self, text=u"Log scale")
+        self.logScaleCB = QtWidgets.QCheckBox(self, text="Log scale")
         self.singleInstrumentCB = QtWidgets.QCheckBox(
             self,
-            text=u"Single instrument")
+            text="Single instrument")
         self.verticalLayout.addWidget(self.logScaleCB)
         self.verticalLayout.addWidget(self.singleInstrumentCB)
 
@@ -140,7 +140,7 @@ class MonitorWidget(MonitorWidgetUi):
 
     def setSingleInstrument(self, row, state):
         """Monitor instrument at `row` iff `state`."""
-        for row_, line in self._monitorItems.iteritems():
+        for row_, line in self._monitorItems.items():
             self._setDataPlotCurveVisibilityForRow(
                 row_, not state or row_ is row)
         self._setDataPlotCurvePenForRow(

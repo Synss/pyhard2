@@ -156,8 +156,8 @@ def main(argv):
         measure.append(vi.input.measure.read())
         output.append(vi.output.output.read())
         setpoint.append(vi.pid.setpoint.read())
-        print ("MEAS: %s  OUT: %s  SP: %s" % (
-            measure[-1], output[-1], setpoint[-1]))
+        print(("MEAS: %s  OUT: %s  SP: %s" % (
+            measure[-1], output[-1], setpoint[-1])))
         time.sleep(0.5 * time_factor)
 
     plt.plot(time_, measure, label="measure")

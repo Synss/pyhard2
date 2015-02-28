@@ -18,9 +18,9 @@ def createController():
     """Initialize controller."""
     config = Config("pfeiffer", "Multigauge")
     if not config.nodes:
-        config.nodes = range(6)
+        config.nodes = list(range(6))
     if not config.nodes:
-        config.nodes = range(1, 7)
+        config.nodes = list(range(1, 7))
         config.names = ["G%i" % node for node in config.nodes]
     if config.virtual:
         driver = virtual.VirtualInstrument()
@@ -31,7 +31,7 @@ def createController():
         iface = Controller(config, driver)
         iface.editorPrototype.default_factory = ScientificSpinBox
         iface.addCommand(driver.gauge.pressure,
-                         u"pressure", poll=True, log=True)
+                         "pressure", poll=True, log=True)
     iface.driverWidget.driverView.setItemDelegateForColumn(
         0, FormatTextDelegate("%.2e"))
     iface.populate()

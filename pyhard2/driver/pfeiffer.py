@@ -4,7 +4,7 @@
 import unittest
 import logging
 logging.basicConfig()
-import ascii
+from . import ascii
 
 import pyhard2.driver as drv
 Cmd, Access = drv.Command, drv.Access

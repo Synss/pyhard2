@@ -6,7 +6,7 @@ import time
 from collections import defaultdict
 from functools import partial
 from zipfile import ZipFile
-from StringIO import StringIO
+from io import StringIO
 
 import argparse
 import yaml
@@ -86,11 +86,11 @@ def Config(section, title="Controller",
     if config.file:
         section_ = yaml.load(config.file).get(section)
         if section_:
-            config.port = section_.iterkeys().next()
-            for __ in section_.itervalues():
+            config.port = next(iter(section_.keys()))
+            for __ in section_.values():
                 for index, node_config in enumerate(__):
                     config.nodes.append(node_config.get("node", index))
-                    config.names.append(node_config.get("name", u"%s" % index))
+                    config.names.append(node_config.get("name", "%s" % index))
     if not config.port:
         config.virtual = True
     return config
@@ -197,15 +197,15 @@ class Controller(ControllerUi):
     def virtualInstrumentController(cls, config, driver):
         """Initialize controller for the virtual instrument driver."""
         self = cls(config, driver)
-        self.addCommand(driver.input.measure, u"measure", poll=True, log=True)
-        self.addCommand(driver.pid.setpoint, u"setpoint", log=True,
+        self.addCommand(driver.input.measure, "measure", poll=True, log=True)
+        self.addCommand(driver.pid.setpoint, "setpoint", log=True,
                         role="program")
-        self.addCommand(driver.output.output, u"output", poll=True, log=True)
-        self.addCommand(driver.pid.proportional, u"PID P", hide=True,
+        self.addCommand(driver.output.output, "output", poll=True, log=True)
+        self.addCommand(driver.pid.proportional, "PID P", hide=True,
                         role="pidp")
-        self.addCommand(driver.pid.integral_time, u"PID I", hide=True,
+        self.addCommand(driver.pid.integral_time, "PID I", hide=True,
                         role="pidi")
-        self.addCommand(driver.pid.derivative_time, u"PID D", hide=True,
+        self.addCommand(driver.pid.derivative_time, "PID D", hide=True,
                         role="pidd")
         return self
 

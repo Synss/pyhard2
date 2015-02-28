@@ -80,7 +80,7 @@ try:
     from curses import ascii
 except ImportError:
     # Curses does not exist on windows, import local copy.
-    import ascii
+    from . import ascii
 
 from PyQt5 import QtCore
 Signal, Slot = QtCore.pyqtSignal, QtCore.pyqtSlot

@@ -214,8 +214,7 @@ class Profile(object):
         if now >= self.profile[-1][Profile.TIME]:
             return self.profile[-1][Profile.SP]
         # find current element in profile // binary search would be + efficient
-        index = len(filter(lambda point:
-                           point[Profile.TIME] <= now, self.profile))
+        index = len([point for point in self.profile if point[Profile.TIME] <= now])
         point, next_point = self.profile[index - 1], self.profile[index]
         return (point[Profile.SP] + 
                 (next_point[Profile.SP] - point[Profile.SP]) /

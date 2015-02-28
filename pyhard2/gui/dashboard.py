@@ -109,13 +109,13 @@ class DashboardConfig(object):
     def setupUi(self, dashboard):
         dashboard.setWindowTitle(self.windowTitle)
         dashboard.setBackgroundItem(self.backgroundItem)
-        for text, (x, y) in self.labels.iteritems():
+        for text, (x, y) in self.labels.items():
             textItem = dashboard.addSimpleText(text)
             textItem.setFlags(
                 textItem.flags()
                 | QtWidgets.QGraphicsItem.ItemIgnoresTransformations)
             textItem.setPos(dashboard.mapToScene(QtCore.QPointF(x, y)))
-        for controller, proxyWidgets in self.controllers.iteritems():
+        for controller, proxyWidgets in self.controllers.items():
             dashboard.addControllerAndWidgets(controller, proxyWidgets)
 
     def parse(self):
@@ -125,11 +125,10 @@ class DashboardConfig(object):
         except KeyError:
             pass
         self.windowTitle = section.pop("name", self.windowTitle)
-        for name, pos in (dct.itervalues()
-                          for dct in section.pop("labels", [])):
+        for name, pos in (dct.values() for dct in section.pop("labels", [])):
             self.labels[name] = pos
 
-        for module, section in self.yaml.iteritems():
+        for module, section in self.yaml.items():
             try:
                 controller = import_module("pyhard2.ctrlr.%s" % module)\
                     .createController()
@@ -138,7 +137,7 @@ class DashboardConfig(object):
                 logger.exception("%s controller failed to load." % module)
                 continue
             self.controllers[controller] = []  # empty proxyWidget list
-            for subsection in section.itervalues():
+            for subsection in section.values():
                 for row, config in enumerate(subsection):
                     try:
                         x, y = config["pos"]
@@ -266,13 +265,13 @@ class Dashboard(DashboardUi):
         line = Line2D([], [])
         axes.add_artist(line)
         showMonitorAction = QtWidgets.QAction(
-            u"monitor ...", item, checkable=True,
+            "monitor ...", item, checkable=True,
             toggled=plot.setVisible)
         plot.addAction(QtWidgets.QAction(
-            u"hide", plot,
+            "hide", plot,
             triggered=showMonitorAction.toggle))
         plot.addAction(QtWidgets.QAction(
-            u"clear", plot,
+            "clear", plot,
             triggered=lambda:
             line.set_data([], [])))
         item.addAction(showMonitorAction)
@@ -404,7 +403,7 @@ class Dashboard(DashboardUi):
                     controller.windowTitle())
                 continue
             proxyWidget.addAction(QtWidgets.QAction(
-                u"go to controller...", proxyWidget,
+                "go to controller...", proxyWidget,
                 # needs early binding in the loop
                 triggered=partial(self._goToController, controller, row)))
             widget = proxyWidget.widget()
