@@ -68,7 +68,7 @@ class Protocol(drv.CommunicationProtocol):
 
     """
     def __init__(self, socket):
-        super(Protocol, self).__init__(socket)
+        super().__init__(socket)
         self._socket.baudrate = 9600
         self._socket.timeout = 0.1
         self._socket.newline = "\r\n"
@@ -88,7 +88,7 @@ class Ngc2d(drv.Subsystem):
 
     """
     def __init__(self, socket):
-        super(Ngc2d, self).__init__()
+        super().__init__()
         self.setProtocol(Protocol(socket))
         # Commands
         self.poll = Cmd("P", Access.WO)

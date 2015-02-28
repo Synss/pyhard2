@@ -40,7 +40,7 @@ class SingleShotProgram(QtCore.QObject):
     value = Signal(object)
 
     def __init__(self):
-        super(SingleShotProgram, self).__init__()
+        super().__init__()
         self._timer = QtCore.QTimer(self)
         self._timer.setSingleShot(True)
         self._timer.timeout.connect(self._shoot)
@@ -118,7 +118,7 @@ class SetpointRampProgram(SingleShotProgram):
     """Program that performs setpoint ramps."""
 
     def __init__(self):
-        super(SetpointRampProgram, self).__init__()
+        super().__init__()
         self._ramp = None
         self._timer.setSingleShot(False)
         self.started.connect(self._timer.start)
@@ -126,7 +126,7 @@ class SetpointRampProgram(SingleShotProgram):
 
     def setProfile(self, profile):
         """Set the profile to `profile`."""
-        super(SetpointRampProgram, self).setProfile(profile)
+        super().setProfile(profile)
         self._ramp = pid.Profile(list(self._profile)).ramp()
 
     @Slot()
@@ -181,7 +181,7 @@ class ProgramWidgetUi(QtWidgets.QWidget):
     """The default UI for the program widget."""
 
     def __init__(self, parent=None):
-        super(ProgramWidgetUi, self).__init__(parent)
+        super().__init__(parent)
         sp = QtWidgets.QSizePolicy
         self.verticalLayout = QtWidgets.QVBoxLayout(self)
         self.setSizePolicy(sp.Fixed, sp.Expanding)
@@ -231,7 +231,7 @@ class ProgramWidget(ProgramWidgetUi):
     stopRequested = Signal(int)
 
     def __init__(self, parent=None):
-        super(ProgramWidget, self).__init__(parent)
+        super().__init__(parent)
         self.driverModel = None
         self.programColumn = None
         self._previewPlotItems = []  # defeat GC

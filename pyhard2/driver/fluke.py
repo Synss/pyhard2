@@ -59,7 +59,7 @@ class CommunicationProtocol(drv.CommunicationProtocol):
 
     """
     def __init__(self, socket):
-        super(CommunicationProtocol, self).__init__(socket)
+        super().__init__(socket)
         self._socket.timeout = 1.0
         self._socket.newline = "\r"
 
@@ -81,7 +81,7 @@ class Fluke18x(drv.Subsystem):
 
     """
     def __init__(self, socket):
-        super(Fluke18x, self).__init__()
+        super().__init__()
         self.setProtocol(CommunicationProtocol(socket))
         self.button = drv.Subsystem(self)
         for name, code in dict(blue=10,

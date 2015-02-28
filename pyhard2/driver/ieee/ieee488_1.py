@@ -18,7 +18,7 @@ class Ieee4881(drv.Subsystem):
 
     """
     def __init__(self, socket, parent=None):
-        super(Ieee4881, self).__init__(parent)
+        super().__init__(parent)
         self.setProtocol(ieee.Ieee488CommunicationProtocol(socket, parent))
 
         self.source_handshake = Cmd("SH1")

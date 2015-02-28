@@ -35,7 +35,7 @@ class HorizontalHeaderItem(QtGui.QStandardItem):
     CommandRole = Qt.UserRole + 1
 
     def __init__(self, text=""):
-        super(HorizontalHeaderItem, self).__init__(text)
+        super().__init__(text)
         self._defaultPollingState = False
         self._defaultLoggingState = False
 
@@ -81,7 +81,7 @@ class VerticalHeaderItem(QtGui.QStandardItem):
     NodeRole = Qt.UserRole + 1
 
     def __init__(self, text=""):
-        super(VerticalHeaderItem, self).__init__(text)
+        super().__init__(text)
 
     def type(self):
         """Return QtGui.QStandardItem.UserType."""
@@ -110,7 +110,7 @@ class SignalProxy(QtCore.QObject):  # Obsolete in Qt5
     signal = Signal(object)
 
     def __init__(self, parent=None):
-        super(SignalProxy, self).__init__(parent)
+        super().__init__(parent)
         self.connect = self.signal.connect
         self.disconnect = self.signal.disconnect
         self.emit = self.signal.emit
@@ -125,7 +125,7 @@ class DriverItem(QtGui.QStandardItem):
     """`QStandardItem` handling communication with the driver."""
 
     def __init__(self):
-        super(DriverItem, self).__init__()
+        super().__init__()
         self._signal = SignalProxy()  # Used to write to the driver.
 
     def type(self):
@@ -233,11 +233,11 @@ class DriverItem(QtGui.QStandardItem):
 
     def data(self, role=Qt.DisplayRole):
         """Default to Qt.DisplayRole."""
-        return super(DriverItem, self).data(role)
+        return super().data(role)
 
     def setData(self, value, role=Qt.EditRole):
         """Default to Qt.EditRole."""
-        super(DriverItem, self).setData(value, role)
+        super().setData(value, role)
         if role == Qt.EditRole and not self.isReadOnly():
             self._signal.emit(value)
 
@@ -247,7 +247,7 @@ class DriverModel(QtGui.QStandardItemModel):
     """Model to handle the driver."""
 
     def __init__(self, parent=None):
-        super(DriverModel, self).__init__(parent)
+        super().__init__(parent)
         self.setItemPrototype(DriverItem())
 
     def __repr__(self):

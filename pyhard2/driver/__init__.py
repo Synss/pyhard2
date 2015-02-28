@@ -191,7 +191,7 @@ class Command(QtCore.QObject):
                  rfunc=None, wfunc=None,
                  doc=None,
                  ):
-        super(Command, self).__init__()
+        super().__init__()
         self.reader = reader
         self.writer = writer if writer is not None else reader
         self.minimum, self.maximum = minimum, maximum
@@ -247,7 +247,7 @@ class Subsystem(QtCore.QObject):
     """A logical group of one or more commands."""
 
     def __init__(self, parent=None):
-        super(Subsystem, self).__init__(parent)
+        super().__init__(parent)
         self._protocol = None
 
     def __repr__(self):
@@ -258,7 +258,7 @@ class Subsystem(QtCore.QObject):
         if isinstance(value, Command):
             if not value.parent():
                 value.setParent(self)
-        super(Subsystem, self).__setattr__(name, value)
+        super().__setattr__(name, value)
 
     def protocol(self):
         """Return the protocol if one has been set."""
@@ -322,7 +322,7 @@ class Protocol(QtCore.QObject):
     """Protocols should derive this class."""
 
     def __init__(self, parent=None):
-        super(Protocol, self).__init__(parent)
+        super().__init__(parent)
 
     def read(self, context):
         """Handle the read request."""
@@ -364,7 +364,7 @@ class CommandCallerProtocol(Protocol):
 
     """
     def __init__(self, parent=None):
-        super(CommandCallerProtocol, self).__init__(parent)
+        super().__init__(parent)
 
     def read(self, context):
         """Return ``context.reader()``."""
@@ -407,7 +407,7 @@ class ObjectWrapperProtocol(Protocol):
 
     """
     def __init__(self, wrapped_obj, parent=None):
-        super(ObjectWrapperProtocol, self).__init__(parent)
+        super().__init__(parent)
         self._nodes = _defaultdict(_partial(_deepcopy, wrapped_obj))
 
     def node(self, node=None):
@@ -431,7 +431,7 @@ class CommunicationProtocol(Protocol):
 
     """
     def __init__(self, socket, parent=None):
-        super(CommunicationProtocol, self).__init__(parent)
+        super().__init__(parent)
         self._socket = socket
 
 
@@ -499,7 +499,7 @@ class Serial(serial.Serial):
     """Fix `readline()` in `pyserial`."""
 
     def __init__(self, port=None, newline="\n", *args, **kwargs):
-        super(Serial, self).__init__(port, *args, **kwargs)
+        super().__init__(port, *args, **kwargs)
         self.newline = newline
 
     def readline(self):
@@ -509,7 +509,7 @@ class Serial(serial.Serial):
         """
         _start = time.time()
         if not self.newline:
-            return super(Serial, self).readline()
+            return super().readline()
         line = ""
         while not line.endswith(self.newline):
             c = self.read(1)

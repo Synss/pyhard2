@@ -26,7 +26,7 @@ class DplProtocol(drv.CommunicationProtocol):
 
     """
     def __init__(self, socket):
-        super(DplProtocol, self).__init__(socket)
+        super().__init__(socket)
 
     @staticmethod
     def _check_error(msg):
@@ -66,7 +66,7 @@ class DplProtocol(drv.CommunicationProtocol):
 class ScpiCommunicationProtocol(ieee.ScpiCommunicationProtocol):
 
     def read(self, context):
-        msg = _stripEot(super(ScpiCommunicationProtocol, self).read(context))
+        msg = _stripEot(super().read(context))
         err = DplProtocol._check_error(msg)
         if err:
             self._socket.flush()
@@ -86,7 +86,7 @@ class Sm700Series(drv.Subsystem):
 
     """
     def __init__(self, socket):
-        super(Sm700Series, self).__init__()
+        super().__init__()
         socket.timeout = 1.0
         # Termination character Controller -> PSC232: LF or CR
         # Termination character PSC232 -> Controller: EOT (\x04)

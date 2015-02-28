@@ -21,7 +21,7 @@ import pyhard2.driver.daq as daq
 class ButtonDelegate(QtWidgets.QAbstractItemDelegate):
 
     def __init__(self, parent=None):
-        super(ButtonDelegate, self).__init__(parent)
+        super().__init__(parent)
 
     def setEditorData(self, editor, index):
         if not index.isValid():
@@ -37,7 +37,7 @@ class ButtonDelegate(QtWidgets.QAbstractItemDelegate):
 class AmtronDriverWidget(DriverWidget):
 
     def __init__(self, parent=None):
-        super(AmtronDriverWidget, self).__init__(parent)
+        super().__init__(parent)
         self.powerBtn = QtWidgets.QPushButton("Power", checkable=True)
         self.gateBtn = QtWidgets.QPushButton("Gate", checkable=True)
         self.pilotBtn = QtWidgets.QPushButton("Pilot laser", checkable=True)
@@ -61,7 +61,7 @@ class AmtronDriverWidget(DriverWidget):
         self.pilotBtn.toggled.connect(self.pilotBtnMapper.submit)
 
     def setDriverModel(self, model):
-        super(AmtronDriverWidget, self).setDriverModel(model)
+        super().setDriverModel(model)
         self.powerBtnMapper.setModel(model)
         self.gateBtnMapper.setModel(model)
         self.pilotBtnMapper.setModel(model)
@@ -82,7 +82,7 @@ class AmtronDriverWidget(DriverWidget):
 class AmtronController(Controller):
 
     def __init__(self, config, driver, parent=None):
-        super(AmtronController, self).__init__(config, driver, parent)
+        super().__init__(config, driver, parent)
         self.programs.default_factory = SetpointRampProgram
         self.populated.connect(self.driverWidget.powerBtnMapper.toFirst)
         self.populated.connect(self.driverWidget.gateBtnMapper.toFirst)
@@ -94,10 +94,10 @@ class AmtronController(Controller):
         ))
 
     def _addDriverWidget(self):
-        super(AmtronController, self)._addDriverWidget(AmtronDriverWidget)
+        super()._addDriverWidget(AmtronDriverWidget)
 
     def _currentRowChanged(self, current, previous):
-        super(AmtronController, self)._currentRowChanged(current, previous)
+        super()._currentRowChanged(current, previous)
         self.driverWidget.powerBtnMapper.setCurrentModelIndex(current)
         self.driverWidget.gateBtnMapper.setCurrentModelIndex(current)
         self.driverWidget.pilotBtnMapper.setCurrentModelIndex(current)
@@ -122,7 +122,7 @@ class AmtronDaq(drv.Subsystem):
     #    thermometer      pid           laser
     #    measure      ->  compute   ->  output
     def __init__(self, serial, daqline):
-        super(AmtronDaq, self).__init__()
+        super().__init__()
         self.pid = virtual.PidSubsystem(self, spmin=-100.0, spmax=1000.0)
         self.temperature = daq.Daq(daqline)
         self.temperature.voltage.ai._rfunc = partial(mul, 100)
@@ -152,7 +152,7 @@ class _VirtualInterface(object):
 class VirtualAmtronInstrument(virtual.VirtualInstrument):
 
     def __init__(self):
-        super(VirtualAmtronInstrument, self).__init__()
+        super().__init__()
         self.laser = drv.Subsystem(self)
         self.laser.command = drv.Subsystem(self.laser)
         self.laser.command.setProtocol(

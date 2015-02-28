@@ -54,7 +54,7 @@ class XonXoffProtocol(drv.CommunicationProtocol):
             28: "Prompt not active"}
 
     def __init__(self, socket):
-        super(XonXoffProtocol, self).__init__(socket)
+        super().__init__(socket)
         self._socket.timeout = 5.0
         self._socket.newline = "\r"
 
@@ -132,7 +132,7 @@ class Series988(drv.Subsystem):
 
     """
     def __init__(self, socket):
-        super(Series988, self).__init__()
+        super().__init__()
         self.setProtocol(XonXoffProtocol(socket))
         self.setpoint = Cmd("SP1", minimum=-250, maximum=9999)
         self.power = Cmd("PWR", access=Access.RO, doc="power output %")

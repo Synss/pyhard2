@@ -33,7 +33,7 @@ class WatlowProgram(SingleShotProgram):
     rate = Signal(float)
 
     def __init__(self):
-        super(WatlowProgram, self).__init__()
+        super().__init__()
 
     @Slot()
     def _shoot(self):
@@ -52,7 +52,7 @@ class WatlowProgram(SingleShotProgram):
 class WatlowDriverWidget(DriverWidget):
 
     def __init__(self, parent=None):
-        super(WatlowDriverWidget, self).__init__(parent)
+        super().__init__(parent)
         self.rateEdit = QtWidgets.QSpinBox(self, enabled=False,
                                            minimum=0, maximum=9999)
         self.initCombo = QtWidgets.QComboBox(self)
@@ -77,7 +77,7 @@ class WatlowDriverWidget(DriverWidget):
         self.rateEdit.valueChanged.connect(self.rateEditMapper.submit)
 
     def setDriverModel(self, model):
-        super(WatlowDriverWidget, self).setDriverModel(model)
+        super().setDriverModel(model)
         self.rampInitMapper.setModel(model)
         self.rateEditMapper.setModel(model)
 
@@ -93,7 +93,7 @@ class WatlowDriverWidget(DriverWidget):
 class WatlowController(Controller):
 
     def __init__(self, config, driver, parent=None):
-        super(WatlowController, self).__init__(config, driver, parent)
+        super().__init__(config, driver, parent)
         self.programs.default_factory = WatlowProgram
         self.populated.connect(self.driverWidget.rampInitMapper.toFirst)
         self.populated.connect(self.driverWidget.rampInitMapper.toFirst)
@@ -108,10 +108,10 @@ class WatlowController(Controller):
             ramprate=self.setRampRateColumn))
 
     def _addDriverWidget(self):
-        super(WatlowController, self)._addDriverWidget(WatlowDriverWidget)
+        super()._addDriverWidget(WatlowDriverWidget)
 
     def _currentRowChanged(self, current, previous):
-        super(WatlowController, self)._currentRowChanged(current, previous)
+        super()._currentRowChanged(current, previous)
         self.driverWidget.rampInitMapper.setCurrentModelIndex(current)
         self.driverWidget.rateEditMapper.setCurrentModelIndex(current)
 
@@ -141,7 +141,7 @@ class WatlowController(Controller):
             row, self.rampInitColumn).data()
         self._rateValuePool[row] = self._driverModel.item(
             row, self.rampRateColumn).data()
-        super(WatlowController, self).startProgram(row)
+        super().startProgram(row)
 
     def stopProgram(self, row):
         # restore values
@@ -149,7 +149,7 @@ class WatlowController(Controller):
             self._rampInitValuePool.pop(row))
         self._driverModel.item(row, self.rampRateColumn).setData(
             self._rateValuePool.pop(row))
-        super(WatlowController, self).stopProgram(row)
+        super().stopProgram(row)
 
 
 class _VirtualRamping(object):

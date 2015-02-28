@@ -22,7 +22,7 @@ class ItemRangedSpinBoxDelegate(DoubleSpinBoxDelegate):
 
     """
     def __init__(self, spinBox=None, parent=None):
-        super(ItemRangedSpinBoxDelegate, self).__init__(spinBox, parent)
+        super().__init__(spinBox, parent)
 
     def createEditor(self, parent, option, index):
         """Return a QDoubleSpinBox.
@@ -32,7 +32,7 @@ class ItemRangedSpinBoxDelegate(DoubleSpinBoxDelegate):
         - The `maximum` property of the spin box is set to
           `item.maximum()` if this value has been set.
         """
-        spinBox = super(ItemRangedSpinBoxDelegate, self).createEditor(
+        spinBox = super().createEditor(
             parent, option, index)
         item = index.model().itemFromIndex(index)
         minimum, maximum = item.minimum(), item.maximum()
@@ -48,7 +48,7 @@ class DriverWidgetUi(QtWidgets.QWidget):
     """The default UI for the driver widget."""
 
     def __init__(self, parent=None):
-        super(DriverWidgetUi, self).__init__(parent)
+        super().__init__(parent)
         self.verticalLayout = QtWidgets.QVBoxLayout(self)
         self.driverView = QtWidgets.QTableView(
             self,
@@ -89,7 +89,7 @@ class DriverWidget(DriverWidgetUi):
 
     """
     def __init__(self, parent=None):
-        super(DriverWidget, self).__init__(parent)
+        super().__init__(parent)
         self.driverModel = None
         self.driverView.setItemDelegate(
             ItemRangedSpinBoxDelegate(parent=self.driverView))

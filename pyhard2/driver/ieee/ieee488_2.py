@@ -25,7 +25,7 @@ class Ieee4882(drv.Subsystem):
 
     """
     def __init__(self, socket, parent=None):
-        super(Ieee4882, self).__init__(parent)
+        super().__init__(parent)
         self.setProtocol(ieee.Ieee488CommunicationProtocol(socket, parent))
         # Table 10-2
         # System data
@@ -49,46 +49,46 @@ class Ieee4882(drv.Subsystem):
 class PowerOn(drv.Subsystem):
     """Table 4-5 -- Optional Power-On Common Commands"""
     def __init__(self, parent):
-        super(PowerOn, self).__init__(parent)
+        super().__init__(parent)
         self.status = Cmd("PSC", access=Access.RO)
         self.clear_status = Cmd("PSC", access=Access.WO)
 
 class ParallelPoll(drv.Subsystem):
     """Table 4-6 -- Optional Parallel Poll Common Commands"""
     def __init__(self, parent):
-        super(ParallelPoll, self).__init__(parent)
+        super().__init__(parent)
         self.individual_status = Cmd('IST', access=Access.RO)
         self.enable_register = Cmd('PRE')
 
 class ResourceDescription(drv.Subsystem):
     """Table 4-8 -- Optional Resource Description Common Command"""
     def __init__(self, parent):
-        super(ResourceDescription, self).__init__(parent)
+        super().__init__(parent)
         self.transfer = Cmd('RDT')
 
 class ProtectedUserData(drv.Subsystem):
     """Table 4-9 -- Optional Protected User Data Command"""
     def __init__(self, parent):
-        super(ProtectedUserData, self).__init__(parent)
+        super().__init__(parent)
         self.protected_user_data = Cmd('PUD')
 
 class Calibration(drv.Subsystem):
     """Table 4-10 -- Optional Calibration Command"""
     def __init__(self, parent):
-        super(Calibration, self).__init__(parent)
+        super().__init__(parent)
         self.self_calibration = Cmd("CAL?", access=Access.WO)
 
 class Trigger(drv.Subsystem):
     """Table 4-11 -- Optional Trigger Command"""
     def __init__(self, parent):
-        super(Trigger, self).__init__(parent)
+        super().__init__(parent)
         self.trigger = Cmd("TRG", access=Access.WO)
 
 class Macro(drv.Subsystem):
     """Table 4-12 -- Optional Trigger Macro Commands
         Table 4-13 -- Optional Macro Commands"""
     def __init__(self, parent):
-        super(Macro, self).__init__(parent)
+        super().__init__(parent)
         self.trigger = Cmd("DDT", access=Access.WO)
         self.define = Cmd("DMC", access=Access.WO)
         self.enable = Cmd("EMC", access=Access.WO)
@@ -99,33 +99,33 @@ class Macro(drv.Subsystem):
 class Identification(drv.Subsystem):
     """Table 4-14 -- Optional Option Identification Command"""
     def __init__(self, parent):
-        super(Identification, self).__init__(parent)
+        super().__init__(parent)
         self.identification_opt = Cmd("OPT", access=Access.RO)
 
 class StoredSetting(drv.Subsystem):
     """Table 4-15 -- Optional Stored Setting Commands"""
     def __init__(self, parent):
-        super(StoredSetting, self).__init__(parent)
+        super().__init__(parent)
         self.recall = Cmd("RCL", access=Access.WO)
         self.save = Cmd("SAV", access=Access.WO)
 
 class Learn(drv.Subsystem):
     """Table 4-16 -- Optional Learn Command"""
     def __init__(self, parent):
-        super(Learn, self).__init__(parent)
+        super().__init__(parent)
         self.learn_device_setup = Cmd("LRN", access=Access.WO)
 
 class SystemConfiguration(drv.Subsystem):
     """Table 4-18 -- Optional System Configuration Commands"""
     def __init__(self, parent):
-        super(SystemConfiguration, self).__init__(parent)
+        super().__init__(parent)
         self.accept_address_command = Cmd("AAD", access=Access.WO)
         self.disable_listener_function = Cmd("DLF", access=Access.WO)
 
 class ControlPassing(drv.Subsystem):
     """Table 4-19 -- Optional Passing Control Commands"""
     def __init__(self, parent):
-        super(ControlPassing, self).__init__(parent)
+        super().__init__(parent)
         self.pass_back = Cmd("PCB", access=Access.WO)
 
 

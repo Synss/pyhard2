@@ -42,12 +42,12 @@ class Cmd(drv.Command):
         """`Context` with `minimum` and `maximum` attributes."""
 
         def __init__(self, command, value=None, node=None):
-            super(Cmd.Context, self).__init__(command, value, node)
+            super().__init__(command, value, node)
             self.minimum = command.minimum
             self.maximum = command.maximum
 
     def __init__(self, **kwargs):
-        super(Cmd, self).__init__(reader=None, **kwargs)
+        super().__init__(reader=None, **kwargs)
 
 
 class Subsystem(drv.Subsystem):
@@ -59,7 +59,7 @@ class Subsystem(drv.Subsystem):
 
     """
     def __init__(self, device, parent=None):
-        super(Subsystem, self).__init__(parent)
+        super().__init__(parent)
         self.device = device
 
 
@@ -104,7 +104,7 @@ class Daq(drv.Subsystem):
 
     """
     def __init__(self, device, parent=None):
-        super(Daq, self).__init__(parent)
+        super().__init__(parent)
         self.digitalIO = Subsystem(device, self)
         self.digitalIO.setProtocol(DioProtocol(self))
         self.digitalIO.state = Cmd(rfunc=bool, access=Access.RW)

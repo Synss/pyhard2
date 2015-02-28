@@ -9,7 +9,7 @@ class Counter(QtWidgets.QWidget):
     """Widget with a timer."""
 
     def __init__(self, parent=None):
-        super(Counter, self).__init__(parent)
+        super().__init__(parent)
         self.refreshRateLayout = QtWidgets.QFormLayout(self)
         self.editor = QtWidgets.QDoubleSpinBox(
             self,
@@ -28,7 +28,7 @@ class ScientificSpinBox(QtWidgets.QDoubleSpinBox):
     """QDoubleSpinBox with a scientific display."""
 
     def __init__(self, parent=None):
-        super(ScientificSpinBox, self).__init__(parent)
+        super().__init__(parent)
         self.setMinimumWidth(self.fontMetrics().width("0.000e-00"))
         self.setDecimals(50)
 

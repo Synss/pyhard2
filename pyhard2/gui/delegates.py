@@ -7,7 +7,7 @@ class FormatTextDelegate(QtWidgets.QStyledItemDelegate):
     """QStyledItemDelegate formatting the text displayed."""
 
     def __init__(self, format="%.2f", parent=None):
-        super(FormatTextDelegate, self).__init__(parent)
+        super().__init__(parent)
         self._format = format
 
     def displayText(self, value, locale):
@@ -19,7 +19,7 @@ class ComboBoxDelegate(QtWidgets.QStyledItemDelegate):
     """QStyledItemDelegate for ComboBox."""
 
     def __ini__(self, parent=None):
-        super(ComboBoxDelegate, self).__init__(parent)
+        super().__init__(parent)
 
     def setEditorData(self, editor, index):
         if not index.isValid() or index.data() is None:
@@ -69,7 +69,7 @@ class DoubleSpinBoxDelegate(QtWidgets.QStyledItemDelegate):
 
     """
     def __init__(self, spinBox=None, parent=None):
-        super(DoubleSpinBoxDelegate, self).__init__(parent)
+        super().__init__(parent)
         self._spinBox = (QtWidgets.QDoubleSpinBox() if spinBox is None
                          else spinBox)
 
@@ -99,8 +99,7 @@ class DoubleSpinBoxDelegate(QtWidgets.QStyledItemDelegate):
             spinBox.editingFinished.connect(self._commitAndCloseEditor)
             return spinBox
         else:
-            return super(DoubleSpinBoxDelegate, self).createEditor(
-                parent, option, index)
+            return super().createEditor(parent, option, index)
 
     def setEditorData(self, spinBox, index):
         """Set spin box value to `index.data()`."""
@@ -115,8 +114,7 @@ class DoubleSpinBoxDelegate(QtWidgets.QStyledItemDelegate):
         if index.isValid():
             model.setData(index, spinBox.value())
         else:
-            super(DoubleSpinBoxDelegate, self).setModelData(
-                spinBox, model, index)
+            super().setModelData(spinBox, model, index)
 
     def _commitAndCloseEditor(self):
         """Commit data and close editor."""
@@ -134,7 +132,7 @@ class ButtonDelegate(QtWidgets.QStyledItemDelegate):
 
     """
     def __init__(self, button=None, parent=None):
-        super(ButtonDelegate, self).__init__(parent)
+        super().__init__(parent)
         self._btn = QtWidgets.QPushButton() if button is None else button
         self._btn.setParent(parent)
         self._btn.hide()
@@ -144,7 +142,7 @@ class ButtonDelegate(QtWidgets.QStyledItemDelegate):
             self.__class__.__name__, self._btn, self.parent())
 
     def sizeHint(self, option, index):
-        return super(ButtonDelegate, self).sizeHint(option, index)
+        return super().sizeHint(option, index)
 
     def createEditor(self, parent, option, index):
         return None

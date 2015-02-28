@@ -24,7 +24,7 @@ class DeltaFluke(drv.Subsystem):
 
     """
     def __init__(self, fluke_serial, delta_serial):
-        super(DeltaFluke, self).__init__()
+        super().__init__()
         self.fluke = fluke.Fluke18x(fluke_serial)
         self.delta = delta.Sm700Series(delta_serial)
         self.pid = virtual.PidSubsystem(

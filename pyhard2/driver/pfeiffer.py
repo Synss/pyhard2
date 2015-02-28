@@ -88,7 +88,7 @@ class CommunicationProtocol(drv.CommunicationProtocol):
     
     """
     def __init__(self, socket):
-        super(CommunicationProtocol, self).__init__(socket)
+        super().__init__(socket)
         self._socket.timeout = 5.0
         self._socket.newline = "\r\n"
 
@@ -131,7 +131,7 @@ class Maxigauge(drv.Subsystem):
 
     """
     def __init__(self, socket):
-        super(Maxigauge, self).__init__()
+        super().__init__()
         self.setProtocol(CommunicationProtocol(socket))
         # Controller subsystem
         self.errors = Cmd("ERR", access=Access.RO, rfunc=_parse_error)

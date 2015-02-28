@@ -52,7 +52,7 @@ class CommunicationProtocol(drv.CommunicationProtocol):
     """Read-only communication with the device."""
 
     def __init__(self, socket):
-        super(CommunicationProtocol, self).__init__(socket)
+        super().__init__(socket)
         self._socket.baudrate = 9600
         self._socket.timeout = 2.0
         self._socket.newline = "\r"
@@ -82,7 +82,7 @@ class DT80k(drv.Subsystem):
              15: ('V AC', 'V', 1e-4)}
 
     def __init__(self, socket):
-        super(DT80k, self).__init__()
+        super().__init__()
         self.setProtocol(CommunicationProtocol(socket))
         self.mode = Cmd(0x89, rfunc=lambda prim:
                         {"\xC0": "temperature",

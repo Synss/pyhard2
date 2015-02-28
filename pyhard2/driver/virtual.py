@@ -29,8 +29,8 @@ class Pid(pid.PidController):
     def __init__(self,
                  proportional=2.0, integral_time=0.0, derivative_time=0.0,
                  vmin=0.0, vmax=100.0):
-        super(Pid, self).__init__(proportional, integral_time, derivative_time,
-                                  vmin, vmax)
+        super().__init__(proportional, integral_time, derivative_time,
+                         vmin, vmax)
         self.measure = 0.0
 
     @property
@@ -84,7 +84,7 @@ class PidSubsystem(drv.Subsystem):
     def __init__(self, parent,
                  proportional=2.0, integral_time=0.0, derivative_time=0.0,
                  vmin=0.0, vmax=100.0, spmin=0.0, spmax=100.0):
-        super(PidSubsystem, self).__init__(parent)
+        super().__init__(parent)
         self.setProtocol(drv.ObjectWrapperProtocol(Pid(
             proportional, integral_time, derivative_time, vmin, vmax)))
         self.measure = Cmd("measure", access=Access.WO)
@@ -106,7 +106,7 @@ class VirtualInstrument(drv.Subsystem):
 
     """
     def __init__(self, socket=None):
-        super(VirtualInstrument, self).__init__()
+        super().__init__()
         self.pid = PidSubsystem(self)
         # Input subsystem
         self.input = drv.Subsystem(self)

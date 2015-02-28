@@ -45,7 +45,7 @@ class CommunicationProtocol(drv.CommunicationProtocol):
                   S="controller in stand-by or manual mode",)
 
     def __init__(self, socket):
-        super(CommunicationProtocol, self).__init__(socket)
+        super().__init__(socket)
         self._socket.baudrate = 19200
         self._socket.timeout = 3
         self._socket.newline = "\r\n"
@@ -97,7 +97,7 @@ class Subsystem(drv.Subsystem):
     """A `Subsystem` with an index."""
 
     def __init__(self, index, parent=None):
-        super(Subsystem, self).__init__(parent)
+        super().__init__(parent)
         self.index = index
 
 
@@ -119,7 +119,7 @@ class _PowerSubsystem(Subsystem):
     """Power unit A, B, C or D."""
 
     def __init__(self, index, parent):
-        super(_PowerSubsystem, self).__init__(index, parent)
+        super().__init__(index, parent)
         self.errors = Cmd(0x01, rfunc=_parse_bits(
             {0x0001: "interlock",
              0x0002: "no prim voltage",
@@ -165,7 +165,7 @@ class _PowerSubsystem(Subsystem):
         self.max_voltage = Cmd(0x10, rfunc=partial(mul, 0.1), access=Access.RO)  # V
 
     def _check_error(self):
-        err = super(_PowerSubsystem, self)._check_error()
+        err = super()._check_error()
         return err.extend(self.errors2) if "see error 2" in err else err
 
 
@@ -177,7 +177,7 @@ class CS400(Subsystem):
 
     """
     def __init__(self, socket):
-        super(CS400, self).__init__(0x00)
+        super().__init__(0x00)
         self.setProtocol(CommunicationProtocol(socket))
         # Main subsystem
         self.errors = Cmd(0x01, rfunc=_parse_bits(

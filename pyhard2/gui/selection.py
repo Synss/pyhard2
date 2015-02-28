@@ -11,7 +11,7 @@ class ItemSelectionModel(QtCore.QItemSelectionModel):
 
     """
     def __init__(self, model, parent=None):
-        super(ItemSelectionModel, self).__init__(model, parent)
+        super().__init__(model, parent)
 
     def currentRow(self):
         """Return the row of the current item."""

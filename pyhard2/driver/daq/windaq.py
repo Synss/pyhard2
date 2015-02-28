@@ -48,7 +48,7 @@ class DioTask(DigitalOutputTask, DigitalInputTask):
 
     """
     def __init__(self, name=""):
-        super(DioTask, self).__init__(name)
+        super().__init__(name)
 
 
 class DioProtocol(drv.Protocol):

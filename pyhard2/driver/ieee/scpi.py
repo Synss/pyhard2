@@ -24,13 +24,13 @@ class ScpiRequired(ieee.ScpiSubsystem):
             ScpiDriver(Scpi):
 
                 def __init__(self, socket):
-                    super(ScpiDriver, self).__init__(socket)
+                    super().__init__(socket)
                     self.common = Ieee4882(socket, self)
                     # Continue definition.
 
     """
     def __init__(self, socket, parent=None):
-        super(ScpiRequired, self).__init__(socket, parent)
+        super().__init__(socket, parent)
         self._scpi = drv.Subsystem(self)
         self._scpi.setProtocol(ieee.ScpiCommunicationProtocol(socket, self))
         # SYSTem
@@ -56,7 +56,7 @@ class ScpiDigitalMeter(ScpiRequired):
 
     """
     def __init__(self, socket, meter_fn, parent=None):
-        super(ScpiDigitalMeter, self).__init__(socket, parent)
+        super().__init__(socket, parent)
         if meter_fn not in ("VOLTage VOLTage:DC VOLTage:AC".split() +
                             "CURRent CURRent:DC CURRent:AC".split() +
                             "RESistance FRESistance".split()):
@@ -101,38 +101,38 @@ class ScpiDCVoltmeter(ScpiDigitalMeter):
 
     """
     def __init__(self, socket, parent=None):
-        super(ScpiDCVoltmeter, self).__init__(socket, "VOLTage", parent)
+        super().__init__(socket, "VOLTage", parent)
         # SENSe: see Command Ref 18.20
 
 
 class ScpiACVoltmeter(ScpiDigitalMeter):
     
     def __init__(self, socket, parent=None):
-        super(ScpiACVoltmeter, self).__init__(socket, "VOLTage:AC", parent)
+        super().__init__(socket, "VOLTage:AC", parent)
 
 
 class ScpiDCAmmeter(ScpiDigitalMeter):
     
     def __init__(self, socket, parent=None):
-        super(ScpiDCAmmeter, self).__init__(socket, "CURRent", parent)
+        super().__init__(socket, "CURRent", parent)
 
 
 class ScpiACAmmeter(ScpiDigitalMeter):
 
     def __init__(self, socket, parent=None):
-        super(ScpiACAmmeter, self).__init__(socket, "CURRent:AC", parent)
+        super().__init__(socket, "CURRent:AC", parent)
 
 
 class ScpiOhmmeter(ScpiDigitalMeter):
     
     def __init_(self, socket, parent=None):
-        super(ScpiOhmmeter, self).__init__(socket, "RESistance", parent)
+        super().__init__(socket, "RESistance", parent)
 
 
 class ScpiFourWireOhmmeter(ScpiDigitalMeter):
 
     def __init__(self, socket, parent=None):
-        super(ScpiFourWireOhmmeter, self).__init__(socket, "FRESistance", parent)
+        super().__init__(socket, "FRESistance", parent)
 
 
 class ScpiPowerSupply(ScpiRequired):
@@ -143,7 +143,7 @@ class ScpiPowerSupply(ScpiRequired):
 
     """
     def __init__(self, socket, parent=None):
-        super(ScpiPowerSupply, self).__init__(socket, parent)
+        super().__init__(socket, parent)
         self.output = ScpiSubsystem("OUTPUT", self._scpi)
         self.output.state = Cmd("STATe")
         self.source = ScpiSubsystem("SOURce", self._scpi)

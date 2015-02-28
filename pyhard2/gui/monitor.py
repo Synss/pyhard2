@@ -77,13 +77,12 @@ class TimeSeriesData(ListData):
 
     """
     def __init__(self):
-        super(TimeSeriesData, self).__init__()
+        super().__init__()
         self.__start = time.time()
 
     def append(self, value):
         """Append `time, value` to the list."""
-        super(TimeSeriesData, self).append(
-            (time.time() - self.__start, value))
+        super().append((time.time() - self.__start, value))
 
 
 class MonitorWidgetUi(QtWidgets.QWidget):
@@ -91,7 +90,7 @@ class MonitorWidgetUi(QtWidgets.QWidget):
     """The default UI for the monitor widget."""
 
     def __init__(self, parent=None):
-        super(MonitorWidgetUi, self).__init__(parent)
+        super().__init__(parent)
         self.verticalLayout = QtWidgets.QVBoxLayout(self)
         self.headerLayout = QtWidgets.QHBoxLayout()
         self.autoSaveLabel = QtWidgets.QLabel("AutoSave:", self)
@@ -122,7 +121,7 @@ class MonitorWidget(MonitorWidgetUi):
 
     """
     def __init__(self, parent=None):
-        super(MonitorWidget, self).__init__(parent)
+        super().__init__(parent)
         self.driverModel = None
         self.data = defaultdict(TimeSeriesData)
         self._monitorItems = defaultdict(list)

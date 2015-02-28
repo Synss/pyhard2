@@ -19,7 +19,7 @@ class ValveButton(QtWidgets.QAbstractButton):
     """Button displaying the image of a valve."""
 
     def __init__(self, parent=None):
-        super(ValveButton, self).__init__(parent)
+        super().__init__(parent)
         self.setCheckable(True)
         self.setAttribute(Qt.WA_NoSystemBackground)
         self._rendererOn = QtSvg.QSvgRenderer(self)
@@ -55,7 +55,7 @@ class VirtualDaq(QtCore.QObject):
             self.ao = 0
 
     def __init__(self, device, parent=None):
-        super(VirtualDaq, self).__init__(parent)
+        super().__init__(parent)
         self.digitalIO = drv.Subsystem()
         self.digitalIO.setProtocol(drv.ObjectWrapperProtocol(VirtualDaq.Dio()))
         self.digitalIO.state = Cmd("state")

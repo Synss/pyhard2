@@ -15,7 +15,7 @@ class Model6487(scpi.ScpiRequired):
 
     """
     def __init__(self, socket, parent=None):
-        super(Model6487, self).__init__(socket, parent)
+        super().__init__(socket, parent)
         # CALCulate subsystem
         self.calculate = scpi.ScpiSubsystem("CALCulate", self._scpi)
         self.calculate.format = Cmd("FORMat")

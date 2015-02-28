@@ -43,7 +43,7 @@ class CommunicationProtocol(drv.CommunicationProtocol):
 
     """
     def __init__(self, socket):
-        super(CommunicationProtocol, self).__init__(socket)
+        super().__init__(socket)
         self._socket.timeout = 3.0
         self._socket.newline = "\r"
 
@@ -70,7 +70,7 @@ class Pt1885(drv.Subsystem):
 
     """
     def __init__(self, socket):
-        super(Pt1885, self).__init__()
+        super().__init__()
         self.setProtocol(CommunicationProtocol(socket))
         self.max_voltage = Cmd('GMAX', rfunc=_parser("voltage"), access=Access.RO)
         self.max_current = Cmd('GMAX', rfunc=_parser("current"), access=Access.RO)

@@ -28,7 +28,7 @@ class ScpiSubsystem(drv.Subsystem):
     """`Subsystem` with a mnemonic."""
 
     def __init__(self, mnemonic, parent=None):
-        super(ScpiSubsystem, self).__init__(parent)
+        super().__init__(parent)
         self.mnemonic = mnemonic
 
 
@@ -37,7 +37,7 @@ class ScpiCommunicationProtocol(drv.CommunicationProtocol):
     """SCPI protocol."""
 
     def __init__(self, socket, parent=None):
-        super(ScpiCommunicationProtocol, self).__init__(socket, parent)
+        super().__init__(socket, parent)
 
     @staticmethod
     def _scpiPath(context):

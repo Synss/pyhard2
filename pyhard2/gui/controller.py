@@ -101,7 +101,7 @@ class ControllerUi(QtWidgets.QMainWindow):
     """QMainWindow for the controllers."""
 
     def __init__(self, parent=None):
-        super(ControllerUi, self).__init__(parent)
+        super().__init__(parent)
         centralWidget = QtWidgets.QWidget(self)
         self.setCentralWidget(centralWidget)
         self.centralLayout = QtWidgets.QHBoxLayout(centralWidget)
@@ -141,7 +141,7 @@ class Controller(ControllerUi):
     populated = Signal()
 
     def __init__(self, config, driver, parent=None):
-        super(Controller, self).__init__(parent)
+        super().__init__(parent)
         self._config = config
 
         self.driverThread = QtCore.QThread(self)

@@ -26,7 +26,7 @@ class DoubleClickEventFilter(QtCore.QObject):
     doubleClicked = Signal()
 
     def __init__(self, parent):
-        super(DoubleClickEventFilter, self).__init__(parent)
+        super().__init__(parent)
 
     def eventFilter(self, obj, event):
         if event.type() == QtCore.QEvent.MouseButtonDblClick:
@@ -164,7 +164,7 @@ class DashboardUi(QtWidgets.QMainWindow):
     """QMainWindow for the dashboard."""
 
     def __init__(self, parent=None):
-        super(DashboardUi, self).__init__(parent)
+        super().__init__(parent)
         sp = QtWidgets.QSizePolicy
         centralWidget = QtWidgets.QWidget(self)
         self.setCentralWidget(centralWidget)
@@ -206,7 +206,7 @@ class DashboardUi(QtWidgets.QMainWindow):
             self.graphicsView.fitInView(self.graphicsScene.sceneRect())
 
     def resizeEvent(self, event):
-        super(DashboardUi, self).resizeEvent(event)
+        super().resizeEvent(event)
         self.fitInView()
 
 
@@ -238,7 +238,7 @@ class Dashboard(DashboardUi):
 
     """
     def __init__(self, parent=None):
-        super(Dashboard, self).__init__(parent)
+        super().__init__(parent)
         self.controllers = [self]
         self._axes = {}
         self._currentIndex = 0

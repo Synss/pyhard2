@@ -48,7 +48,7 @@ class Subsystem(drv.Subsystem):
     """Subsystem with process number."""
 
     def __init__(self, process, parent=None):
-        super(Subsystem, self).__init__(parent)
+        super().__init__(parent)
         self.process = process
 
 
@@ -66,11 +66,11 @@ class Cmd(drv.Command):
         """`Context` with a `type` attribute."""
 
         def __init__(self, command, value=None, node=None):
-            super(Cmd.Context, self).__init__(command, value, node)
+            super().__init__(command, value, node)
             self.type = command.type
 
     def __init__(self, reader, type=None, **kwargs):
-        super(Cmd, self).__init__(reader, **kwargs)
+        super().__init__(reader, **kwargs)
         self.type = type
 
 
@@ -104,7 +104,7 @@ class AsciiProtocol(drv.CommunicationProtocol):
     """ASCII protocol."""
 
     def __init__(self, socket):
-        super(AsciiProtocol, self).__init__(socket)
+        super().__init__(socket)
 
     err = {":0101": "no ':' at the start of the message",
            ":0102": "error in first byte",
@@ -172,7 +172,7 @@ class Controller(Subsystem):
     def __init__(self, socket):
         socket.baudrate = 38400
         socket.timeout = 3
-        super(Controller, self).__init__(1)
+        super().__init__(1)
         self.setProtocol(AsciiProtocol(socket))
         # Process 1
         self.measure = Cmd(0, rfunc=_measure_to_pct, wfunc=_pct_to_measure,
@@ -256,7 +256,7 @@ class MFC(Controller):
     """Instrument for mass-flow controllers."""
 
     def __init__(self, socket):
-        super(MFC, self).__init__(socket)
+        super().__init__(socket)
 
 
 class PC(Controller):
@@ -264,7 +264,7 @@ class PC(Controller):
     """Instrument for pressure controllers."""
 
     def __init__(self, socket):
-        super(PC, self).__init__(socket)
+        super().__init__(socket)
 
 
 class BronkhorstTest(unittest.TestCase):

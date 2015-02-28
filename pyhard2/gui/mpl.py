@@ -21,12 +21,12 @@ class MplWidget(FigureCanvas):
 
     def __init__(self, parent=None):
         fig = Figure()
-        super(MplWidget, self).__init__(fig)
+        super().__init__(fig)
         self.setParent(parent)
 
     def setParent(self, parent):
         """Set the colors to the parent's theme."""
-        super(MplWidget, self).setParent(parent)
+        super().setParent(parent)
         if parent:
             color = parent.palette().brush(QPalette.Window).color()
             self.figure.set_facecolor("#%X%X%X" % (color.red(),
