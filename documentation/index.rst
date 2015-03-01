@@ -58,6 +58,21 @@ Tutorials
 API documentation
 =================
 
+pyhard2 is organized following a highly hierarchical structure:
+
+.. table::
+
+   ==================   ========================
+   layer                module
+   ==================   ========================
+   User
+   User interface       :mod:`pyhard2.gui`
+   Database             :mod:`pyhard2.db`
+   Driver model         :mod:`pyhard2.gui.model`
+   Driver abstraction   :mod:`pyhard2.driver`
+   Socket
+   ==================   ========================
+
 .. toctree::
    :maxdepth: 1
 
