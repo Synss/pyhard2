@@ -3,6 +3,8 @@
 """
 from collections import defaultdict
 
+from matplotlib import dates
+
 from PyQt5 import QtWidgets, QtCore, QtGui
 Qt = QtCore.Qt
 Slot, Signal = QtCore.pyqtSlot, QtCore.pyqtSignal
@@ -28,6 +30,9 @@ class MonitorWidgetUi(QtWidgets.QWidget):
         self.verticalLayout.addLayout(self.headerLayout)
         self.monitor = MplWidget(self)
         self.axes = self.monitor.figure.add_subplot(111)
+        self.axes.figure.autofmt_xdate()
+        self.axes.xaxis.set_major_locator(dates.MinuteLocator())
+        self.axes.xaxis.set_major_formatter(dates.DateFormatter("%d-%m %H:%M"))
         self.monitor.setContextMenuPolicy(Qt.ActionsContextMenu)
         self.verticalLayout.addWidget(self.monitor)
         self.logScaleCB = QtWidgets.QCheckBox(self, text="Log scale")

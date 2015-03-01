@@ -10,7 +10,6 @@ import argparse
 import yaml
 
 import numpy as np
-from matplotlib import dates
 from matplotlib.lines import Line2D
 
 from PyQt5 import QtWidgets, QtCore, QtGui
@@ -249,12 +248,12 @@ class Controller(ControllerUi):
             q = (self._db.query(db.LogTable)
                  .filter(db.LogTable.command == command)
                  .filter(db.LogTable.node == node))
-            data = np.array([(dates.date2num(timestamp), value)
+            data = np.array([(timestamp, value)
                              for timestamp, value
                              in ((row.timestamp, row.value)
                                  for row in q.all())])
-            self._monitorLines[(node, command)].set_data(
-                data[:, 0], data[:, 1])
+            line = self._monitorLines[(node, command)]
+            line.set_data(data[:, 0], data[:, 1])
         self.monitorWidget.axes.relim()
         self.monitorWidget.axes.autoscale_view()
         self.monitorWidget.axes.figure.canvas.draw_idle()
