@@ -95,8 +95,6 @@ class WatlowController(Controller):
     def __init__(self, config, driver, parent=None):
         super().__init__(config, driver, parent)
         self.programs.default_factory = WatlowProgram
-        self.populated.connect(self.driverWidget.rampInitMapper.toFirst)
-        self.populated.connect(self.driverWidget.rampInitMapper.toFirst)
 
         self.rampInitColumn = None
         self.rampRateColumn = None
@@ -114,6 +112,11 @@ class WatlowController(Controller):
         super()._currentRowChanged(current, previous)
         self.driverWidget.rampInitMapper.setCurrentModelIndex(current)
         self.driverWidget.rateEditMapper.setCurrentModelIndex(current)
+
+    def populate(self):
+        super().populate()
+        self.driverWidget.rampInitMapper.toFirst()
+        self.driverWidget.rampInitMapper.toFirst()
 
     def setRampInitColumn(self, column):
         self.driverWidget.mapRampInitComboBox(column)
@@ -185,11 +188,10 @@ def createController():
     else:
         driver = Series988(drv.Serial(config.port))
         iface = WatlowController(config, driver)
-        iface.addCommand(driver.temperature1, "TC sample", poll=True, log=True)
-        iface.addCommand(driver.temperature2, "TC heater", poll=True, log=True)
-        iface.addCommand(driver.setpoint, "setpoint", log=True,
-                         role="program")
-        iface.addCommand(driver.power, "output", poll=True, log=True)
+        iface.addCommand(driver.temperature1, "TC sample", poll=True)
+        iface.addCommand(driver.temperature2, "TC heater", poll=True)
+        iface.addCommand(driver.setpoint, "setpoint", role="program")
+        iface.addCommand(driver.power, "output", poll=True)
         iface.addCommand(driver.operation.pid.a1.gain, "PID P", hide=True,
                          role="pidp")
         iface.addCommand(driver.operation.pid.a1.integral, "PID I", hide=True,

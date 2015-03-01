@@ -1,88 +1,13 @@
 """Module with the `MonitorWidget` widget.
 
 """
-import os
 from collections import defaultdict
-from itertools import chain
-import csv
-import time
 
 from PyQt5 import QtWidgets, QtCore, QtGui
 Qt = QtCore.Qt
 Slot, Signal = QtCore.pyqtSlot, QtCore.pyqtSignal
 
-from matplotlib.lines import Line2D
-import numpy as np
-
 from pyhard2.gui.mpl import MplWidget
-
-
-class ListData(object):
-
-    def __init__(self):
-        self._historySize = 10000
-        self._history = []
-        self._data = []
-
-    def __len__(self):
-        """Return length of data."""
-        return len(self._history) + len(self._data)
-
-    def __iter__(self):
-        """Iterate over the data."""
-        return chain(self._history, self._data)
-
-    def __getitem__(self, i):
-        """Return value at `i`."""
-        try:
-            return self._history[i]
-        except IndexError:
-            return self._data[i - len(self._history)]
-
-    def append(self, value):
-        """Append `value` to the data."""
-        self._data.append(value)
-
-    def exportAndTrim(self, csvfile):
-        """Export the data to `csvfile` and trim it.
-
-        The data acquired since the previous call is saved to `csvfile`
-        and `historySize` points are kept.  The rest of the data is
-        deleted.
-        """
-        currentData, self._data = self._data, []
-        self._history.extend(currentData)
-        self._history = self._history[-self._historySize:]
-        csv.writer(csvfile, delimiter="\t").writerows(currentData)
-
-    def x(self):
-        try:
-            return np.array(self)[:, 0]
-        except IndexError:
-            return np.array([])
-
-    def y(self):
-        try:
-            return np.array(self)[:, 1:]
-        except IndexError:
-            return np.array([])
-
-
-class TimeSeriesData(ListData):
-
-    """A `ListData` to plot values against time.
-
-    Note:
-        The time is set to zero upon instantiation.
-
-    """
-    def __init__(self):
-        super().__init__()
-        self.__start = time.time()
-
-    def append(self, value):
-        """Append `time, value` to the list."""
-        super().append((time.time() - self.__start, value))
 
 
 class MonitorWidgetUi(QtWidgets.QWidget):
@@ -123,19 +48,10 @@ class MonitorWidget(MonitorWidgetUi):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.driverModel = None
-        self.data = defaultdict(TimeSeriesData)
         self._monitorItems = defaultdict(list)
 
     def setDriverModel(self, driverModel):
         self.driverModel = driverModel
-
-    @Slot()
-    def populate(self):
-        """Called when the model has been populated.
-
-        Initialize monitor items.
-
-        """
 
     def setSingleInstrument(self, row, state):
         """Monitor instrument at `row` iff `state`."""

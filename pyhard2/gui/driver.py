@@ -117,10 +117,6 @@ class DriverWidget(DriverWidgetUi):
         self.driverView.setModel(self.driverModel)
         self.pidBoxMapper.setModel(self.driverModel)
 
-    @Slot()
-    def populate(self):
-        """Called when the model has been populated."""
-
     def mapPEditor(self, column):
         """Map PID P editor to column `column` of `driverModel`."""
         assert(self.driverModel)

@@ -2,11 +2,9 @@
 
 """
 import os
-import time
+from datetime import datetime
 from collections import defaultdict
 from functools import partial
-from zipfile import ZipFile
-from io import StringIO
 
 import argparse
 import yaml
@@ -15,6 +13,7 @@ from PyQt5 import QtWidgets, QtCore, QtGui
 Slot, Signal = QtCore.pyqtSlot, QtCore.pyqtSignal
 
 from pyhard2 import __version__
+import pyhard2.db as db
 from pyhard2.gui.model import DriverModel
 from pyhard2.gui.driver import DriverWidget
 from pyhard2.gui.monitor import MonitorWidget
@@ -108,6 +107,9 @@ class ControllerUi(QtWidgets.QMainWindow):
         self._addDriverWidget()
         self._addMonitorWidget()
         self._addProgramWidget()
+        self.refreshRate = Counter(self)
+        self.driverWidget.verticalLayout.insertWidget(0, self.refreshRate)
+        self.timer = self.refreshRate.timer
 
     @staticmethod
     def aboutBox(parent, checked):
@@ -138,11 +140,17 @@ class Controller(ControllerUi):
 
     """The default controller widget."""
 
-    populated = Signal()
-
     def __init__(self, config, driver, parent=None):
         super().__init__(parent)
         self._config = config
+
+        if self._config.virtual:
+            url = "sqlite:///"
+        else:
+            documents = QtGui.QDesktopServices.storageLocation(
+                QtGui.QDesktopServices.DocumentsLocation)
+            url = os.path.join(documents, "pyhard2.db")
+        self._db = db.get_session(url)
 
         self.driverThread = QtCore.QThread(self)
         self.driver = driver
@@ -150,15 +158,11 @@ class Controller(ControllerUi):
         self.driverThread.start()
 
         self.driverModel = DriverModel(self)
-
         self.driverWidget.setDriverModel(self.driverModel)
         self.monitorWidget.setDriverModel(self.driverModel)
         self.programWidget.setDriverModel(self.driverModel)
 
         self.programs = defaultdict(SingleShotProgram)
-        self.refreshRate = Counter(self)
-        self.driverWidget.verticalLayout.insertWidget(0, self.refreshRate)
-        self.timer = self.refreshRate.timer
         self.setWindowTitle(config.title
                             + (" [virtual]" if config.virtual else ""))
         self.editorPrototype = defaultdict(QtWidgets.QDoubleSpinBox)
@@ -166,25 +170,14 @@ class Controller(ControllerUi):
         selectionModel = self.driverWidget.driverView.selectionModel()
         selectionModel.currentRowChanged.connect(self._currentRowChanged)
 
-        self._autoSaveTimer = QtCore.QTimer(self, singleShot=False,
-                                            interval=600000)  # 10 min
-        self.populated.connect(self._autoSaveTimer.start)
-        self._autoSaveTimer.timeout.connect(self.autoSave)
-        QtCore.QTimer.singleShot(0, self.autoSave)
-
         self._roleMapper = dict(
             program=self.setProgramColumn,
             pidp=self.setPidPColumn,
             pidi=self.setPidIColumn,
             pidd=self.setPidDColumn,)
 
-        self.timer.timeout.connect(self.replot)
-        self.timer.timeout.connect(self.refreshData)
-        self.timer.timeout.connect(self.logData)
-
-        self.populated.connect(self._setupWithModel)
-        self.populated.connect(self.timer.start)
-        self.populated.connect(self.driverWidget.pidBoxMapper.toFirst)
+        self.timer.timeout.connect(self.monitorWidget.draw_idle)
+        self.timer.timeout.connect(self._refreshData)
 
         for row, node in enumerate(self._config.nodes):
             try:
@@ -197,10 +190,9 @@ class Controller(ControllerUi):
     def virtualInstrumentController(cls, config, driver):
         """Initialize controller for the virtual instrument driver."""
         self = cls(config, driver)
-        self.addCommand(driver.input.measure, "measure", poll=True, log=True)
-        self.addCommand(driver.pid.setpoint, "setpoint", log=True,
-                        role="program")
-        self.addCommand(driver.output.output, "output", poll=True, log=True)
+        self.addCommand(driver.input.measure, "measure", poll=True)
+        self.addCommand(driver.pid.setpoint, "setpoint", role="program")
+        self.addCommand(driver.output.output, "output", poll=True)
         self.addCommand(driver.pid.proportional, "PID P", hide=True,
                         role="pidp")
         self.addCommand(driver.pid.integral_time, "PID I", hide=True,
@@ -208,11 +200,6 @@ class Controller(ControllerUi):
         self.addCommand(driver.pid.derivative_time, "PID D", hide=True,
                         role="pidd")
         return self
-
-    def _setupWithModel(self):
-        self.driverWidget.populate()
-        self.programWidget.populate()
-        self.monitorWidget.populate()
 
     def _setSingleInstrument(self, state):
         selectionModel = self.driverView.selectionModel()
@@ -227,63 +214,38 @@ class Controller(ControllerUi):
         self.monitorWidget.setCurrentRow(current.row(), previous.row())
         self.programWidget.setProgramTableRoot(current.row())
 
-    def autoSaveFileName(self):
-        path = os.path
-        autoSaveFileName = path.join(QtGui.QDesktopServices.storageLocation(
-            QtWidgets.QDesktopServices.DocumentsLocation),
-            "pyhard2", time.strftime("%Y"), time.strftime("%m"),
-            time.strftime("%Y%m%d.zip"))
-        self.monitorWidget.autoSaveEdit.setText(autoSaveFileName)
-        if not path.exists(path.dirname(autoSaveFileName)):
-            os.makedirs(path.dirname(autoSaveFileName))
-        return autoSaveFileName
-
     @Slot()
-    def replot(self):
-        """Update the monitor."""
-        self.monitorWidget.draw()
-
-    @Slot()
-    def refreshData(self, force=False):
+    def _refreshData(self, force=False):
         """Request update to the `driverModel` from the hardware."""
         for item in self.driverModel:
             if item.isPolling() or force:
                 item.queryData()
 
-    @Slot()
-    def logData(self):
-        """Save data."""
+    @Slot(QtGui.QStandardItem, object)
+    def _logData(self, item, value):
+        """Save data into database."""
+        entry = db.LogTable(
+            controller=self._config.title,
+            node=item.node(),
+            command=item.name(),
+            timestamp=datetime.utcnow(),
+            value=value,
+        )
+        self._db.add(entry)
+        self._db.commit()
 
-    @Slot()
-    def autoSave(self):
-        """Export the data in the `monitor` to an archive."""
-        return
-        path = os.path
-        with ZipFile(self.autoSaveFileName(), "a") as zipfile:
-            for line in self.monitorWidget.axes.artists:
-                csvfile = StringIO()
-                line.data().exportAndTrim(csvfile)
-                filename = path.join(
-                    self.windowTitle(),
-                    line.get_label(),
-                    time.strftime("T%H%M%S")) + ".txt"
-                zipfile.writestr(filename, csvfile.getvalue())
-
-    def addCommand(self, command, label="",
-                   hide=False, poll=False, log=False,
-                   role=""):
+    def addCommand(self, command, label="", hide=False, poll=False, role=""):
         """Add `command` as a new column in the driver table.
 
         Parameters:
             hide (bool): Hide the column.
             poll (bool): Set the default polling state.
-            log (bool): Set the default logging state.
             role {"program", "pidp", "pidi", "pidd"}:
                 Connect the column to the relevant GUI elements.
 
         """
         column = self.driverModel.columnCount()
-        self.driverModel.addCommand(command, label, poll, log)
+        self.driverModel.addCommand(command, label, poll)
         self.driverWidget.driverView.setColumnHidden(column, hide)
         if role:
             self._roleMapper[role.lower()](column)
@@ -291,6 +253,20 @@ class Controller(ControllerUi):
     def addNode(self, node, label=""):
         """Add `node` as a new row in the driver table."""
         self.driverModel.addNode(node, label)
+        self.programWidget.addNode(label)
+
+    def populate(self):
+        """Populate the driver table."""
+        # Calls itemFromIndex to lazily create the items.
+        for item in (
+            self.driverModel.itemFromIndex(self.driverModel.index(row, column))
+                for row in range(self.driverModel.rowCount())
+                for column in range(self.driverModel.columnCount())):
+            item.connectDriver()
+            item.command().signal.connect(partial(self._logData, item))
+            item.queryData()
+        self.timer.start()
+        self.driverWidget.pidBoxMapper.toFirst()
 
     def programColumn(self):
         """Return the index of the programmable column."""
@@ -344,15 +320,11 @@ class Controller(ControllerUi):
         else:
             program.stop()
 
-    def populate(self):
-        """Populate the driver table."""
-        self.driverModel.populate()
-        self.populated.emit()
+    def __del__(self):
+        self._db.close()
 
     def closeEvent(self, event):
         self.timer.stop()
-        self._autoSaveTimer.stop()
-        self.autoSave()
         self.driverThread.quit()
         self.driverThread.wait()
         event.accept()

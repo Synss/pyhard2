@@ -84,9 +84,6 @@ class AmtronController(Controller):
     def __init__(self, config, driver, parent=None):
         super().__init__(config, driver, parent)
         self.programs.default_factory = SetpointRampProgram
-        self.populated.connect(self.driverWidget.powerBtnMapper.toFirst)
-        self.populated.connect(self.driverWidget.gateBtnMapper.toFirst)
-        self.populated.connect(self.driverWidget.pilotBtnMapper.toFirst)
         self._roleMapper.update(dict(
             laserpower=self.setPowerStateColumn,
             lasergate=self.setGateStateColumn,
@@ -101,6 +98,12 @@ class AmtronController(Controller):
         self.driverWidget.powerBtnMapper.setCurrentModelIndex(current)
         self.driverWidget.gateBtnMapper.setCurrentModelIndex(current)
         self.driverWidget.pilotBtnMapper.setCurrentModelIndex(current)
+
+    def populate(self):
+        super().populate()
+        self.driverWidget.powerBtnMapper.toFirst()
+        self.driverWidget.gateBtnMapper.toFirst()
+        self.driverWidget.pilotBtnMapper.toFirst()
 
     def setPowerStateColumn(self, column):
         self.driverWidget.mapPowerStateEditor(column)
@@ -177,11 +180,10 @@ def createController():
         driver = AmtronDaq(drv.Serial(config.port), "Circat1")
         iface = AmtronController(config, driver)
         iface.addCommand(driver.temperature.voltage.ai,
-                         "temperature / C", poll=True, log=True)
-        iface.addCommand(driver.pid.setpoint, "setpoint / C",
-                         log=True, role="program")
+                         "temperature / C", poll=True)
+        iface.addCommand(driver.pid.setpoint, "setpoint / C", role="program")
         iface.addCommand(driver.laser.control.total_power, "power / W",
-                         poll=True, log=True)
+                         poll=True)
         iface.addCommand(driver.pid.proportional, "PID P", hide=True,
                          role="pidp")
         iface.addCommand(driver.pid.integral_time, "PID I", hide=True,

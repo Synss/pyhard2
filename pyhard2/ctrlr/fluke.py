@@ -23,7 +23,7 @@ def createController():
     else:
         driver = fluke.Fluke18x(drv.Serial(config.port))
         iface = Controller(config, driver)
-        iface.addCommand(driver.measure, "Measure", poll=True, log=True)
+        iface.addCommand(driver.measure, "Measure", poll=True)
         iface.addCommand(driver.unit, "Unit", poll=True)
     iface.populate()
     return iface

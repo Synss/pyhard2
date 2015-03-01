@@ -25,12 +25,10 @@ def createController():
     else:
         driver = MFC(drv.Serial(config.port))
         iface = Controller(config, driver)
-        iface.addCommand(driver.direct_reading.measure, "measure",
-                         poll=True, log=True)
+        iface.addCommand(driver.direct_reading.measure, "measure", poll=True)
         iface.addCommand(driver.direct_reading.setpoint, "setpoint",
-                         log=True, role="program")
-        iface.addCommand(driver.controller.valve_output, "output",
-                         poll=True, log=True)
+                         role="program")
+        iface.addCommand(driver.controller.valve_output, "output", poll=True)
         iface.addCommand(driver.controller.PIDKp, "PID P", hide=True,
                          role="pidp")
         iface.addCommand(driver.controller.PIDKi, "PID I", hide=True,

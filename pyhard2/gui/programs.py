@@ -237,6 +237,7 @@ class ProgramWidget(ProgramWidgetUi):
         self._previewPlotItems = []  # defeat GC
 
         self.model = QtGui.QStandardItemModel(self)
+        self.model.setHorizontalHeaderLabels(["time /s", "setpoint"])
         self.programView.setModel(self.model)
 
         timeColumnDelegate = DoubleSpinBoxDelegate(parent=self.programView)
@@ -340,23 +341,13 @@ class ProgramWidget(ProgramWidgetUi):
     def setDriverModel(self, driverModel):
         self.driverModel = driverModel
 
-    @Slot()
-    def populate(self):
-        """Called when the model has been populated.
-
-        Generate the program tree.
-
-        """
-        self.model.clear()
-        self.model.setHorizontalHeaderLabels(["time /s", "setpoint"])
-        for root in range(self.driverModel.rowCount()):
-            rootItem = QtGui.QStandardItem(
-                self.driverModel.verticalHeaderItem(root).text())
-            rootItem.setEditable(False)
-            self.model.invisibleRootItem().appendRow(rootItem)
-            for row in range(8):
-                rootItem.appendRow(
-                    [QtGui.QStandardItem(), QtGui.QStandardItem()])
+    def addNode(self, label=""):
+        """Add node `label` to the program tree."""
+        item = QtGui.QStandardItem(label)
+        item.setEditable(False)
+        self.model.invisibleRootItem().appendRow(item)
+        for row in range(128):
+            item.appendRow([QtGui.QStandardItem(), QtGui.QStandardItem()])
 
     def setProgramTableRoot(self, row):
         if None in (self.programColumn, self.driverModel):

@@ -30,8 +30,7 @@ def createController():
         driver = Maxigauge(drv.Serial(config.port))
         iface = Controller(config, driver)
         iface.editorPrototype.default_factory = ScientificSpinBox
-        iface.addCommand(driver.gauge.pressure,
-                         "pressure", poll=True, log=True)
+        iface.addCommand(driver.gauge.pressure, "pressure", poll=True)
     iface.driverWidget.driverView.setItemDelegateForColumn(
         0, FormatTextDelegate("%.2e"))
     iface.populate()

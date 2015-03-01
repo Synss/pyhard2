@@ -37,7 +37,6 @@ class HorizontalHeaderItem(QtGui.QStandardItem):
     def __init__(self, text=""):
         super().__init__(text)
         self._defaultPollingState = False
-        self._defaultLoggingState = False
 
     def type(self):
         """Return `QStandardItem.UserType`."""
@@ -63,15 +62,6 @@ class HorizontalHeaderItem(QtGui.QStandardItem):
     def setDefaultPollingState(self, state):
         """Set the default polling state for this column to `state`."""
         self._defaultPollingState = state
-
-    def defaultLoggingState(self):
-        """Return True if the column defaults to logging;
-        otherwise return False."""
-        return self._defaultLoggingState is True
-
-    def setDefaultLoggingState(self, state):
-        """Set the default logging state for this column to `state`."""
-        self._defaultLoggingState = state
 
 
 class VerticalHeaderItem(QtGui.QStandardItem):
@@ -117,7 +107,6 @@ class SignalProxy(QtCore.QObject):  # Obsolete in Qt5
 
 
 PollingRole = Qt.UserRole + 2
-LoggingRole = Qt.UserRole + 3
 
 
 class DriverItem(QtGui.QStandardItem):
@@ -155,16 +144,11 @@ class DriverItem(QtGui.QStandardItem):
         """Set polling to `state` for this item."""
         self.setData(state, role=PollingRole)
 
-    def isLogging(self):
-        """Return True if logging is enabled for this item;
-        otherwise return False."""
-        state = self.data(role=LoggingRole)
-        return (self._horizontalHeaderItem().defaultLoggingState()
-                if state is None else state)
-
-    def setLogging(self, state):
-        """Set logging to `state` for this item."""
-        self.setData(state, role=LoggingRole)
+    def name(self):
+        """Return the text set in the horizontal header if one was set;
+        otherwise return the index of the column."""
+        text = self._horizontalHeaderItem().text()
+        return text if text != "" else self.column()
 
     def command(self):
         """Return the `Command` object for this column."""
@@ -211,8 +195,8 @@ class DriverItem(QtGui.QStandardItem):
                               self.node(),
                               e))
 
-    def _connectDriver(self):
-        """Connect the `Command` to this item using Qt4 signals and slots.
+    def connectDriver(self):
+        """Connect the `Command` to this item using Qt signals and slots.
 
         The read only flag is also set according to the `Command`.
 
@@ -272,19 +256,10 @@ class DriverModel(QtGui.QStandardItemModel):
         headerItem.setNode(node)
         self.setVerticalHeaderItem(row, headerItem)
 
-    def addCommand(self, command, label="", poll=False, log=False):
+    def addCommand(self, command, label="", poll=False):
         """Add `command` as a new column with `label`."""
         column = self.columnCount()
         item = HorizontalHeaderItem(label if label else "C%i" % column)
         item.setCommand(command)
         item.setDefaultPollingState(poll)
-        item.setDefaultLoggingState(log)
         self.setHorizontalHeaderItem(column, item)
-
-    def populate(self):
-        """Fill the model with `DriverItem`."""
-        for item in (self.itemFromIndex(self.index(row, column))
-                     for row in range(self.rowCount())
-                     for column in range(self.columnCount())):
-            item._connectDriver()
-            item.queryData()
