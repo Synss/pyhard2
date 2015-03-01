@@ -190,10 +190,10 @@ def createController():
     else:
         driver = Series988(drv.Serial(config.port))
         iface = WatlowController(config, driver)
-        iface.addCommand(driver.temperature1, "TC sample", poll=True)
-        iface.addCommand(driver.temperature2, "TC heater", poll=True)
+        iface.addCommand(driver.temperature1, "TC sample")
+        iface.addCommand(driver.temperature2, "TC heater")
         iface.addCommand(driver.setpoint, "setpoint", role="program")
-        iface.addCommand(driver.power, "output", poll=True)
+        iface.addCommand(driver.power, "output")
         iface.addCommand(driver.operation.pid.a1.gain, "PID P", hide=True,
                          role="pidp")
         iface.addCommand(driver.operation.pid.a1.integral, "PID I", hide=True,

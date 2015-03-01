@@ -179,23 +179,21 @@ def createController():
     else:
         driver = AmtronDaq(drv.Serial(config.port), "Circat1")
         iface = AmtronController(config, driver)
-        iface.addCommand(driver.temperature.voltage.ai,
-                         "temperature / C", poll=True)
+        iface.addCommand(driver.temperature.voltage.ai, "temperature / C")
         iface.addCommand(driver.pid.setpoint, "setpoint / C", role="program")
-        iface.addCommand(driver.laser.control.total_power, "power / W",
-                         poll=True)
-        iface.addCommand(driver.pid.proportional, "PID P", hide=True,
-                         role="pidp")
-        iface.addCommand(driver.pid.integral_time, "PID I", hide=True,
-                         role="pidi")
-        iface.addCommand(driver.pid.derivative_time, "PID D", hide=True,
-                         role="pidd")
-    iface.addCommand(driver.laser.command.laser_state, "power", hide=True,
-                     poll=True, role="laserpower")
-    iface.addCommand(driver.laser.command.gate_state, "gate", hide=True,
-                     poll=True, role="lasergate")
-    iface.addCommand(driver.laser.interface.pilot_laser_state, "pilot",
-                     hide=True, poll=False, role="pilotlaser")
+        iface.addCommand(driver.laser.control.total_power, "power / W")
+        iface.addCommand(driver.pid.proportional,
+                         "PID P", hide=True, role="pidp")
+        iface.addCommand(driver.pid.integral_time,
+                         "PID I", hide=True, role="pidi")
+        iface.addCommand(driver.pid.derivative_time,
+                         "PID D", hide=True, role="pidd")
+    iface.addCommand(driver.laser.command.laser_state,
+                     "power", role="laserpower")
+    iface.addCommand(driver.laser.command.gate_state,
+                     "gate", role="lasergate")
+    iface.addCommand(driver.laser.interface.pilot_laser_state,
+                     "pilot", role="pilotlaser")
     iface.populate()
     return iface
 

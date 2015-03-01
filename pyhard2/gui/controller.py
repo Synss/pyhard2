@@ -195,9 +195,9 @@ class Controller(ControllerUi):
     def virtualInstrumentController(cls, config, driver):
         """Initialize controller for the virtual instrument driver."""
         self = cls(config, driver)
-        self.addCommand(driver.input.measure, "measure", poll=True)
+        self.addCommand(driver.input.measure, "measure")
         self.addCommand(driver.pid.setpoint, "setpoint", role="program")
-        self.addCommand(driver.output.output, "output", poll=True)
+        self.addCommand(driver.output.output, "output")
         self.addCommand(driver.pid.proportional, "PID P", hide=True,
                         role="pidp")
         self.addCommand(driver.pid.integral_time, "PID I", hide=True,
@@ -258,18 +258,17 @@ class Controller(ControllerUi):
         self.monitorWidget.axes.autoscale_view()
         self.monitorWidget.axes.figure.canvas.draw_idle()
 
-    def addCommand(self, command, label="", hide=False, poll=False, role=""):
+    def addCommand(self, command, label="", hide=False, role=""):
         """Add `command` as a new column in the driver table.
 
         Parameters:
-            hide (bool): Hide the column.
-            poll (bool): Set the default polling state.
+            hide (bool): Hide the column and disable polling.
             role {"program", "pidp", "pidi", "pidd"}:
                 Connect the column to the relevant GUI elements.
 
         """
         column = self.driverModel.columnCount()
-        self.driverModel.addCommand(command, label, poll)
+        self.driverModel.addCommand(command, label, poll=not hide)
         self.driverWidget.driverView.setColumnHidden(column, hide)
         if role:
             self._roleMapper[role.lower()](column)

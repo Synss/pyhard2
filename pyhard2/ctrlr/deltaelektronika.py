@@ -20,8 +20,8 @@ def createController():
     else:
         driver = delta.Sm700Series(drv.Serial(config.port))
         iface = Controller(config, driver)
-        iface.addCommand(driver.source.voltage, "Voltage", poll=True)
-        iface.addCommand(driver.source.current, "Current", poll=True)
+        iface.addCommand(driver.source.voltage, "Voltage")
+        iface.addCommand(driver.source.current, "Current")
     iface.populate()
     return iface
 
