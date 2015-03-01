@@ -119,9 +119,11 @@ class WatlowController(Controller):
         self.driverWidget.rampInitMapper.toFirst()
 
     def setRampInitColumn(self, column):
+        self.rampInitColumn = column
         self.driverWidget.mapRampInitComboBox(column)
 
     def setRampRateColumn(self, column):
+        self.rampRateColumn = column
         self.driverWidget.mapRateEditor(column)
 
     def startProgram(self, row):
@@ -131,26 +133,26 @@ class WatlowController(Controller):
         # Connect program to GUI
         program.started.connect(
             lambda:
-            self._driverModel.item(row, self.rampInitColumn).setData(2))
+            self.driverModel.item(row, self.rampInitColumn).setData(2))
         program.rate.connect(
             lambda value:
-            self._driverModel.item(row, self.rampRateColumn).setData(value))
+            self.driverModel.item(row, self.rampRateColumn).setData(value))
         program.started.connect(partial(
-            self.ui.rampSettings.setDisabled, True))
+            self.driverWidget.rateEdit.setDisabled, True))
         program.finished.connect(partial(
-            self.ui.rampSettings.setDisabled, False))
+            self.driverWidget.rateEdit.setDisabled, False))
         # Save values
-        self._rampInitValuePool[row] = self._driverModel.item(
+        self._rampInitValuePool[row] = self.driverModel.item(
             row, self.rampInitColumn).data()
-        self._rateValuePool[row] = self._driverModel.item(
+        self._rateValuePool[row] = self.driverModel.item(
             row, self.rampRateColumn).data()
         super().startProgram(row)
 
     def stopProgram(self, row):
         # restore values
-        self._driverModel.item(row, self.rampInitColumn).setData(
+        self.driverModel.item(row, self.rampInitColumn).setData(
             self._rampInitValuePool.pop(row))
-        self._driverModel.item(row, self.rampRateColumn).setData(
+        self.driverModel.item(row, self.rampRateColumn).setData(
             self._rateValuePool.pop(row))
         super().stopProgram(row)
 

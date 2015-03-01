@@ -21,6 +21,8 @@ class Counter(QtWidgets.QWidget):
         self.timer.setInterval(self.editor.value() * 1000)
         self.editor.valueChanged.connect(
             lambda rate: self.timer.setInterval(rate * 1000))
+        self.value = self.editor.value
+        self.valueChanged = self.editor.valueChanged
 
 
 class ScientificSpinBox(QtWidgets.QDoubleSpinBox):
