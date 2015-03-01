@@ -2,6 +2,7 @@
 
 """
 from collections import defaultdict
+from datetime import timedelta
 
 from matplotlib import dates
 
@@ -20,13 +21,17 @@ class MonitorWidgetUi(QtWidgets.QWidget):
         super().__init__(parent)
         self.verticalLayout = QtWidgets.QVBoxLayout(self)
         self.headerLayout = QtWidgets.QHBoxLayout()
-        self.autoSaveLabel = QtWidgets.QLabel("AutoSave:", self)
-        self.autoSaveEdit = QtWidgets.QLineEdit(
-            self,
-            frame=False,
-            readOnly=True)
-        self.headerLayout.addWidget(self.autoSaveLabel)
-        self.headerLayout.addWidget(self.autoSaveEdit)
+        self.historyLimitLabel = QtWidgets.QLabel("History limit", self)
+        self.historyLimitCombo = QtWidgets.QComboBox(self)
+        self.historyLimitCombo.addItem("30 min", timedelta(minutes=30))
+        self.historyLimitCombo.addItem("1 h", timedelta(hours=1))
+        self.historyLimitCombo.addItem("3 h", timedelta(hours=3))
+        self.historyLimitCombo.addItem("6 h", timedelta(hours=6))
+        self.historyLimitCombo.addItem("12 h", timedelta(hours=12))
+        self.historyLimitCombo.addItem("24 h", timedelta(hours=24))
+        self.historyLimitCombo.setCurrentIndex(3)
+        self.headerLayout.addWidget(self.historyLimitLabel)
+        self.headerLayout.addWidget(self.historyLimitCombo)
         self.verticalLayout.addLayout(self.headerLayout)
         self.monitor = MplWidget(self)
         self.axes = self.monitor.figure.add_subplot(111)

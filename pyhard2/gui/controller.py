@@ -241,13 +241,17 @@ class Controller(ControllerUi):
 
     def _refreshMonitor(self):
         q = self._db.query(db.LogTable).distinct(db.LogTable.command)
+        history = self.monitorWidget.historyLimitCombo
+        delta = history.itemData(history.currentIndex())
         for item in self.driverModel:
             if self.driverWidget.driverView.isColumnHidden(item.column()):
                 continue
             node, command = item.node(), item.name()
             q = (self._db.query(db.LogTable)
                  .filter(db.LogTable.command == command)
-                 .filter(db.LogTable.node == node))
+                 .filter(db.LogTable.node == node)
+                 .filter(db.LogTable.timestamp >= datetime.utcnow() - delta)
+                 )
             data = np.array([(timestamp, value)
                              for timestamp, value
                              in ((row.timestamp, row.value)
@@ -256,7 +260,7 @@ class Controller(ControllerUi):
             line.set_data(data[:, 0], data[:, 1])
         self.monitorWidget.axes.relim()
         self.monitorWidget.axes.autoscale_view()
-        self.monitorWidget.axes.figure.canvas.draw_idle()
+        self.monitorWidget.monitor.draw_idle()
 
     def addCommand(self, command, label="", hide=False, role=""):
         """Add `command` as a new column in the driver table.
