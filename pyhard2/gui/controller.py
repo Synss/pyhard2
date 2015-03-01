@@ -9,6 +9,10 @@ from functools import partial
 import argparse
 import yaml
 
+import numpy as np
+from matplotlib import dates
+from matplotlib.lines import Line2D
+
 from PyQt5 import QtWidgets, QtCore, QtGui
 Slot, Signal = QtCore.pyqtSlot, QtCore.pyqtSignal
 
@@ -162,6 +166,8 @@ class Controller(ControllerUi):
         self.monitorWidget.setDriverModel(self.driverModel)
         self.programWidget.setDriverModel(self.driverModel)
 
+        self._monitorLines = {}
+
         self.programs = defaultdict(SingleShotProgram)
         self.setWindowTitle(config.title
                             + (" [virtual]" if config.virtual else ""))
@@ -176,8 +182,8 @@ class Controller(ControllerUi):
             pidi=self.setPidIColumn,
             pidd=self.setPidDColumn,)
 
-        self.timer.timeout.connect(self.monitorWidget.draw_idle)
         self.timer.timeout.connect(self._refreshData)
+        self.timer.timeout.connect(self._refreshMonitor)
 
         for row, node in enumerate(self._config.nodes):
             try:
@@ -234,6 +240,25 @@ class Controller(ControllerUi):
         self._db.add(entry)
         self._db.commit()
 
+    def _refreshMonitor(self):
+        q = self._db.query(db.LogTable).distinct(db.LogTable.command)
+        for item in self.driverModel:
+            if self.driverWidget.driverView.isColumnHidden(item.column()):
+                continue
+            node, command = item.node(), item.name()
+            q = (self._db.query(db.LogTable)
+                 .filter(db.LogTable.command == command)
+                 .filter(db.LogTable.node == node))
+            data = np.array([(dates.date2num(timestamp), value)
+                             for timestamp, value
+                             in ((row.timestamp, row.value)
+                                 for row in q.all())])
+            self._monitorLines[(node, command)].set_data(
+                data[:, 0], data[:, 1])
+        self.monitorWidget.axes.relim()
+        self.monitorWidget.axes.autoscale_view()
+        self.monitorWidget.axes.figure.canvas.draw_idle()
+
     def addCommand(self, command, label="", hide=False, poll=False, role=""):
         """Add `command` as a new column in the driver table.
 
@@ -265,6 +290,9 @@ class Controller(ControllerUi):
             item.connectDriver()
             item.command().signal.connect(partial(self._logData, item))
             item.queryData()
+            line = Line2D([], [])
+            self._monitorLines[(item.node(), item.name())] = line
+            self.monitorWidget.axes.add_line(line)
         self.timer.start()
         self.driverWidget.pidBoxMapper.toFirst()
 
