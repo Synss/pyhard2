@@ -205,20 +205,6 @@ class ProgramWidgetUi(QtWidgets.QWidget):
         self.verticalLayout.addWidget(self.previewPlot)
         self.axes = self.previewPlot.figure.add_subplot(111)
 
-    def scaleToArtists(self, artists):
-        if not artists:
-            return
-        # Scale
-        xmin, xmax = self.axes.get_xbound()
-        ymin, ymax = self.axes.get_ybound()
-        data = np.hstack(artist.get_data() for artist in artists)
-        xdata_min, ydata_min = data.min(axis=1)
-        xdata_max, ydata_max = data.max(axis=1)
-        if xdata_min < xmin or xdata_max > xmax:
-            self.axes.set_xbound(xdata_min * 0.8, xdata_max * 1.2)
-        elif ydata_min < ymin or ydata_max > ymax:
-            self.axes.set_ybound(ydata_min * 0.8, ydata_max * 1.2)
-
 
 class ProgramWidget(ProgramWidgetUi):
 
@@ -327,9 +313,10 @@ class ProgramWidget(ProgramWidgetUi):
                 label = (self.driverModel.verticalHeaderItem(row).text()
                          if self.driverModel else "%i" % row)
                 line = Line(data[0], data[1], label=label)
-                self.axes.add_artist(line)
+                self.axes.add_line(line)
                 self._previewPlotItems.append(line)
-        self.scaleToArtists(self._previewPlotItems)
+        self.axes.relim()
+        self.axes.autoscale_view()
         self.previewPlot.draw_idle()
 
     @property
