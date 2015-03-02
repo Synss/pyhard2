@@ -95,6 +95,7 @@ def Config(section, title="Controller",
                 for index, node_config in enumerate(__):
                     config.nodes.append(node_config.get("node", index))
                     config.names.append(node_config.get("name", "%s" % index))
+        config.file.close()
     if not config.port:
         config.virtual = True
     return config
