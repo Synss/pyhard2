@@ -16,10 +16,47 @@ free hardware projects on Arduino/Raspberry Pi/BeagleBone hardware.
 - New drivers should take about 0.5 to 1 day to write and do not require a large
   amount of code.
 - Graphical user interfaces are loosely coupled to the driver.
-- Creating the GUI from Qt Designer (ui-files) is supported.
 - The library takes care of threading when the driver is used in a GUI.
 - Easily create a Dashboard presenting a live overview over every running
   controller.
+
+pyhard2 is organized hierarchically:
+
+.. table::
+
+   +----------------+--------------+----------------+------------------------------+
+   |                | Layer        | Technology     | Module                       |
+   +================+==============+================+==============================+
+   | User interface | Controller   | Qt, matplotlib | :mod:`pyhard2.gui`           |
+   +----------------+--------------+----------------+------------------------------+
+   |                | Database     | SQLAlchemy     | :mod:`pyhard2.db`            |
+   | Data           +--------------+----------------+------------------------------+
+   |                | Model        | Qt             | :mod:`pyhard2.model`         |
+   +----------------+--------------+----------------+------------------------------+
+   | Driver         | Abstraction  |                | :mod:`pyhard2.driver`        |
+   +----------------+--------------+----------------+------------------------------+
+
+Communications and data follow:
+
+.. uml::
+
+   actor        hardware
+   participant  driver
+   participant  model
+   database     db
+   participant  gui
+   actor        user
+
+   hardware ->  driver
+   driver   ->> model: async
+   model    ->  db
+   db       ->  gui
+   model    ->  gui
+   gui      ->  user
+   gui      <-  user
+   model    <-  gui
+   driver  <<-  model: async
+   hardware <-  driver
 
 
 Example
@@ -58,30 +95,10 @@ Tutorials
 API documentation
 =================
 
-pyhard2 is organized following a highly hierarchical structure:
-
-.. table::
-
-   +----------------+--------------+----------------+-------------------------------+
-   |                | Layer        | Technology     | Module                        |
-   +================+==============+================+===============================+
-   |                | Dashboard    | Qt, matplotlib | :mod:`pyhard2.gui.dashboard`  |
-   | User interface +--------------+----------------+-------------------------------+
-   |                | Controller   | Qt, matplotlib | :mod:`pyhard2.gui.controller` |
-   +----------------+--------------+----------------+-------------------------------+
-   |                | Database     | SQLAlchemy     | :mod:`pyhard2.db`             |
-   | Data           +--------------+----------------+-------------------------------+
-   |                | Model        | Qt             | :mod:`pyhard2.model`          |
-   +----------------+--------------+----------------+-------------------------------+
-   | Driver         | Abstraction  |                | :mod:`pyhard2.driver`         |
-   +----------------+--------------+----------------+-------------------------------+
-
-
 .. toctree::
    :maxdepth: 1
 
    apigui
-   apictrlr
    apidb
    apimodel
    apidrv
@@ -94,7 +111,7 @@ Drivers and controllers
    :maxdepth: 2
 
    drv
-   ctrlr
+   apictrlr
 
 
 License

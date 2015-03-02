@@ -329,11 +329,11 @@ class Dashboard(DashboardUi):
     def _tabChanged(self, new):
         controller = self.controllers[self._currentIndex]
         if controller is not self:
-            controller.timer.timeout.disconnect(controller.replot)
+            controller.timer.timeout.disconnect(controller._refreshMonitor)
         controller = self.controllers[new]
         if controller is not self:
-            controller.replot()
-            controller.timer.timeout.connect(controller.replot)
+            controller._refreshMonitor()
+            controller.timer.timeout.connect(controller._refreshMonitor)
         self._currentIndex = new
 
     def _goToController(self, controller, row=None):
@@ -383,7 +383,7 @@ class Dashboard(DashboardUi):
 
     def addController(self, controller):
         """Add the `controller` as a new tab."""
-        controller.timer.timeout.disconnect(controller.replot)
+        controller.timer.timeout.disconnect(controller._refreshMonitor)
         self.menuWindow.addAction(QtWidgets.QAction(
             controller.windowTitle(), self.menuWindow,
             triggered=lambda checked: self._goToController(controller)))

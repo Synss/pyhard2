@@ -1,4 +1,4 @@
-"""The `gui` module contains the GUI elements used for the
+"""The `gui` package contains the GUI elements used for the
 controllers.
 
 """

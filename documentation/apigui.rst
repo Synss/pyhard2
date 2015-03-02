@@ -1,50 +1,59 @@
-Graphical user interface  (GUI)
-===============================
+:mod:`pyhard2.gui` Package
+==========================
 
 .. automodule:: pyhard2.gui
    :members:
 
-Default controller UI
----------------------
-.. automodule:: pyhard2.gui.controller
-   :members:
+:mod:`pyhard2.gui.dashboard` Module
+-----------------------------------
 
-Dashboard UI
-------------
 .. automodule:: pyhard2.gui.dashboard
    :members:
 
-Driver panel UI
----------------
+:mod:`pyhard2.gui.controller` Module
+------------------------------------
+
+.. automodule:: pyhard2.gui.controller
+   :members:
+
+:mod:`pyhard2.gui.driver` Module
+--------------------------------
+
 .. automodule:: pyhard2.gui.driver
    :members:
 
-Monitor panel UI
-----------------
+:mod:`pyhard2.gui.monitor` Module
+---------------------------------
+
 .. automodule:: pyhard2.gui.monitor
    :members:
 
-Program panel UI and stock programs
------------------------------------
+:mod:`pyhard2.gui.programs` Module
+----------------------------------
+
 .. automodule:: pyhard2.gui.programs
    :members:
 
-Customized Qt delegates
------------------------
+:mod:`pyhard2.gui.delegates` Module
+-----------------------------------
+
 .. automodule:: pyhard2.gui.delegates
    :members:
 
-Customized Qt widgets
----------------------
+:mod:`pyhard2.gui.widgets` Module
+---------------------------------
+
 .. automodule:: pyhard2.gui.widgets
    :members:
 
-Customized matplotlib widgets
+:mod:`pyhard2.gui.mpl` Module
 -----------------------------
+
 .. automodule:: pyhard2.gui.mpl
    :members:
 
-Selection model with copy and paste
+:mod:`pyhard2.gui.selection` Module
 -----------------------------------
+
 .. automodule:: pyhard2.gui.selection
    :members:

@@ -1,7 +1,6 @@
 Drivers
 =======
 
-
 The `Commands` available in each driver are displayed in blue and the
 `Subsystems` are shown in red or black in a tree.  For example, reading
 the temperature and setting the voltage with the imaginary driver:
@@ -28,71 +27,95 @@ is done with
 >>> driver.power_supply.voltage.write(10)
 
 
-Virtual instrument driver
--------------------------
+:mod:`pyhard2.driver.virtual` Module
+------------------------------------
 
 .. automodule:: pyhard2.driver.virtual
    :members:
 
-AML
----
+:mod:`pyhard2.driver.aml` Module
+--------------------------------
+
 .. automodule:: pyhard2.driver.aml
    :members:
 
-Amtron
-------
+:mod:`pyhard2.driver.amtron` Module
+-----------------------------------
+
 .. automodule:: pyhard2.driver.amtron
    :members:
 
-Bronkhorst
-----------
+:mod:`pyhard2.driver.bronkhorst` Module
+---------------------------------------
+
 .. automodule:: pyhard2.driver.bronkhorst
    :members:
 
-DAQ
----
+:mod:`pyhard2.driver.daq` Package
+---------------------------------
+
 .. automodule:: pyhard2.driver.daq
    :members:
+
+:mod:`pyhard2.driver.daq.windaq` Module
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. automodule:: pyhard2.driver.daq.windaq
    :members:
 
+:mod:`pyhard2.driver.daq.lindaq` Module
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 .. automodule:: pyhard2.driver.daq.lindaq
    :members:
 
-Delta-Elektronika
------------------
+:mod:`pyhard2.driver.deltaelektronika` Module
+---------------------------------------------
+
 .. automodule:: pyhard2.driver.deltaelektronika
 
-Fluke
------
+:mod:`pyhard2.driver.fluke` Module
+----------------------------------
+
 .. automodule:: pyhard2.driver.fluke
    :members:
 
-SCPI
-----
+:mod:`pyhard2.driver.ieee` Package
+----------------------------------
+
 .. automodule:: pyhard2.driver.ieee
    :members:
 
+:mod:`pyhard2.driver.ieee.ieee488_1` Module
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 .. automodule:: pyhard2.driver.ieee.ieee488_1
 
+:mod:`pyhard2.driver.ieee.ieee488_2` Module
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 .. automodule:: pyhard2.driver.ieee.ieee488_2
+
+:mod:`pyhard2.driver.ieee.scpi` Module
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. automodule:: pyhard2.driver.ieee.scpi
    :members:
 
-Peaktech
---------
+:mod:`pyhard2.driver.peaktech` Module
+-------------------------------------
+
 .. automodule:: pyhard2.driver.peaktech
    :members:
 
-Pfeiffer
---------
+:mod:`pyhard2.driver.pfeiffer` Module
+-------------------------------------
+
 .. automodule:: pyhard2.driver.pfeiffer
    :members:
 
-Watlow
-------
+:mod:`pyhard2.driver.watlow` Module
+-----------------------------------
+
 .. automodule:: pyhard2.driver.watlow
    :members:
-

@@ -1,6 +1,5 @@
-Proportional-integral-derivative (PID) control algorithm
---------------------------------------------------------
+:mod:`pyhard2.pid` Module
+=========================
 
 .. automodule:: pyhard2.pid
    :members:
-

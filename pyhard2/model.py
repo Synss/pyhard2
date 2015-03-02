@@ -1,5 +1,5 @@
-"""The `DriverModel` class provides a high-level interface for reading
-and writing commands in a driver.
+"""The `DriverModel` class provides a high-level Qt interface handling
+communication with the driver.
 
 The model has the form of a two-dimensional table where the horizontal
 headers contain a :class:`~pyhard2.driver.Command` associated to a
@@ -74,11 +74,11 @@ class VerticalHeaderItem(QtGui.QStandardItem):
         super().__init__(text)
 
     def type(self):
-        """Return QtGui.QStandardItem.UserType."""
+        """Return QStandardItem.UserType."""
         return self.UserType
 
     def clone(self):
-        """Reimplemented from :class:`QtGui.QStandardItem`."""
+        """Reimplemented from `QStandardItem`."""
         return self.__class__()
 
     def node(self):
@@ -90,8 +90,8 @@ class VerticalHeaderItem(QtGui.QStandardItem):
         self.setData(node, role=VerticalHeaderItem.NodeRole)
 
 
-class SignalProxy(QtCore.QObject):  # Obsolete in Qt5
-    """Proxy class for Qt4 signals.
+class SignalProxy(QtCore.QObject):
+    """Proxy class for Qt signals.
 
     SignalProxy can be used in place of a Signal in classes that do not
     inherit QObject.
@@ -118,7 +118,7 @@ class DriverItem(QtGui.QStandardItem):
         self._signal = SignalProxy()  # Used to write to the driver.
 
     def type(self):
-        """Return QtGui.QStandardItem.UserType."""
+        """Return `QStandardItem.UserType`."""
         return self.UserType
 
     def clone(self):
@@ -126,11 +126,11 @@ class DriverItem(QtGui.QStandardItem):
         return self.__class__()
 
     def _horizontalHeaderItem(self):
-        """Return the HorizontalHeaderItem for this item's column."""
+        """Return the `HorizontalHeaderItem` for this item's column."""
         return self.model().horizontalHeaderItem(self.column())
 
     def _verticalHeaderItem(self):
-        """Return the VerticalHeaderItem for this item's row."""
+        """Return the `VerticalHeaderItem` for this item's row."""
         return self.model().verticalHeaderItem(self.row())
 
     def isPolling(self):
@@ -159,19 +159,19 @@ class DriverItem(QtGui.QStandardItem):
         return self._verticalHeaderItem().node()
 
     def minimum(self):
-        """Return the minimum value for this item.
+        """Return the minimum value for this item's command.
 
         The value is read in the driver."""
         return self.command().minimum
 
     def maximum(self):
-        """Return the maximum value for this item.
+        """Return the maximum value for this item's command.
 
         The value is read in the driver"""
         return self.command().maximum
 
     def isReadOnly(self):
-        """Return the read only value for this item.
+        """Return the read only value for this item's command.
 
         The value is read in the driver."""
         return self.command().access == "Access.RO"
@@ -180,11 +180,12 @@ class DriverItem(QtGui.QStandardItem):
         """Request reading data in the driver.
 
         Note:
-            - The query is constructed from the `Command` set on this
-              item's column and the `node` (if any) set for this item's
-              row.
-            - If the driver raises a `HardwareError`, the error is
-              logged but execution continues.
+            The query is constructed from the `Command` set on the
+            column and the `node` set on the row.
+
+        Exceptions:
+            `HardwareError` are logged but *not* raised and execution
+            continues.
 
         """
         try:
@@ -228,7 +229,7 @@ class DriverItem(QtGui.QStandardItem):
 
 class DriverModel(QtGui.QStandardItemModel):
 
-    """Model to handle the driver."""
+    """High-level interface to the driver."""
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -248,7 +249,7 @@ class DriverModel(QtGui.QStandardItemModel):
         return self.verticalHeaderItem(row).node()
 
     def addNode(self, node, label=""):
-        """Add `node` as a new row with `label`."""
+        """Set `node` to a new row with `label`."""
         row = self.rowCount()
         if not label:
             label = node if node is not None else "%i" % row
@@ -257,7 +258,7 @@ class DriverModel(QtGui.QStandardItemModel):
         self.setVerticalHeaderItem(row, headerItem)
 
     def addCommand(self, command, label="", poll=False):
-        """Add `command` as a new column with `label`."""
+        """Set `command` to a new column with `label`."""
         column = self.columnCount()
         item = HorizontalHeaderItem(label if label else "C%i" % column)
         item.setCommand(command)

@@ -1,6 +1,5 @@
-Device driver development kit (DDK)
------------------------------------
+:mod:`pyhard2.driver` Module
+============================
 
 .. automodule:: pyhard2.driver
    :members:
-
