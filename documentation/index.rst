@@ -114,29 +114,6 @@ Drivers and controllers
    apictrlr
 
 
-License
-=======
-
-GNU GENERAL LICENSE v3.0
-------------------------
-
-pyhard2 - An object-oriented framework for the development of instrument
-drivers.
-Copyright (C) 2012-2014, Mathias Laurin
-
-This program is free software: you can redistribute it and/or modify it under
-the terms of the GNU General Public License as published by the Free Software
-Foundation, either version 3 of the License, or (at your option) any later
-version.
-
-This program is distributed in the hope that it will be useful, but WITHOUT ANY
-WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
-PARTICULAR PURPOSE.  See the GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License along with
-this program.  If not, see <http://www.gnu.org/licenses/>.
-
-
 Installation
 ============
 
@@ -188,8 +165,8 @@ and optionally on
 .. _construct: http://construct.readthedocs.org/en/latest
 
 
-Development and contributing
-============================
+Development and contributions
+=============================
 
 Please file issues on `github <https://github.com/Synss/pyhard2/issues>`__.
 Questions may be asked on the `mailing list
@@ -203,4 +180,3 @@ Indices and tables
 
 * :ref:`modindex`
 * :ref:`search`
-
