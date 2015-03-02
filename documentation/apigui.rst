@@ -29,11 +29,6 @@ Program panel UI and stock programs
 .. automodule:: pyhard2.gui.programs
    :members:
 
-Model to handle the driver
---------------------------
-.. automodule:: pyhard2.gui.model
-   :members:
-
 Customized Qt delegates
 -----------------------
 .. automodule:: pyhard2.gui.delegates

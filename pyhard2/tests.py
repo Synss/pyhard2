@@ -5,7 +5,7 @@ from PyQt5.QtWidgets import QApplication
 from PyQt5.QtTest import QTest
 
 from pyhard2.driver.virtual import VirtualInstrument
-from pyhard2.gui.model import DriverModel
+from pyhard2.model import DriverModel
 from pyhard2.gui.driver import DriverWidget
 from pyhard2.gui.monitor import MonitorWidget
 from pyhard2.gui.programs import ProgramWidget

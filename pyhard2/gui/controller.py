@@ -17,7 +17,7 @@ Slot, Signal = QtCore.pyqtSlot, QtCore.pyqtSignal
 
 from pyhard2 import __version__
 import pyhard2.db as db
-from pyhard2.gui.model import DriverModel
+from pyhard2.model import DriverModel
 from pyhard2.gui.driver import DriverWidget
 from pyhard2.gui.monitor import MonitorWidget
 from pyhard2.gui.programs import ProfileData, ProgramWidget, SingleShotProgram

@@ -71,7 +71,7 @@ pyhard2 is organized following a highly hierarchical structure:
    +----------------+--------------+----------------+-------------------------------+
    |                | Database     | SQLAlchemy     | :mod:`pyhard2.db`             |
    | Data           +--------------+----------------+-------------------------------+
-   |                | Model        | Qt             | :mod:`pyhard2.gui.model`      |
+   |                | Model        | Qt             | :mod:`pyhard2.model`          |
    +----------------+--------------+----------------+-------------------------------+
    | Driver         | Abstraction  |                | :mod:`pyhard2.driver`         |
    +----------------+--------------+----------------+-------------------------------+
@@ -83,6 +83,7 @@ pyhard2 is organized following a highly hierarchical structure:
    apigui
    apictrlr
    apidb
+   apimodel
    apidrv
    apimisc
 
