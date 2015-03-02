@@ -98,10 +98,10 @@ API documentation
 .. toctree::
    :maxdepth: 1
 
-   apigui
-   apidb
-   apimodel
    apidrv
+   apimodel
+   apidb
+   apigui
    apimisc
 
 Drivers and controllers

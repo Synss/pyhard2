@@ -5,17 +5,19 @@
 
 
 """This is where the classes for the device driver development kit are
-defined.  Parameters relative to every command are stored in `Command`
-(read-only, read-write, or write-only; mnemonic; maximum and minimum
-value, for example)
+defined.  Parameters relative to every command are stored in
+:class:`Command` (read-only, read-write, or write-only; mnemonic;
+maximum and minimum value, for example)
 
-Then, the `Commands` are organized in `Subsystems`.  The `Subsystems`
-may be nested, which is useful to organize large drivers or SCPI
-drivers.
+The `Commands` objects are organized by :class:`Subsystem`.
+`Subsystems` may be nested, which is useful to organize large drivers
+like SCPI drivers.
 
-A `Protocol` may be set on a `Subsystem`.  The `Protocol` will handle
-the command, like, for example, formatting and sending a request to the
-hardware; parse the results; and send it back.
+In the end of the `Subsystem` tree, a :class:`Protocol` handles the
+request.  It receives a :class:`Context` object that contains the
+`Command` as well its `Subsystems` so that it can build the query, send
+it to the receiver (hardware socket) and eventually parse the answer,
+check for errors, etc.
 
 A simplified UML representation of a driver using the classes in this
 module is
@@ -180,7 +182,7 @@ class Command(QtCore.QObject):
     """
     signal = Signal(object, object)
     Context = Context
-    """`Context` nested in `Command` to make derivable.
+    """`Context` nested in `Command` to make it derivable.
 
     See :class:`Context`.
 

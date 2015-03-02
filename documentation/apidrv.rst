@@ -3,3 +3,4 @@
 
 .. automodule:: pyhard2.driver
    :members:
+   :exclude-members: splitlines
