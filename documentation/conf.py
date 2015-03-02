@@ -59,9 +59,10 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = u'pyhard2'
-copyright = u'(c) 2012-2014 Mathias Laurin, GPLv3'
-
+project = "pyhard2"
+copyright = """2012-2015 Mathias Laurin.
+pyhard2 and its documentation are licensed under the MIT license
+"""
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
 # built documents.
