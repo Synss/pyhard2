@@ -273,8 +273,7 @@ class Controller(ControllerUi):
             except TypeError:
                 # Nothing to plot
                 continue
-            node, command = item.node(), item.name()
-            line = self._monitorLines[(node, command)]
+            line = self._monitorLines[(item.row(), item.column())]
             line.set_data(x, y)
         self.monitorWidget.axes.relim()
         self.monitorWidget.axes.autoscale_view()
@@ -308,10 +307,10 @@ class Controller(ControllerUi):
                 for row in range(self.driverModel.rowCount())
                 for column in range(self.driverModel.columnCount())):
             item.connectDriver()
-            item.command().signal.connect(partial(self.logItemValue, item))
+            item.dataValueChanged.connect(partial(self.logItemValue, item))
             item.queryData()
             line = Line2D([], [])
-            self._monitorLines[(item.node(), item.name())] = line
+            self._monitorLines[(item.row(), item.column())] = line
             self.monitorWidget.axes.add_line(line)
         self.timer.start()
         self.driverWidget.pidBoxMapper.toFirst()

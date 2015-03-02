@@ -115,7 +115,10 @@ class DriverItem(QtGui.QStandardItem):
 
     def __init__(self):
         super().__init__()
-        self._signal = SignalProxy()  # Used to write to the driver.
+        self._signal = SignalProxy()
+        """Asynchronous write to the driver."""
+        self.dataValueChanged = SignalProxy()
+        """Emit when new data is received from the driver."""
 
     def type(self):
         """Return `QStandardItem.UserType`."""
@@ -205,6 +208,7 @@ class DriverItem(QtGui.QStandardItem):
         def displayData(data, node):
             if node == self.node():
                 self.setData(data, role=Qt.DisplayRole)
+                self.dataValueChanged.emit(data)
 
         def writeData(data):
             if not self.isReadOnly():
