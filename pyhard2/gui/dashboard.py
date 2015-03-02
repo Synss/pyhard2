@@ -125,13 +125,17 @@ class DashboardConfig(object):
         except KeyError:
             pass
         self.windowTitle = section.pop("name", self.windowTitle)
-        for name, pos in (dct.values() for dct in section.pop("labels", [])):
-            self.labels[name] = pos
+        try:
+            labels = section.pop("labels")
+        except KeyError:
+            pass
+        else:
+            self.labels = {label["name"]: label["pos"] for label in labels}
 
         for module, section in self.yaml.items():
             try:
-                controller = import_module("pyhard2.ctrlr.%s" % module)\
-                    .createController()
+                controller = (import_module("pyhard2.ctrlr.%s" % module)
+                              .createController())
             except:
                 logger = logging.getLogger(__name__)
                 logger.exception("%s controller failed to load." % module)
