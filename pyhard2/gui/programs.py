@@ -127,7 +127,7 @@ class SetpointRampProgram(SingleShotProgram):
     def setProfile(self, profile):
         """Set the profile to `profile`."""
         super().setProfile(profile)
-        self._ramp = pid.Profile(list(self._profile)).ramp()
+        self._ramp = pid.Profile(self._profile.array.tolist()).ramp()
 
     @Slot()
     def _shoot(self):
@@ -273,10 +273,10 @@ class ProgramWidget(ProgramWidgetUi):
             triggered=self.programSelectionModel.removeRows)
         self.startProgramAction = QtWidgets.QAction(
             icon("media-playback-start"), "Start program", self,
-            triggered=self.startProgram)
+            triggered=lambda checked: self.startProgram())  # eat `checked`
         self.stopProgramAction = QtWidgets.QAction(
             icon("media-playback-stop"), "Stop program", self,
-            triggered=self.stopProgram)
+            triggered=lambda checked: self.stopProgram())  # eat `checked`
         self.startAllProgramsAction = QtWidgets.QAction(
             icon("media-seek-forward"), "Start all programs", self,
             triggered=self.startAllPrograms)
