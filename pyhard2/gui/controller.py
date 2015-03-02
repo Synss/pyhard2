@@ -1,6 +1,8 @@
 """Module with the default controller.
 
 """
+import logging
+logging.basicConfig()
 import os
 from datetime import datetime
 from collections import defaultdict
@@ -236,8 +238,13 @@ class Controller(ControllerUi):
             timestamp=datetime.utcnow(),
             value=value,
         )
-        self._db.add(entry)
-        self._db.commit()
+        try:
+            self._db.add(entry)
+            self._db.commit()
+        except:
+            logger = logging.getLogger(__name__)
+            logger.error("Failed to log %r" % item)
+            self._db.rollback()
 
     def _refreshMonitor(self):
         q = self._db.query(db.LogTable).distinct(db.LogTable.command)
