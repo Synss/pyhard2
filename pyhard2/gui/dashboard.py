@@ -6,7 +6,9 @@ logging.basicConfig()
 from importlib import import_module  # DashboardConfig
 from functools import partial
 import yaml
-import time
+from datetime import datetime
+
+from matplotlib import dates
 
 from PyQt5 import QtWidgets, QtCore, QtSvg
 Qt = QtCore.Qt
@@ -214,21 +216,6 @@ class DashboardUi(QtWidgets.QMainWindow):
         self.fitInView()
 
 
-def scaleToArtists(axes, artists):
-    if not artists:
-        return
-    # Scale
-    xmin, xmax = axes.get_xbound()
-    ymin, ymax = axes.get_ybound()
-    data = np.hstack(artist.get_data() for artist in artists)
-    xdata_min, ydata_min = data.min(axis=1)
-    xdata_max, ydata_max = data.max(axis=1)
-    if xdata_min < xmin or xdata_max > xmax:
-        axes.set_xbound(xdata_min * 0.8, xdata_max * 1.2)
-    elif ydata_min < ymin or ydata_max > ymax:
-        axes.set_ybound(ydata_min * 0.8, ydata_max * 1.2)
-
-
 class Dashboard(DashboardUi):
 
     """Implement the behavior of the GUI.
@@ -251,10 +238,11 @@ class Dashboard(DashboardUi):
     def _addMonitorForSpinBox(self, item):
         def spinBox_valueChanged(value):
             x, y = line.get_data()
-            x.append(time.time())
+            x.append(datetime.utcnow())
             y.append(value)
             line.set_data(x, y)
-            scaleToArtists(axes, [line])
+            axes.relim()
+            axes.autoscale_view()
             plot.draw_idle()
 
         plot = MplWidget(self.plotArea)
@@ -264,10 +252,13 @@ class Dashboard(DashboardUi):
         plot.hide()
         axes = plot.figure.add_subplot(111)
         axes.set_title(item.toolTip())
+        axes.figure.autofmt_xdate()
+        axes.xaxis.set_major_locator(dates.HourLocator())
+        axes.xaxis.set_major_formatter(dates.DateFormatter("%H:%M"))
         self._axes[plot] = axes
         self.plotArea.layout().addWidget(plot)
         line = Line2D([], [])
-        axes.add_artist(line)
+        axes.add_line(line)
         showMonitorAction = QtWidgets.QAction(
             "monitor ...", item, checkable=True,
             toggled=plot.setVisible)
