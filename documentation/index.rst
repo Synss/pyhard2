@@ -62,23 +62,28 @@ pyhard2 is organized following a highly hierarchical structure:
 
 .. table::
 
-   ==================   ========================
-   layer                module
-   ==================   ========================
-   User
-   User interface       :mod:`pyhard2.gui`
-   Database             :mod:`pyhard2.db`
-   Driver model         :mod:`pyhard2.gui.model`
-   Driver abstraction   :mod:`pyhard2.driver`
-   Socket
-   ==================   ========================
+   +----------------+--------------+----------------+-------------------------------+
+   |                | Layer        | Technology     | Module                        |
+   +================+==============+================+===============================+
+   |                | Dashboard    | Qt, matplotlib | :mod:`pyhard2.gui.dashboard`  |
+   | User interface +--------------+----------------+-------------------------------+
+   |                | Controller   | Qt, matplotlib | :mod:`pyhard2.gui.controller` |
+   +----------------+--------------+----------------+-------------------------------+
+   |                | Database     | SQLAlchemy     | :mod:`pyhard2.db`             |
+   | Data           +--------------+----------------+-------------------------------+
+   |                | Model        | Qt             | :mod:`pyhard2.gui.model`      |
+   +----------------+--------------+----------------+-------------------------------+
+   | Driver         | Abstraction  |                | :mod:`pyhard2.driver`         |
+   +----------------+--------------+----------------+-------------------------------+
+
 
 .. toctree::
    :maxdepth: 1
 
-   apidrv
    apigui
    apictrlr
+   apidb
+   apidrv
    apimisc
 
 Drivers and controllers
