@@ -230,7 +230,7 @@ class Controller(ControllerUi):
                 item.queryData()
 
     @Slot(QtGui.QStandardItem, object)
-    def _logData(self, item, value):
+    def logItemValue(self, item, value):
         """Save data into database."""
         entry = db.LogTable(
             controller=self._config.title,
@@ -247,25 +247,35 @@ class Controller(ControllerUi):
             logger.error("Failed to log %r" % item)
             self._db.rollback()
 
-    def _refreshMonitor(self):
+    def getLogForItem(self, item):
+        """Query the database for the log of the values for `item`."""
+        if self.driverWidget.driverView.isColumnHidden(item.column()):
+            return
         q = self._db.query(db.LogTable).distinct(db.LogTable.command)
         history = self.monitorWidget.historyLimitCombo
         delta = history.itemData(history.currentIndex())
+        node, command = item.node(), item.name()
+        q = (self._db.query(db.LogTable)
+             .filter(db.LogTable.command == command)
+             .filter(db.LogTable.node == node)
+             .filter(db.LogTable.timestamp >= datetime.utcnow() - delta)
+             )
+        data = np.array([(timestamp, value)
+                         for timestamp, value
+                         in ((row.timestamp, row.value)
+                             for row in q.all())])
+        return data[:, 0], data[:, 1]
+
+    def _refreshMonitor(self):
         for item in self.driverModel:
-            if self.driverWidget.driverView.isColumnHidden(item.column()):
+            try:
+                x, y = self.getLogForItem(item)
+            except TypeError:
+                # Nothing to plot
                 continue
             node, command = item.node(), item.name()
-            q = (self._db.query(db.LogTable)
-                 .filter(db.LogTable.command == command)
-                 .filter(db.LogTable.node == node)
-                 .filter(db.LogTable.timestamp >= datetime.utcnow() - delta)
-                 )
-            data = np.array([(timestamp, value)
-                             for timestamp, value
-                             in ((row.timestamp, row.value)
-                                 for row in q.all())])
             line = self._monitorLines[(node, command)]
-            line.set_data(data[:, 0], data[:, 1])
+            line.set_data(x, y)
         self.monitorWidget.axes.relim()
         self.monitorWidget.axes.autoscale_view()
         self.monitorWidget.monitor.draw_idle()
@@ -298,7 +308,7 @@ class Controller(ControllerUi):
                 for row in range(self.driverModel.rowCount())
                 for column in range(self.driverModel.columnCount())):
             item.connectDriver()
-            item.command().signal.connect(partial(self._logData, item))
+            item.command().signal.connect(partial(self.logItemValue, item))
             item.queryData()
             line = Line2D([], [])
             self._monitorLines[(item.node(), item.name())] = line
