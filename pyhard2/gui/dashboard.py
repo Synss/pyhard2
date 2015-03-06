@@ -55,7 +55,7 @@ Example:
     the following line starts a dashboard containing virtual
     instruments::
 
-        python pyhard2/gui/dashboard.py circat.yml -v
+        python pyhard2/gui/dashboard.py -v circat.yml
 
 """
 import logging
