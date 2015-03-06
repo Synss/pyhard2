@@ -148,16 +148,18 @@ class Dashboard(DashboardUi):
         super().__init__(parent)
         self._axes = {}
         self._currentIndex = 0
+        self.tabWidget.currentChanged.connect(self._tabChanged)
         self.controllers = [self]
         with open(yamlConfig, "rb") as yamlFile:
-            self.yaml = yaml.load(yamlFile)
-        for name, yamlSection in self.yaml.items():
-            dict(dashboard=self._setUpDashboard,
-                 ).get(name, self._setUpController)(name, yamlSection)
-        self.tabWidget.currentChanged.connect(self._tabChanged)
+            config = yaml.load(yamlFile)
+            self._setUpDashboard(config.pop("dashboard", ""))  # must be 1st
+            for name, yamlSection in config.items():
+                self._setUpController(name, yamlSection)
 
-    def _setUpDashboard(self, name, yaml):
-        self.setWindowTitle(yaml.get("name", name))
+    def _setUpDashboard(self, yaml):
+        if not yaml:
+            return
+        self.setWindowTitle(yaml.get("name", "Dashboard"))
         self.setBackgroundImage(yaml.get("image", ":/image/gaslines.svg"))
         try:
             labels = {label["name"]: label["pos"] for label in yaml["labels"]}
