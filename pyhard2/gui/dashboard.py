@@ -1,4 +1,61 @@
-"""Launcher for the dashboard.
+"""Module with the default dashboard.
+
+The config files are extended with a `dashboard` section such as
+
+.. code-block:: yaml
+
+    dashboard:
+        name: Dashboard
+        image: :/img/gaslines.svg
+        labels:
+            - name: LABEL1
+                pos: [0.25, 0.25]
+            - name: LABEL2
+                pos: [0.5, 0.25]
+            - name: LABEL3
+                pos: [0.75, 0.25]
+
+Where `Dashboard` is the name of the window. ``image:`` points
+to an svg file that will be displayed in the background of the
+window.  ``labels:`` is a list of text labels containing the
+text `LABEL1`, `LABEL2`, and `LABEL3` displayed at the position
+given by ``pos:`` as `(x,y)` pairs of relative coordinates.  `x`
+and `y` can be any value between 0 and 1.
+
+The other nodes also require the `pos` data in the format
+specified above, and optional ``scale`` and ``angle`` data may
+be passed as well.  Such as the previous file may become
+
+.. code-block:: yaml
+
+    MODULE:
+        COM1:
+            - node: 1
+                name: first
+                pos: [0.25, 0.5]
+
+            - node: 2
+                name: second
+                pos: [0.5, 0.5]
+                scale: 0.5
+                angle: 180
+
+            - node: 3
+                name: third
+                pos: [0.75, 0.5]
+
+- `pos` gives the position as ``[x, y]`` pairs of relative
+  coordinates (`x` and `y` are values between 0 and 1)  for the
+  widget of the corresponding node.
+- `scale` scales the widget by the given amount.
+- `angle` rotates the widget by the given amount, in degree.
+
+Example:
+    From the root directory of a working installation of `pyhard2`,
+    the following line starts a dashboard containing virtual
+    instruments::
+
+        python pyhard2/gui/dashboard.py circat.yml -v
 
 """
 import logging
@@ -37,134 +94,6 @@ class DoubleClickEventFilter(QtCore.QObject):
         return False
 
 
-class DashboardConfig(object):
-
-    """Extend the config file format described in :func:`Config` to
-    launch the `Dashboard` interface.
-
-    The config files are extended with a `dashboard` section such as
-
-    .. code-block:: yaml
-
-        dashboard:
-            name: Dashboard
-            image: :/img/gaslines.svg
-            labels:
-                - name: LABEL1
-                  pos: [0.25, 0.25]
-                - name: LABEL2
-                  pos: [0.5, 0.25]
-                - name: LABEL3
-                  pos: [0.75, 0.25]
-
-    Where `Dashboard` is the name of the window. ``image:`` points to an
-    svg file that will be displayed in the background of the window.
-    ``labels:`` is a list of text labels containing the text `LABEL1`,
-    `LABEL2`, and `LABEL3` displayed at the position given by ``pos:``
-    as `(x,y)` pairs of relative coordinates.  `x` and `y` can be any
-    value between 0 and 1.
-
-    The other nodes also require the `pos` data in the format specified
-    above, and optional ``scale`` and ``angle`` data may be passed as
-    well.  Such as the previous file may become
-
-    .. code-block:: yaml
-
-        MODULE:
-            COM1:
-                - node: 1
-                  name: first
-                  pos: [0.25, 0.5]
-
-                - node: 2
-                  name: second
-                  pos: [0.5, 0.5]
-                  scale: 0.5
-                  angle: 180
-
-                - node: 3
-                  name: third
-                  pos: [0.75, 0.5]
-
-    - `pos` gives the position as ``[x, y]`` pairs of relative
-      coordinates (`x` and `y` are values between 0 and 1)  for the
-      widget of the corresponding node.
-    - `scale` scales the widget by the given amount.
-    - `angle` rotates the widget by the given amount, in degree.
-
-    Example:
-        From the root directory of a working installation of `pyhard2`,
-        the following line starts a dashboard containing virtual
-        instruments::
-
-            python pyhard2/gui/dashboard.py circat.yml -v
-
-    """
-    def __init__(self, filename):
-        with open(filename, "rb") as file:
-            self.yaml = yaml.load(file)
-        self.windowTitle = "Dashboard"
-        self.backgroundItem = QtWidgets.QGraphicsRectItem(0, 0, 640, 480)
-        self.controllers = {}
-        self.labels = {}
-
-    def setupUi(self, dashboard):
-        dashboard.setWindowTitle(self.windowTitle)
-        dashboard.setBackgroundItem(self.backgroundItem)
-        for text, (x, y) in self.labels.items():
-            textItem = dashboard.addSimpleText(text)
-            textItem.setFlags(
-                textItem.flags()
-                | QtWidgets.QGraphicsItem.ItemIgnoresTransformations)
-            textItem.setPos(dashboard.mapToScene(QtCore.QPointF(x, y)))
-        for controller, proxyWidgets in self.controllers.items():
-            dashboard.addControllerAndWidgets(controller, proxyWidgets)
-
-    def parse(self):
-        section = self.yaml.pop("dashboard")
-        try:
-            self.backgroundItem = QtSvg.QGraphicsSvgItem(section.pop("image"))
-        except KeyError:
-            pass
-        self.windowTitle = section.pop("name", self.windowTitle)
-        try:
-            labels = section.pop("labels")
-        except KeyError:
-            pass
-        else:
-            self.labels = {label["name"]: label["pos"] for label in labels}
-
-        for module, section in self.yaml.items():
-            try:
-                controller = (import_module("pyhard2.ctrlr.%s" % module)
-                              .createController())
-            except:
-                logger = logging.getLogger(__name__)
-                logger.exception("%s controller failed to load." % module)
-                continue
-            self.controllers[controller] = []  # empty proxyWidget list
-            for subsection in section.values():
-                for row, config in enumerate(subsection):
-                    try:
-                        x, y = config["pos"]
-                    except KeyError:
-                        continue
-                    column = 0
-                    proxyWidget = QtWidgets.QGraphicsProxyWidget()
-                    proxyWidget.setWidget(controller.editorPrototype[column]
-                                          .__class__())  # XXX
-                    proxyWidget.setToolTip(config.get("name", row))
-                    proxyWidget.setPos(x, y)
-                    proxyWidget.setRotation(config.get("angle", 0))
-                    proxyWidget.setScale(config.get("scale", 1.5))
-                    if isinstance(proxyWidget.widget(),
-                                  QtWidgets.QAbstractSpinBox):
-                        proxyWidget.setFlags(
-                            proxyWidget.flags()
-                            | proxyWidget.ItemIgnoresTransformations)
-                    self.controllers[controller].append(proxyWidget)
-
-
 class DashboardUi(QtWidgets.QMainWindow):
 
     """QMainWindow for the dashboard."""
@@ -189,6 +118,10 @@ class DashboardUi(QtWidgets.QMainWindow):
             sizePolicy=sizePolicy)
         self.graphicsScene = QtWidgets.QGraphicsScene(self)
         self.graphicsView.setScene(self.graphicsScene)
+        self.backgroundItem = QtSvg.QGraphicsSvgItem()
+        self.backgroundItem.setFlags(QtSvg.QGraphicsSvgItem.ItemClipsToShape)
+        self.backgroundItem.setZValue(-1)
+        self.graphicsScene.addItem(self.backgroundItem)
         self.plotArea = QtWidgets.QScrollArea(self)
         self.dashboardTabLayout.addWidget(self.graphicsView)
         self.dashboardTabLayout.addWidget(self.plotArea)
@@ -206,34 +139,141 @@ class DashboardUi(QtWidgets.QMainWindow):
 
         self.tabWidget.currentChanged.connect(self.fitInView)
 
-    @Slot()
-    def fitInView(self):
-        if self.tabWidget.currentIndex() is 0:
-            self.graphicsView.fitInView(self.graphicsScene.sceneRect())
-
-    def resizeEvent(self, event):
-        super().resizeEvent(event)
-        self.fitInView()
-
 
 class Dashboard(DashboardUi):
 
-    """Implement the behavior of the GUI.
+    """The default dashboard widget."""
 
-    Methods:
-        windowTitle()
-        setWindowTitle(title)
-            This property holds the window title (caption).
-        show: Show the widget and its child widgets.
-        close: Close the widget.
-
-    """
-    def __init__(self, parent=None):
+    def __init__(self, yamlConfig, parent=None):
         super().__init__(parent)
-        self.controllers = [self]
         self._axes = {}
         self._currentIndex = 0
+        self.controllers = [self]
+        with open(yamlConfig, "rb") as yamlFile:
+            self.yaml = yaml.load(yamlFile)
+        for name, yamlSection in self.yaml.items():
+            dict(dashboard=self._setUpDashboard,
+                 ).get(name, self._setUpController)(name, yamlSection)
         self.tabWidget.currentChanged.connect(self._tabChanged)
+
+    def _setUpDashboard(self, name, yaml):
+        self.setWindowTitle(yaml.get("name", name))
+        self.setBackgroundImage(yaml.get("image", ":/image/gaslines.svg"))
+        try:
+            labels = {label["name"]: label["pos"] for label in yaml["labels"]}
+        except KeyError:
+            labels = {}
+        for text, (x, y) in labels.items():
+            self.addLabel(QtCore.QPointF(x, y), text)
+
+    def _setUpController(self, name, yaml):
+        """Add the controller defined in module pyhard2.ctrlr.`name` with
+           widgets defined in `yaml`.
+
+        """
+        try:
+            controller = (import_module("pyhard2.ctrlr.%s" % name)
+                          .createController())
+        except:
+            logger = logging.getLogger(__name__)
+            logger.exception("%s controller failed to load." % name)
+            return
+        else:
+            self.addController(controller)
+
+        for subsection in yaml.values():
+            for row, config in enumerate(subsection):
+                try:
+                    x, y = config["pos"]
+                except KeyError:
+                    continue
+                column = 0
+                proxyWidget = QtWidgets.QGraphicsProxyWidget()
+                proxyWidget.setWidget(controller.editorPrototype[column]
+                                      .__class__())  # XXX
+                proxyWidget.setToolTip(config.get("name", row))
+                proxyWidget.setPos(x, y)
+                proxyWidget.setRotation(config.get("angle", 0))
+                proxyWidget.setScale(config.get("scale", 1.5))
+                if isinstance(proxyWidget.widget(),
+                              QtWidgets.QAbstractSpinBox):
+                    proxyWidget.setFlags(
+                        proxyWidget.flags()
+                        | proxyWidget.ItemIgnoresTransformations)
+                self.addItem(proxyWidget)
+
+                # connect to driverModel
+                modelItem = controller.driverModel.item(row, column)
+                if not modelItem:
+                    logging.getLogger(__name__).error(
+                        "Size of configuration file and model do not match in %s" %
+                        controller.windowTitle())
+                    continue
+                proxyWidget.addAction(QtWidgets.QAction(
+                    "go to controller...", proxyWidget,
+                    # needs early binding in the loop
+                    triggered=partial(self._goToController, controller, row)))
+                widget = proxyWidget.widget()
+                if isinstance(widget, QtWidgets.QAbstractSpinBox):
+                    self._addMonitorForSpinBox(proxyWidget)
+                    self._connectSpinBoxToItem(widget, modelItem,
+                                               controller.programColumn())
+                elif isinstance(widget, QtWidgets.QAbstractButton):
+                    self._connectButtonToItem(widget, modelItem)
+                else:
+                    raise NotImplementedError
+
+    def setBackgroundImage(self, svgFilename):
+        """Set the image from `svgFilename` as background."""
+        # FIXME handle failure better
+        if not svgFilename:
+            return
+        renderer = QtSvg.QSvgRenderer(svgFilename, self)
+        self.backgroundItem.setSharedRenderer(renderer)
+        rect = self.backgroundItem.boundingRect()
+        self.graphicsScene.setSceneRect(0, 0, rect.width(), rect.height())
+        self.fitInView()
+
+    def addLabel(self, pos, text):
+        """Add a label with `text` at `pos`."""
+        textItem = self.graphicsScene.addSimpleText(text)
+        textItem.setFlags(textItem.flags()
+                          | QtWidgets.QGraphicsItem.ItemIgnoresTransformations)
+        textItem.setPos(self.mapToScene(pos))
+
+    def addController(self, controller):
+        """Add the `controller` as a new tab."""
+        controller.timer.timeout.disconnect(controller._refreshMonitor)
+        self.menuWindow.addAction(QtWidgets.QAction(
+            controller.windowTitle(), self.menuWindow,
+            triggered=lambda checked: self._goToController(controller)))
+        self.tabWidget.addTab(controller, controller.windowTitle())
+        self.controllers.append(controller)
+
+    def addItem(self, item):
+        """Add the `item` to the scene."""
+
+        def onContextMenuRequested(pos):
+            # cannot use ActionsContextMenu as the menu scales
+            # with the widget
+            view = self.graphicsView
+            pos = view.viewport().mapToGlobal(
+                view.mapFromScene(item.mapToScene(pos)))
+            menu = QtWidgets.QMenu()
+            menu.addActions(item.actions())
+            menu.addActions(item.widget().actions())
+            menu.exec_(pos)
+
+        item.widget().setContextMenuPolicy(Qt.CustomContextMenu)
+        item.widget().customContextMenuRequested.connect(
+            onContextMenuRequested)
+        item.setPos(self.mapToScene(item.pos()))
+        self.graphicsScene.addItem(item)
+
+    def mapToScene(self, point):
+        rect = self.graphicsScene.sceneRect()
+        return QtCore.QPointF(rect.width() * point.x(),
+                              rect.height() * point.y())
 
     def _addMonitorForSpinBox(self, item):
         def spinBox_valueChanged(value):
@@ -337,79 +377,14 @@ class Dashboard(DashboardUi):
         if row is not None:
             controller.driverWidget.driverView.selectRow(row)
 
-    def mapToScene(self, point):
-        rect = self.graphicsScene.sceneRect()
-        return QtCore.QPointF(rect.width() * point.x(),
-                              rect.height() * point.y())
+    @Slot()
+    def fitInView(self):
+        if self.tabWidget.currentIndex() is 0:
+            self.graphicsView.fitInView(self.graphicsScene.sceneRect())
 
-    def setBackgroundItem(self, backgroundItem):
-        """Set the SVG image to use as a background."""
-        backgroundItem.setParent(self.graphicsScene)
-        backgroundItem.setFlags(QtSvg.QGraphicsSvgItem.ItemClipsToShape)
-        backgroundItem.setZValue(-1)
-        self.graphicsScene.addItem(backgroundItem)
-        rect = backgroundItem.boundingRect()
-        self.graphicsScene.setSceneRect(0, 0, rect.width(), rect.height())
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
         self.fitInView()
-
-    def addSimpleText(self, text):
-        """Add the `text` to the scene."""
-        return self.graphicsScene.addSimpleText(text)
-
-    def addSceneItem(self, item):
-        """Add the `item` to the scene."""
-
-        def onContextMenuRequested(pos):
-            # cannot use ActionsContextMenu as the menu scales
-            # with the widget
-            view = self.graphicsView
-            pos = view.viewport().mapToGlobal(
-                view.mapFromScene(item.mapToScene(pos)))
-            menu = QtWidgets.QMenu()
-            menu.addActions(item.actions())
-            menu.addActions(item.widget().actions())
-            menu.exec_(pos)
-
-        item.widget().setContextMenuPolicy(Qt.CustomContextMenu)
-        item.widget().customContextMenuRequested.connect(
-            onContextMenuRequested)
-        item.setPos(self.mapToScene(item.pos()))
-        self.graphicsScene.addItem(item)
-
-    def addController(self, controller):
-        """Add the `controller` as a new tab."""
-        controller.timer.timeout.disconnect(controller._refreshMonitor)
-        self.menuWindow.addAction(QtWidgets.QAction(
-            controller.windowTitle(), self.menuWindow,
-            triggered=lambda checked: self._goToController(controller)))
-        self.tabWidget.addTab(controller, controller.windowTitle())
-        self.controllers.append(controller)
-
-    def addControllerAndWidgets(self, controller, proxyWidgetList):
-        """Add a `controller` and its associated widgets."""
-        self.addController(controller)
-        for row, proxyWidget in enumerate(proxyWidgetList):
-            self.addSceneItem(proxyWidget)
-            column = 0
-            modelItem = controller.driverModel.item(row, column)
-            if not modelItem:
-                logging.getLogger(__name__).error(
-                    "Size of configuration file and model do not match in %s" %
-                    controller.windowTitle())
-                continue
-            proxyWidget.addAction(QtWidgets.QAction(
-                "go to controller...", proxyWidget,
-                # needs early binding in the loop
-                triggered=partial(self._goToController, controller, row)))
-            widget = proxyWidget.widget()
-            if isinstance(widget, QtWidgets.QAbstractSpinBox):
-                self._addMonitorForSpinBox(proxyWidget)
-                self._connectSpinBoxToItem(widget, modelItem,
-                                           controller.programColumn())
-            elif isinstance(widget, QtWidgets.QAbstractButton):
-                self._connectButtonToItem(widget, modelItem)
-            else:
-                raise NotImplementedError
 
     def closeEvent(self, event):
         for controller in self.controllers:
@@ -421,11 +396,8 @@ class Dashboard(DashboardUi):
 def main(argv):
     app = QtWidgets.QApplication(argv)
     app.lastWindowClosed.connect(app.quit)
-    w = Dashboard()
+    w = Dashboard(argv[-1])
     w.show()
-    config = DashboardConfig(argv[1])
-    config.parse()
-    config.setupUi(w)
     sys.exit(app.exec_())
 
 
