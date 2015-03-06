@@ -156,21 +156,21 @@ class Dashboard(DashboardUi):
             for name, yamlSection in config.items():
                 self._setUpController(name, yamlSection)
 
-    def _setUpDashboard(self, yaml):
-        if not yaml:
+    def _setUpDashboard(self, yml):
+        if not yml:
             return
-        self.setWindowTitle(yaml.get("name", "Dashboard"))
-        self.setBackgroundImage(yaml.get("image", ":/image/gaslines.svg"))
+        self.setWindowTitle(yml.get("name", "Dashboard"))
+        self.setBackgroundImage(yml.get("image", ":/image/gaslines.svg"))
         try:
-            labels = {label["name"]: label["pos"] for label in yaml["labels"]}
+            labels = {label["name"]: label["pos"] for label in yml["labels"]}
         except KeyError:
             labels = {}
         for text, (x, y) in labels.items():
             self.addLabel(QtCore.QPointF(x, y), text)
 
-    def _setUpController(self, name, yaml):
+    def _setUpController(self, name, yml):
         """Add the controller defined in module pyhard2.ctrlr.`name` with
-           widgets defined in `yaml`.
+           widgets defined in `yml`.
 
         """
         try:
@@ -183,7 +183,7 @@ class Dashboard(DashboardUi):
         else:
             self.addController(controller)
 
-        for subsection in yaml.values():
+        for subsection in yml.values():
             for row, config in enumerate(subsection):
                 try:
                     x, y = config["pos"]
