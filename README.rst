@@ -24,3 +24,9 @@ License
 pyhard2 (c) 2012-2014 Mathias Laurin,
             GNU General Public License v3 (GPLv3)
 
+pyhard2 (c) 2016 Mathisa Laurin,
+            The MIT License (MIT)
+
+This whole project is as of today 2016-06-04 relicensed under
+The MIT License (MIT).  This includes the work in progress in
+the `develop` branch.
