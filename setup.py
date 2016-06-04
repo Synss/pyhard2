@@ -22,7 +22,7 @@ setup(name=u"pyhard2",
       author=u"Mathias Laurin",
       author_email="Mathias_Laurin@users.sf.net",
       url="http://pyhard2.sf.net",
-      license="GNU General Public License v3 (GPLv3)",
+      license="The MIT License (MIT)",
       packages=["pyhard2",
                 "pyhard2.rsc",
                 "pyhard2.ctrlr",
@@ -46,7 +46,7 @@ setup(name=u"pyhard2",
       classifiers=os.linesep.join(
           s for s in """
           Development Status :: 3 - Alpha
-          License :: OSI Approved :: GNU General Public License v3 (GPLv3)
+          License :: OSI Approved :: The MIT License (MIT)
           Intended Audience :: Developers
           Intended Audience :: Science/Research
           Programming Language :: Python :: 2.7

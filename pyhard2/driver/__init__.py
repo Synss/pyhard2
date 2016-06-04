@@ -1,7 +1,7 @@
 # This file is part of pyhard2 - An object-oriented framework for the
 # development of instrument drivers.
 
-# Copyright (C) 2012-2014 Mathias Laurin, GPLv3
+# Copyright (C) 2012-2014 Mathias Laurin, MIT
 
 
 """This is where the classes for the device driver development kit are

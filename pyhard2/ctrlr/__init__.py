@@ -1,7 +1,7 @@
 # This file is part of pyhard2 - An object-oriented framework for the
 # development of instrument drivers.
 
-# Copyright (C) 2012-2014 Mathias Laurin, GPLv3
+# Copyright (C) 2012-2014 Mathias Laurin, MIT
 
 
 """Qt4 graphical user interface for the controllers.
@@ -1239,7 +1239,7 @@ class ControllerUi(QtGui.QMainWindow):
             u"The free DDK written in Python."
             u"",
             u"Copyright (c) 2012-2014 Mathias Laurin.",
-            u"Distributed under the GPLv3 License.")))
+            u"Distributed under the MIT License.")))
 
 
 class Controller(QtCore.QObject):
