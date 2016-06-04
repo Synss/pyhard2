@@ -168,114 +168,48 @@ class Dashboard(DashboardUi):
         for text, (x, y) in labels.items():
             self.addLabel(QtCore.QPointF(x, y), text)
 
-    def _setUpController(self, name, yml):
-        """Add the controller defined in module pyhard2.ctrlr.`name` with
-           widgets defined in `yml`.
-
-        """
+    def _setUpProxyWidget(self, controller, row, yml):
         try:
-            controller = (import_module("pyhard2.ctrlr.%s" % name)
-                          .createController())
-        except:
-            logger = logging.getLogger(__name__)
-            logger.exception("%s controller failed to load." % name)
+            x, y = yml["pos"]
+        except KeyError:
             return
+        column = 0
+        proxyWidget = QtWidgets.QGraphicsProxyWidget()
+        proxyWidget.setWidget(controller.editorPrototype[column]
+                              .__class__())  # XXX
+        proxyWidget.setToolTip(yml.get("name", row))
+        proxyWidget.setPos(x, y)
+        proxyWidget.setRotation(yml.get("angle", 0))
+        proxyWidget.setScale(yml.get("scale", 1.5))
+        if isinstance(proxyWidget.widget(),
+                      QtWidgets.QAbstractSpinBox):
+            proxyWidget.setFlags(
+                proxyWidget.flags()
+                | proxyWidget.ItemIgnoresTransformations)
+        self.addItem(proxyWidget)
+        if isinstance(proxyWidget.widget(), QtWidgets.QAbstractSpinBox):
+            self._setUpSpinBoxProxyWidget(controller, row, proxyWidget)
+        elif isinstance(proxyWidget.widget(), QtWidgets.QAbstractButton):
+            self._setUpButtonProxyWidget(controller, row, proxyWidget)
         else:
-            self.addController(controller)
+            raise NotImplementedError
 
-        for subsection in yml.values():
-            for row, config in enumerate(subsection):
-                try:
-                    x, y = config["pos"]
-                except KeyError:
-                    continue
-                column = 0
-                proxyWidget = QtWidgets.QGraphicsProxyWidget()
-                proxyWidget.setWidget(controller.editorPrototype[column]
-                                      .__class__())  # XXX
-                proxyWidget.setToolTip(config.get("name", row))
-                proxyWidget.setPos(x, y)
-                proxyWidget.setRotation(config.get("angle", 0))
-                proxyWidget.setScale(config.get("scale", 1.5))
-                if isinstance(proxyWidget.widget(),
-                              QtWidgets.QAbstractSpinBox):
-                    proxyWidget.setFlags(
-                        proxyWidget.flags()
-                        | proxyWidget.ItemIgnoresTransformations)
-                self.addItem(proxyWidget)
-
-                # connect to driverModel
-                modelItem = controller.driverModel.item(row, column)
-                if not modelItem:
-                    logging.getLogger(__name__).error(
-                        "Size of configuration file and model do not match in %s" %
-                        controller.windowTitle())
-                    continue
-                proxyWidget.addAction(QtWidgets.QAction(
-                    "go to controller...", proxyWidget,
-                    # needs early binding in the loop
-                    triggered=partial(self._goToController, controller, row)))
-                widget = proxyWidget.widget()
-                if isinstance(widget, QtWidgets.QAbstractSpinBox):
-                    self._addMonitorForSpinBox(proxyWidget)
-                    self._connectSpinBoxToItem(widget, modelItem,
-                                               controller.programColumn())
-                elif isinstance(widget, QtWidgets.QAbstractButton):
-                    self._connectButtonToItem(widget, modelItem)
-                else:
-                    raise NotImplementedError
-
-    def setBackgroundImage(self, svgFilename):
-        """Set the image from `svgFilename` as background."""
-        # FIXME handle failure better
-        if not svgFilename:
+    def _setUpSpinBoxProxyWidget(self, controller, row, proxyWidget):
+        column = 0
+        modelItem = controller.driverModel.item(row, column)
+        if not modelItem:
+            logging.getLogger(__name__).error(
+                "Size of configuration file and model do not match in %s" %
+                controller.windowTitle())
             return
-        renderer = QtSvg.QSvgRenderer(svgFilename, self)
-        self.backgroundItem.setSharedRenderer(renderer)
-        rect = self.backgroundItem.boundingRect()
-        self.graphicsScene.setSceneRect(0, 0, rect.width(), rect.height())
-        self.fitInView()
-
-    def addLabel(self, pos, text):
-        """Add a label with `text` at `pos`."""
-        textItem = self.graphicsScene.addSimpleText(text)
-        textItem.setFlags(textItem.flags()
-                          | QtWidgets.QGraphicsItem.ItemIgnoresTransformations)
-        textItem.setPos(self.mapToScene(pos))
-
-    def addController(self, controller):
-        """Add the `controller` as a new tab."""
-        controller.timer.timeout.disconnect(controller._refreshMonitor)
-        self.menuWindow.addAction(QtWidgets.QAction(
-            controller.windowTitle(), self.menuWindow,
-            triggered=lambda checked: self._goToController(controller)))
-        self.tabWidget.addTab(controller, controller.windowTitle())
-        self.controllers.append(controller)
-
-    def addItem(self, item):
-        """Add the `item` to the scene."""
-
-        def onContextMenuRequested(pos):
-            # cannot use ActionsContextMenu as the menu scales
-            # with the widget
-            view = self.graphicsView
-            pos = view.viewport().mapToGlobal(
-                view.mapFromScene(item.mapToScene(pos)))
-            menu = QtWidgets.QMenu()
-            menu.addActions(item.actions())
-            menu.addActions(item.widget().actions())
-            menu.exec_(pos)
-
-        item.widget().setContextMenuPolicy(Qt.CustomContextMenu)
-        item.widget().customContextMenuRequested.connect(
-            onContextMenuRequested)
-        item.setPos(self.mapToScene(item.pos()))
-        self.graphicsScene.addItem(item)
-
-    def mapToScene(self, point):
-        rect = self.graphicsScene.sceneRect()
-        return QtCore.QPointF(rect.width() * point.x(),
-                              rect.height() * point.y())
+        proxyWidget.addAction(QtWidgets.QAction(
+            "go to controller...", proxyWidget,
+            # needs early binding in the loop
+            triggered=partial(self._goToController, controller, row)))
+        widget = proxyWidget.widget()
+        self._addMonitorForSpinBox(proxyWidget)
+        self._connectSpinBoxToItem(widget, modelItem,
+                                   controller.programColumn())
 
     def _addMonitorForSpinBox(self, item):
         def spinBox_valueChanged(value):
@@ -353,15 +287,84 @@ class Dashboard(DashboardUi):
                 newValueAction.trigger)
             spinBox.lineEdit().installEventFilter(doubleClickEventFilter)
 
-    def _connectButtonToItem(self, button, item):
-        def onItemChanged(item_):
-            if item_ is item:
-                button.setChecked(item.data())
+    def _setUpButtonProxyWidget(self, controller, row, proxyWidget):
+        column = 0
+        modelItem = controller.driverModel.item(row, column)
+        button = proxyWidget.widget()
+        button.setEnabled(not modelItem.isReadOnly())
+        modelItem.dataValueChanged.connect(button.setChecked)
+        button.clicked.connect(modelItem.setData)
 
-        button.setEnabled(not item.isReadOnly())
-        model = item.model()
-        model.itemChanged.connect(onItemChanged)
-        button.clicked.connect(item.setData)
+    def _setUpController(self, name, yml):
+        """Add the controller defined in module pyhard2.ctrlr.`name` with
+           widgets defined in `yml`.
+
+        """
+        try:
+            controller = (import_module("pyhard2.ctrlr.%s" % name)
+                          .createController())
+        except:
+            logger = logging.getLogger(__name__)
+            logger.exception("%s controller failed to load." % name)
+            return
+        else:
+            self.addController(controller)
+
+        for subsection in yml.values():
+            for row, config in enumerate(subsection):
+                self._setUpProxyWidget(controller, row, config)
+
+    def setBackgroundImage(self, svgFilename):
+        """Set the image from `svgFilename` as background."""
+        # FIXME handle failure better
+        if not svgFilename:
+            return
+        renderer = QtSvg.QSvgRenderer(svgFilename, self)
+        self.backgroundItem.setSharedRenderer(renderer)
+        rect = self.backgroundItem.boundingRect()
+        self.graphicsScene.setSceneRect(0, 0, rect.width(), rect.height())
+        self.fitInView()
+
+    def addLabel(self, pos, text):
+        """Add a label with `text` at `pos`."""
+        textItem = self.graphicsScene.addSimpleText(text)
+        textItem.setFlags(textItem.flags()
+                          | QtWidgets.QGraphicsItem.ItemIgnoresTransformations)
+        textItem.setPos(self.mapToScene(pos))
+
+    def addController(self, controller):
+        """Add the `controller` as a new tab."""
+        controller.timer.timeout.disconnect(controller._refreshMonitor)
+        self.menuWindow.addAction(QtWidgets.QAction(
+            controller.windowTitle(), self.menuWindow,
+            triggered=lambda checked: self._goToController(controller)))
+        self.tabWidget.addTab(controller, controller.windowTitle())
+        self.controllers.append(controller)
+
+    def addItem(self, item):
+        """Add the `item` to the scene."""
+
+        def onContextMenuRequested(pos):
+            # cannot use ActionsContextMenu as the menu scales
+            # with the widget
+            view = self.graphicsView
+            pos = view.viewport().mapToGlobal(
+                view.mapFromScene(item.mapToScene(pos)))
+            menu = QtWidgets.QMenu()
+            menu.addActions(item.actions())
+            menu.addActions(item.widget().actions())
+            menu.exec_(pos)
+
+        item.widget().setContextMenuPolicy(Qt.CustomContextMenu)
+        item.widget().customContextMenuRequested.connect(
+            onContextMenuRequested)
+        item.setPos(self.mapToScene(item.pos()))
+        self.graphicsScene.addItem(item)
+
+    def mapToScene(self, point):
+        rect = self.graphicsScene.sceneRect()
+        return QtCore.QPointF(rect.width() * point.x(),
+                              rect.height() * point.y())
 
     def _tabChanged(self, new):
         controller = self.controllers[self._currentIndex]
