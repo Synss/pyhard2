@@ -30,7 +30,7 @@ __about__ = """
 pyhard2 {version}, the free DDK written in Python.
 
 Copyright (c) 2012-2015 Mathias Laurin.
-Distributed under the GPLv3 License.
+Distributed under the MIT license.
 """.format(version=__version__)
 
 

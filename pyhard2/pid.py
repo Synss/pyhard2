@@ -2,7 +2,7 @@
 # This file is part of
 # pyhard2 - An object-oriented framework for the development of
 # instrument drivers
-# Copyright (C) 2012, Mathias Laurin, GPLv3
+# Copyright (C) 2012, Mathias Laurin, MIT License
 
 """Proportional-integral-derivative controller and ramping functions.
 
